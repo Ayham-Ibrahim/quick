@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('password');
             $table->boolean('is_admin')->default(0);
             $table->string('avatar')->nullable();
+            $table->string('city')->nullable();
+            $table->string('gender')->nullable();
             $table->string('v_location')->nullable();
             $table->string('h_location')->nullable();
             // $table->foreignId('walet_id')->constrained('walets')->cascadeOnDelete();

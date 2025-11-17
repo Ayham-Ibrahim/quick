@@ -23,6 +23,8 @@ class UserManagementService
         $user = User::create([
             'name'     => $data['name'],
             'phone'    => $data['phone'],
+            'gender'    => $data['gender'],
+            'city'    => $data['city'],
             'password' => bcrypt($data['password']),
             'avatar' => $avatarPath,
             'v_location' => $data['v_location'],
