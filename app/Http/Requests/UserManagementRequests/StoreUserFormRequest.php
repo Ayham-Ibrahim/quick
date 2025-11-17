@@ -29,6 +29,8 @@ class StoreUserFormRequest extends BaseFormRequest
                                     |mimes:png,jpg,jpeg
                                     |mimetypes:image/jpeg,image/png,image/jpg
                                     |max:10000',
+            'gender' => 'required|string|max:255',
+            'city' => 'required|string|max:255',
             'v_location' => 'required|string|max:255',
             'h_location' => 'required|string|max:255',
             'is_admin' => 'nullable|boolean|in:0,1',
