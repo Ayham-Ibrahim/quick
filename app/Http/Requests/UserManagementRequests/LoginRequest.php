@@ -22,8 +22,9 @@ class LoginRequest extends BaseFormRequest
     public function rules(): array
     {
         return [
-            'phone'    => 'required|string|exists:users,phone|max:255',
+            'phone'    => 'required|string|max:255',
             'password' => 'required|string|min:6|max:255',
+            'type' => 'required|in:user,provider,store_manager'
         ];
     }
      /**
@@ -34,8 +35,9 @@ class LoginRequest extends BaseFormRequest
     public function attributes(): array
     {
         return [
-            'phone' => 'رقم الوااتساب',
+            'phone' => 'رقم الواتساب',
             'password' => 'كلمة المرور',
+            'type' => 'نوع المستخدم'
         ];
     }
      /**

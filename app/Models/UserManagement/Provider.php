@@ -1,14 +1,13 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\UserManagement;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-
-class User extends Authenticatable
+use Illuminate\Foundation\Auth\User as Authenticatable;
+class Provider extends Model
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasApiTokens;
@@ -19,18 +18,15 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
-        'phone',
-        'avatar',
-        'gender',
-        'city',
+        'provider_name',
+        'market_name',
         'v_location',
         'h_location',
+        'phone',
         'password',
-        'is_admin',
+        'city'
         // 'walet_id'
     ];
-
     /**
      * The attributes that should be hidden for serialization.
      *
@@ -40,8 +36,7 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
-
-    /**
+      /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -51,7 +46,6 @@ class User extends Authenticatable
         return [
             'phone_verified_at' => 'datetime',
             'password' => 'hashed',
-            'is_admin' => 'boolean',
         ];
     }
 }

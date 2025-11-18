@@ -2,34 +2,30 @@
 
 namespace App\Services\UserManagementServices;
 
-use App\Models\User;
+use App\Models\UserManagement\Provider;
+use App\Models\UserManagement\User;
 use App\Services\FileStorage;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\Request;
 
 class UserManagementService
 {
     public function register(array $data)
     {
-        $avatarPath = null;
-
-        if (isset($data['avatar'])) {
-            $avatarPath = FileStorage::storeFile(
-                $data['avatar'],
-                'avatars',
-                'img'
-            );
-        }
+        $avatarPath = isset($data['avatar'])
+            ? FileStorage::storeFile($data['avatar'], 'avatars', 'img')
+            : null;
 
         $user = User::create([
-            'name'     => $data['name'],
-            'phone'    => $data['phone'],
-            'gender'    => $data['gender'],
-            'city'    => $data['city'],
-            'password' => bcrypt($data['password']),
-            'avatar' => $avatarPath,
-            'v_location' => $data['v_location'],
-            'h_location' => $data['h_location'],
-            'is_admin' => 0
+            'name'        => $data['name'],
+            'phone'       => $data['phone'],
+            'gender'      => $data['gender'],
+            'city'        => $data['city'],
+            'password'    => bcrypt($data['password']),
+            'avatar'      => $avatarPath,
+            'v_location'  => $data['v_location'],
+            'h_location'  => $data['h_location'],
+            'is_admin'    => 0
         ]);
 
         $token = $user->createToken('api')->plainTextToken;
@@ -40,25 +36,38 @@ class UserManagementService
         ];
     }
 
-    public function login(array $data)
+    public function login(array $credentials)
     {
-        if (!Auth::attempt(['phone' => $data['phone'], 'password' => $data['password']])) {
-            return ['error' => 'كلمة المرور أو الرقم غير صحيحين'];
+        $model = match ($credentials['type']) {
+            'user' => User::class,
+            'provider' => Provider::class,
+            // 'store_manager' => StoreManager::class,
+        };
+
+        $account = $model::where('phone', $credentials['phone'])->first();
+
+        if (!$account || !Hash::check($credentials['password'], $account->password)) {
+            return [
+                'success' => false,
+                'message' => 'بيانات الدخول غير صحيحة'
+            ];
         }
 
-        $user = Auth::user();
-        $token = $user->createToken('api')->plainTextToken;
+        $token = $account->createToken('mobile-token')->plainTextToken;
 
         return [
-            'user'  => $user,
-            'token' => $token,
+            'success' => true,
+            'data' => [
+                'type'  => $credentials['type'],
+                'user'  => $account,
+                'token' => $token
+            ]
         ];
     }
 
-    public function logout($request)
+    public function logout($user)
     {
-        $request->user()->currentAccessToken()->delete();
-        
+        $user->currentAccessToken()->delete();
         return ['message' => 'Logged out'];
     }
 }
