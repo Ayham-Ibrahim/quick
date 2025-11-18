@@ -10,33 +10,33 @@ use App\Http\Requests\UserManagementRequests\StoreUserFormRequest;
 
 class UserManagementController extends Controller
 {
-    protected $UserManagementService;
+    protected UserManagementService $service;
 
-    public function __construct(UserManagementService $UserManagementService)
+    public function __construct(UserManagementService $service)
     {
-        $this->UserManagementService = $UserManagementService;
+        $this->service = $service;
     }
 
     public function register(StoreUserFormRequest $request)
     {
-        $result = $this->UserManagementService->register($request->validated());
-        return response()->json($result, 201);
+        $result = $this->service->register($request->validated());
+        return $this->success($result, "registered successfully", 201);
     }
 
     public function login(LoginRequest $request)
     {
-        $result = $this->UserManagementService->login($request->validated());
+        $result = $this->service->login($request->validated());
 
-        if (isset($result['error'])) {
-            return response()->json(['message' => $result['error']], 401);
+        if (!$result['success']) {
+            return $this->error($result['message'], 401);
         }
 
-        return response()->json($result, 200);
+        return $this->success($result['data'], "Login successfully");
     }
 
     public function logout(Request $request)
     {
-        $result = $this->UserManagementService->logout($request);
-        return response()->json($result, 200);
+        $result = $this->service->logout($request->user());
+        return $this->success($result, "Logout success");
     }
 }

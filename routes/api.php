@@ -4,7 +4,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Categories\CategoryController;
 use App\Http\Controllers\Categories\SubCategoryController;
+use App\Http\Controllers\UserManagementControllers\ProviderController;
 use App\Http\Controllers\UserManagementControllers\UserManagementController;
+use App\Http\Controllers\AuthController;
 
 
 /*
@@ -12,14 +14,10 @@ use App\Http\Controllers\UserManagementControllers\UserManagementController;
 | Authentication Routes
 |--------------------------------------------------------------------------
 */
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
 Route::post('/register', [UserManagementController::class, 'register']);
 Route::post('/login', [UserManagementController::class, 'login']);
 
 Route::middleware('auth:sanctum')->post('/logout', [UserManagementController::class, 'logout']);
-
 
 /*
 |--------------------------------------------------------------------------
@@ -34,7 +32,7 @@ Route::middleware('auth:sanctum')->post('/logout', [UserManagementController::cl
 | Authenticated Routes
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth:api'])->group(function () {
+Route::middleware(['auth:sanctum'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
@@ -44,4 +42,7 @@ Route::middleware(['auth:api'])->group(function () {
     Route::apiResource('/categories', CategoryController::class);
     Route::apiResource('/subcategories', SubCategoryController::class);
 
-});
+   /** service provider */
+    Route::apiResource('/providers', ProviderController::class);
+
+ });
