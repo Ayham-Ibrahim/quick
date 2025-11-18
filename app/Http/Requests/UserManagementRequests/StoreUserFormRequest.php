@@ -28,7 +28,7 @@ class StoreUserFormRequest extends BaseFormRequest
             'avatar'   => 'nullable|image
                                     |mimes:png,jpg,jpeg
                                     |mimetypes:image/jpeg,image/png,image/jpg
-                                    |max:10000',
+                                    |max:5000',
             'gender' => 'required|string|max:255|in:male,female',
             'city' => 'required|string|max:255',
             'v_location' => 'required|string|max:255',
@@ -74,7 +74,7 @@ class StoreUserFormRequest extends BaseFormRequest
 
             'avatar.image' => 'حقل :attribute يجب أن يكون صورة.',
             'avatar.mimes' => 'الصورة يجب أن تكون من نوع: :values.',
-            'avatar.max' => 'حجم :attribute يجب ألا يتجاوز :max كيلوبايت (ما يعادل 10 ميجابايت).',
+            'avatar.max' => 'حجم :attribute يجب ألا يتجاوز :max كيلوبايت (ما يعادل 5 ميجابايت).',
             'avatar.mimetypes' => 'نوع ملف الصورة غير مسموح به. الأنواع المسموحة: :values.',
         ];
     }
