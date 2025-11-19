@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Category;
 
+use App\Services\Service;
 use App\Services\FileStorage;
-use App\Models\Categories\Category;
 use Illuminate\Support\Facades\Log;
 use App\Models\Categories\SubCategory;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -32,7 +32,7 @@ class SubCategoryService extends Service
 
     /**
      *  Update an existing subcategory.
-     * 
+     *
      */
     public function updateSubCategory($data, SubCategory $subcategory)
     {
