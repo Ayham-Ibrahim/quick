@@ -1,13 +1,11 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Categories\CategoryController;
 use App\Http\Controllers\Categories\SubCategoryController;
+use App\Http\Controllers\AdsController;
 use App\Http\Controllers\UserManagementControllers\ProviderController;
 use App\Http\Controllers\UserManagementControllers\UserManagementController;
-use App\Http\Controllers\AuthController;
-
 
 /*
 |--------------------------------------------------------------------------
@@ -45,4 +43,5 @@ Route::middleware(['auth:sanctum'])->group(function () {
    /** service provider */
     Route::apiResource('/providers', ProviderController::class);
 
+     Route::apiResource('/ads', AdsController::class);
  });

@@ -2,8 +2,9 @@
 
 namespace App\Http\Requests\Category;
 
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class UpdateSubCategoryRequest extends FormRequest
 {
@@ -12,7 +13,7 @@ class UpdateSubCategoryRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+         return Auth::check() && Auth::user()->is_admin;
     }
 
     /**
@@ -61,5 +62,12 @@ class UpdateSubCategoryRequest extends FormRequest
             'image.max' => 'يجب ألا تتجاوز حجم الصورة 10 ميجابايت',
             'image.mimetypes' => 'يجب أن تكون الصورة من نوع: jpeg, png, jpg, gif',
         ];
+    }
+    protected function failedAuthorization()
+    {
+        throw new HttpResponseException(response()->json([
+            'status' => 'error',
+            'message' => 'غير مصرح لك بالقيام بهذا الإجراء.'
+        ], 403));
     }
 }

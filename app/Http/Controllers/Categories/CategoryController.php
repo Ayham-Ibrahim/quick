@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Categories;
 
 use Illuminate\Http\Request;
-use App\Services\CategoryService;
+use App\Services\Category\CategoryService;
 use App\Models\Categories\Category;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Category\StoreCategoryRequest;
@@ -14,7 +14,7 @@ class CategoryController extends Controller
        /**
      * The service class responsible for handling Category-related business logic.
      *
-     * @var \App\Services\CategoryService
+     * @var \App\Services\Category\CategoryService
      */
     protected $categoryService;
 
@@ -27,7 +27,6 @@ class CategoryController extends Controller
     {
         $this->categoryService = $categoryService;
     }
-    
 
      /**
      * Display a listing of the resource.

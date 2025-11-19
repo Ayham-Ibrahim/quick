@@ -4,14 +4,14 @@ namespace App\Http\Controllers\Categories;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Services\SubCategoryService;
 use App\Models\Categories\SubCategory;
+use App\Services\Category\SubCategoryService;
 use App\Http\Requests\Category\StoreSubCategoryRequest;
 use App\Http\Requests\Category\UpdateSubCategoryRequest;
 
 class SubCategoryController extends Controller
 {
-       /**
+    /**
      * The service class responsible for handling SubCategory-related business logic.
      *
      * @var SubCategoryService
@@ -27,9 +27,9 @@ class SubCategoryController extends Controller
     {
         $this->subCategoryService = $subCategoryService;
     }
-    
 
-     /**
+
+    /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
@@ -66,7 +66,7 @@ class SubCategoryController extends Controller
         );
     }
 
-     /**
+    /**
      * Update the specified resource in storage.
      */
     public function update(UpdateSubCategoryRequest $request, SubCategory $subCategory)
