@@ -29,6 +29,7 @@ class UpdateSubCategoryRequest extends FormRequest
                 'string',
                 'max:255',
             ],
+            'category_id' => 'nullable|exists:categories,id',
             'image' => 'nullable|file|image|mimes:png,jpg,jpeg|max:10000|mimetypes:image/jpeg,image/png,image/jpg',
         ];
     }
@@ -43,6 +44,7 @@ class UpdateSubCategoryRequest extends FormRequest
         return [
             'name' => 'اسم الفئة',
             'image' => 'صورة الفئة',
+            'category_id' => 'الفئة الرئيسية',
         ];
     }
 
@@ -61,6 +63,7 @@ class UpdateSubCategoryRequest extends FormRequest
             'image.mimes' => 'يجب أن تكون الصورة من نوع: png, jpg, jpeg, gif',
             'image.max' => 'يجب ألا تتجاوز حجم الصورة 10 ميجابايت',
             'image.mimetypes' => 'يجب أن تكون الصورة من نوع: jpeg, png, jpg, gif',
+            'category_id.exists' => 'الفئة الرئيسية المحددة غير موجودة',
         ];
     }
     protected function failedAuthorization()

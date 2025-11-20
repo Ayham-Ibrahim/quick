@@ -37,11 +37,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
     | Category and SubCategory Routes
     |--------------------------------------------------------------------------
     */
+    
+    // categories routes
     Route::apiResource('/categories', CategoryController::class);
+    // subcategories routes
     Route::apiResource('/subcategories', SubCategoryController::class);
 
-   /** service provider */
+    /** service provider */
     Route::apiResource('/providers', ProviderController::class);
-
-     Route::apiResource('/ads', AdsController::class);
+    // Ads routes
+    Route::apiResource('/ads', AdsController::class);
  });

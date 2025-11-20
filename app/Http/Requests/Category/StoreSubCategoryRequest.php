@@ -25,6 +25,7 @@ class StoreSubCategoryRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
             'image' => 'required|file|image|mimes:png,jpg,jpeg|max:10000|mimetypes:image/jpeg,image/png,image/jpg'
         ];
     }
@@ -39,6 +40,7 @@ class StoreSubCategoryRequest extends FormRequest
         return [
             'name' => 'اسم الفئة',
             'image' => 'صورة الفئة',
+            'category_id' => 'الفئة الرئيسية',
         ];
     }
 
@@ -61,6 +63,8 @@ class StoreSubCategoryRequest extends FormRequest
             'image.mimes' => 'يجب أن تكون الصورة من نوع: png, jpg, jpeg, gif',
             'image.max' => 'يجب ألا تتجاوز حجم الصورة 10 ميجابايت',
             'image.mimetypes' => 'يجب أن تكون الصورة من نوع: jpeg, png, jpg, gif',
+            'category_id.required' => 'حقل الفئة الرئيسية مطلوب',
+            'category_id.exists' => 'الفئة الرئيسية المحددة غير موجودة',
         ];
     }
 

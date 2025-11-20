@@ -35,8 +35,9 @@ class SubCategoryController extends Controller
     public function index(Request $request)
     {
         return $this->success(
-            SubCategory::select('id', 'name', 'image')
-                ->get(),
+            SubCategory::with('category:id,name') 
+                    ->select('id', 'name', 'image', 'category_id')
+                    ->get(),
             'SubCategories retrieved successfully'
         );
     }
@@ -57,20 +58,40 @@ class SubCategoryController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(SubCategory $subCategory)
+    public function show($id)
     {
-        $data = $subCategory->load('subCategories');
-        return $this->success(
-            $data,
-            'SubCategory retrieved successfully'
-        );
+        $subCategory = SubCategory::with('category:id,name')->find($id);
+
+        if (!$subCategory) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'SubCategory not found',
+                'data' => null
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'SubCategory retrieved successfully',
+            'data' => $subCategory
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateSubCategoryRequest $request, SubCategory $subCategory)
+    public function update(UpdateSubCategoryRequest $request, $id)
     {
+        $subCategory = SubCategory::with('category:id,name')->find($id);
+
+        if (!$subCategory) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'SubCategory not found',
+                'data' => null
+            ], 404);
+        }
+
         return $this->success(
             $this->subCategoryService->updateSubCategory($request->validated(), $subCategory),
             'SubCategory updated successfully'
@@ -86,7 +107,7 @@ class SubCategoryController extends Controller
         return $this->success(
             null,
             'SubCategory deleted successfully',
-            204
+            200
         );
     }
 }
