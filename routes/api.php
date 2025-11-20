@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Categories\CategoryController;
 use App\Http\Controllers\Categories\SubCategoryController;
 use App\Http\Controllers\AdsController;
+use App\Http\Controllers\StoreController;
 use App\Http\Controllers\UserManagementControllers\ProviderController;
 use App\Http\Controllers\UserManagementControllers\UserManagementController;
 
@@ -43,5 +44,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
    /** service provider */
     Route::apiResource('/providers', ProviderController::class);
 
-     Route::apiResource('/ads', AdsController::class);
+    Route::apiResource('/ads', AdsController::class);
+
+    Route::apiResource('/store', StoreController::class);
+
  });

@@ -36,7 +36,7 @@ class UpdateProviderRequest extends BaseFormRequest
                 Rule::unique('providers', 'phone')->ignore($this->provider)
             ],
             'city'          => 'nullable|string|max:255',
-            'password'      => 'nullable|string|min:6|max:255',
+            'password'      => 'nullable|string|min:6|max:255|confirmed',
         ];
     }
     /**

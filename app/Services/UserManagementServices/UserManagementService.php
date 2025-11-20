@@ -2,6 +2,7 @@
 
 namespace App\Services\UserManagementServices;
 
+use App\Models\Store;
 use App\Models\UserManagement\Provider;
 use App\Models\UserManagement\User;
 use App\Services\FileStorage;
@@ -41,7 +42,7 @@ class UserManagementService
         $model = match ($credentials['type']) {
             'user' => User::class,
             'provider' => Provider::class,
-            // 'store_manager' => StoreManager::class,
+            'store_manager' => Store::class,
         };
 
         $account = $model::where('phone', $credentials['phone'])->first();

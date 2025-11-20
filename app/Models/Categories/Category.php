@@ -2,6 +2,7 @@
 
 namespace App\Models\Categories;
 
+use App\Models\Store;
 use App\Models\Categories\SubCategory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -24,5 +25,14 @@ class Category extends Model
     public function subCategories()
     {
         return $this->hasMany(SubCategory::class);
+    }
+    
+    /**
+     * Summary of subCategories
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<Store>
+     */
+    public function stores()
+    {
+        return $this->hasMany(Store::class);
     }
 }
