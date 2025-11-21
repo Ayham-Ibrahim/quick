@@ -72,4 +72,9 @@ class Store extends Model
     {
         return $this->belongsTo(SubCategory::class, 'subcategory_id');
     }
+
+    public function ratings()
+    {
+        return $this->morphMany(\App\Models\Rating::class, 'rateable');
+    }
 }
