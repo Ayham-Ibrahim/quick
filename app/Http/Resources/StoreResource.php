@@ -26,9 +26,8 @@ class StoreResource extends JsonResource
             'city'                       => $this->city,
             'v_location'                 => $this->v_location,
             'h_location'                 => $this->h_location,
-
-            'phone_verified_at'          => $this->phone_verified_at,
-
+            'average_rating' => round($this->averageRating(), 1),
+            
             'category' => new CategoryResource($this->whenLoaded('category')),
             'subcategory' => new SubCategoryResource($this->whenLoaded('sub_category')),
 

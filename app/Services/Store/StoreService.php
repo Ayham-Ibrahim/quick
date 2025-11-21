@@ -2,6 +2,7 @@
 
 namespace App\Services\Store;
 
+use App\Http\Resources\StoreResource;
 use App\Models\Store;
 use App\Services\FileStorage;
 use App\Services\Service;
@@ -12,8 +13,11 @@ class StoreService extends Service
 {
     public function paginate($perPage = 10)
     {
-        return Store::with(['category', 'sub_category'])->paginate($perPage);
+        $stores = Store::with(['category', 'sub_category'])->paginate($perPage);
+
+        return StoreResource::collection($stores);
     }
+
 
     public function find($id)
     {

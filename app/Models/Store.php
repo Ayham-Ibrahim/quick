@@ -77,4 +77,9 @@ class Store extends Model
     {
         return $this->morphMany(\App\Models\Rating::class, 'rateable');
     }
+
+    public function averageRating()
+    {
+        return $this->ratings()->avg('rating') ?? 0;
+    }
 }
