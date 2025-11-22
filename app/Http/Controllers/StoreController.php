@@ -19,9 +19,9 @@ class StoreController extends Controller
 
     public function index()
     {
-        $data = $this->storeService->paginate();
-        return $this->paginate($data);
+        return $this->success($this->storeService->paginate());
     }
+
 
     public function store(StoreStoreRequest $request)
     {
@@ -37,7 +37,7 @@ class StoreController extends Controller
 
     public function update(UpdateStoreRequest $request, Store $store)
     {
-        $store = $this->storeService->updateStore($request->validated(),$store);
+        $store = $this->storeService->updateStore($request->validated(), $store);
         return $this->success(new StoreResource($store), 'Store updated successfully');
     }
 

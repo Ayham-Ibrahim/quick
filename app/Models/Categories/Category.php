@@ -26,13 +26,9 @@ class Category extends Model
     {
         return $this->hasMany(SubCategory::class);
     }
-    
-    /**
-     * Summary of subCategories
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany<Store>
-     */
+
     public function stores()
     {
-        return $this->hasMany(Store::class);
+        return $this->belongsToMany(Store::class, 'category_store');
     }
 }

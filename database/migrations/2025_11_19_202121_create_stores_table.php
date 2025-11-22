@@ -25,15 +25,6 @@ return new class extends Migration
             $table->string('v_location');
             $table->string('h_location');
 
-            $table->foreignId('category_id')
-                ->constrained('categories')
-                ->cascadeOnDelete();
-
-            $table->foreignId('subcategory_id')
-                ->nullable()
-                ->constrained('sub_categories')
-                ->nullOnDelete();
-
             $table->timestamp('phone_verified_at')->nullable();
 
             $table->rememberToken();

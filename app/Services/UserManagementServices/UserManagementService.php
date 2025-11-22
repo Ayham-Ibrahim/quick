@@ -7,7 +7,6 @@ use App\Models\UserManagement\Provider;
 use App\Models\UserManagement\User;
 use App\Services\FileStorage;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Http\Request;
 
 class UserManagementService
 {
