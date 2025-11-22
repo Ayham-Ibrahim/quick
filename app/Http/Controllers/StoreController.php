@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreRequests\StoreStoreRequest;
+use App\Http\Requests\StoreRequests\UpdateStoreProfileRequest;
 use App\Http\Requests\StoreRequests\UpdateStoreRequest;
 use App\Http\Resources\StoreResource;
 use App\Models\Store;
 use App\Services\Store\StoreService;
+use Illuminate\Support\Facades\Auth;
 
 class StoreController extends Controller
 {
@@ -39,6 +41,22 @@ class StoreController extends Controller
     {
         $store = $this->storeService->updateStore($request->validated(), $store);
         return $this->success(new StoreResource($store), 'Store updated successfully');
+    }
+    /**
+     * Update store data.
+     */
+    public function updateStoreProfile(UpdateStoreProfileRequest $request)
+    {
+        $updated = $this->storeService->updateStoreProfile($request->validated());
+        return $this->success($updated, 'تم تحديث بياناتك بنجاح');
+    }
+
+    public function profile()
+    {
+        return $this->success(
+            new StoreResource(Auth::user()->load(['subCategories', 'categories'])),
+            'بيانات المتجر'
+        );
     }
 
     public function destroy(Store $store)

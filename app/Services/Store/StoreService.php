@@ -7,6 +7,8 @@ use App\Models\Store;
 use App\Services\FileStorage;
 use App\Services\Service;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
 class StoreService extends Service
@@ -30,7 +32,7 @@ class StoreService extends Service
         return $store;
     }
     /**
-     * Store a new provider store
+     * Store a new store store
      */
     public function storeStore($data)
     {
@@ -111,7 +113,33 @@ class StoreService extends Service
             $this->throwExceptionJson();
         }
     }
+ /**
+     * Update store data
+     */
+    public function updateStoreProfile(array $data)
+    {
+        try {
+            $store = Auth::guard('store')->user();
 
+            if (!$store instanceof Store) {
+                throw new \Exception('غير مصرح لك بالقيام بهذا الإجراء.');
+            }
+
+            if (!empty($data['password'])) {
+                $data['password'] = Hash::make($data['password']);
+            }
+
+            $store->update($data);
+
+            return $store->fresh();
+        } catch (\Throwable $e) {
+            $this->throwExceptionJson(
+                'حدث خطأ أثناء تحديث بياناتك',
+                500,
+                $e->getMessage()
+            );
+        }
+    }
     /**
      * Delete store with images
      */

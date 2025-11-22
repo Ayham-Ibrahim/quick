@@ -5,11 +5,11 @@ namespace App\Models;
 use App\Models\Categories\Category;
 use App\Models\Categories\SubCategory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class Store extends Model
+class Store extends Authenticatable
 {
     use HasFactory, Notifiable, HasApiTokens;
     /**
