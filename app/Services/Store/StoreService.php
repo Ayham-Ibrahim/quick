@@ -113,7 +113,7 @@ class StoreService extends Service
             $this->throwExceptionJson();
         }
     }
- /**
+    /**
      * Update store data
      */
     public function updateStoreProfile(array $data)
@@ -129,9 +129,40 @@ class StoreService extends Service
                 $data['password'] = Hash::make($data['password']);
             }
 
-            $store->update($data);
+            $store->update(array_filter([
+                'store_name'                 => $data['store_name'] ?? null,
+                'phone'                => $data['phone'] ?? null,
+                'store_owner_name'           => $data['store_owner_name'] ?? null,
+                'password'                   => isset($data['password']) ? bcrypt($data['password']) : null,
 
-            return $store->fresh();
+                'commercial_register_image'  => FileStorage::fileExists(
+                    $data['commercial_register_image'] ?? null,
+                    $store->commercial_register_image,
+                    'Store',
+                    'img'
+                ),
+
+                'store_logo'                 => FileStorage::fileExists(
+                    $data['store_logo'] ?? null,
+                    $store->store_logo,
+                    'Store',
+                    'img'
+                ),
+
+                'city'                       => array_key_exists('city', $data) ? $data['city'] : null,
+                'v_location'                 => $data['v_location'] ?? null,
+                'h_location'                 => $data['h_location'] ?? null,
+            ]));
+
+            if (isset($data['category_ids'])) {
+                $store->categories()->sync($data['category_ids']);
+            }
+
+            if (isset($data['subcategory_ids'])) {
+                $store->subcategories()->sync($data['subcategory_ids']);
+            }
+
+            return $store->load(['subCategories', 'categories']);
         } catch (\Throwable $e) {
             $this->throwExceptionJson(
                 'حدث خطأ أثناء تحديث بياناتك',

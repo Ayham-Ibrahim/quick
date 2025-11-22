@@ -52,7 +52,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::apiResource('/stores', StoreController::class);
     Route::get('/store/profile', [StoreController::class, 'profile']);
-    Route::post('/store/profile', [StoreController::class, 'updateStoreProfile']);
+    Route::put('/store/profile', [StoreController::class, 'updateStoreProfile']);
 
     Route::apiResource('/ratings', RatingController::class);
 });
