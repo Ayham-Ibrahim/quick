@@ -28,12 +28,8 @@ class SubCategory extends Model
         return $this->belongsTo(Category::class);
     }
 
-    /**
-     * Summary of subCategories
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany<Store>
-     */
     public function stores()
     {
-        return $this->hasMany(Store::class);
+        return $this->belongsToMany(Store::class, 'store_sub_category');
     }
 }

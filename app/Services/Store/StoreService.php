@@ -13,7 +13,7 @@ class StoreService extends Service
 {
     public function paginate($perPage = 10)
     {
-        $stores = Store::with(['category', 'sub_category'])->paginate($perPage);
+        $stores = Store::with(['subCategories', 'categories'])->paginate($perPage);
 
         return StoreResource::collection($stores);
     }
@@ -21,7 +21,7 @@ class StoreService extends Service
 
     public function find($id)
     {
-        $store = Store::with(['category', 'sub_category'])->find($id);
+        $store = Store::with(['subCategories', 'categories'])->find($id);
 
         if (!$store) {
             $this->throwExceptionJson('Store not found', 404);
@@ -35,7 +35,7 @@ class StoreService extends Service
     public function storeStore($data)
     {
         try {
-            return Store::create([
+            $store =  Store::create([
                 'store_name'                 => $data['store_name'],
                 'phone'                => $data['phone'],
                 'store_owner_name'           => $data['store_owner_name'],
@@ -45,9 +45,11 @@ class StoreService extends Service
                 'city'                       => $data['city'] ?? null,
                 'v_location'                 => $data['v_location'],
                 'h_location'                 => $data['h_location'],
-                'category_id'                => $data['category_id'],
-                'subcategory_id'             => $data['subcategory_id'],
             ]);
+
+            $store->categories()->sync($data['category_ids']);
+            $store->subcategories()->sync($data['subcategory_ids']);
+            return  $store->load(['subCategories', 'categories']);
         } catch (\Throwable $th) {
             Log::error($th);
 
@@ -88,11 +90,17 @@ class StoreService extends Service
                 'city'                       => array_key_exists('city', $data) ? $data['city'] : null,
                 'v_location'                 => $data['v_location'] ?? null,
                 'h_location'                 => $data['h_location'] ?? null,
-                'category_id'                => $data['category_id'] ?? null,
-                'subcategory_id'             => $data['subcategory_id'] ?? null,
             ]));
 
-            return $store;
+            if (isset($data['category_ids'])) {
+                $store->categories()->sync($data['category_ids']);
+            }
+
+            if (isset($data['subcategory_ids'])) {
+                $store->subcategories()->sync($data['subcategory_ids']);
+            }
+
+            return $store->load(['subCategories', 'categories']);
         } catch (\Throwable $th) {
             Log::error($th);
 
