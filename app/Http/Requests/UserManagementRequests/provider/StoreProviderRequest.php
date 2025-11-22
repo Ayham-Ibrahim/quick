@@ -30,7 +30,7 @@ class StoreProviderRequest extends BaseFormRequest
             'h_location'    => 'required|string|max:255',
             'phone'         => 'required|string|unique:providers,phone|max:255',
             'city'          => 'nullable|string|max:255',
-            'password'      => 'required|string|min:6|max:255',
+            'password'      => 'required|string|min:6|max:255|confirmed',
         ];
     }
     /**
@@ -68,11 +68,10 @@ class StoreProviderRequest extends BaseFormRequest
         ];
     }
     protected function failedAuthorization()
-{
-    throw new HttpResponseException(response()->json([
-        'status' => 'error',
-        'message' => 'غير مصرح لك بالقيام بهذا الإجراء.'
-    ], 403));
-}
-
+    {
+        throw new HttpResponseException(response()->json([
+            'status' => 'error',
+            'message' => 'غير مصرح لك بالقيام بهذا الإجراء.'
+        ], 403));
+    }
 }
