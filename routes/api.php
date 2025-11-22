@@ -1,10 +1,12 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Categories\CategoryController;
-use App\Http\Controllers\Categories\SubCategoryController;
 use App\Http\Controllers\AdsController;
 use App\Http\Controllers\StoreController;
+use App\Http\Controllers\RatingController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\Categories\CategoryController;
+use App\Http\Controllers\Categories\SubCategoryController;
 use App\Http\Controllers\UserManagementControllers\ProviderController;
 use App\Http\Controllers\UserManagementControllers\UserManagementController;
 
@@ -41,6 +43,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     
     // categories routes
     Route::apiResource('/categories', CategoryController::class);
+
+    // for admin list when addding categories and subcategories
+    Route::post('/categories/subcategories', [CategoryController::class, 'getSubCategories']);
+
     // subcategories routes
     Route::apiResource('/subcategories', SubCategoryController::class);
 
@@ -51,4 +57,27 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::apiResource('/store', StoreController::class);
 
+    Route::apiResource('/ratings', RatingController::class);
+
+
+    // Public (logged-in) user: list accepted products
+    Route::get('/products', [ProductController::class, 'index']);
+    Route::get('/products/{product}', [ProductController::class, 'show']);
+
+    // Store Owner
+    Route::get('/my-products', [ProductController::class, 'myProducts']);
+    Route::post('/products', [ProductController::class, 'store']);
+    Route::put('/products/{product}', [ProductController::class, 'update']);
+    Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+    Route::delete('/product-image/{image}', [ProductController::class, 'deleteImage']);
+
+    // Admin
+    Route::middleware('is_admin')->group(function () {
+        // Pending products that need admin approval
+        Route::get('/pending-products', [ProductController::class, 'pendingProducts']);
+        // Accept a pending product
+        Route::post('/accept-product/{product}', [ProductController::class, 'acceptProduct']);
+    });
 });
+
+

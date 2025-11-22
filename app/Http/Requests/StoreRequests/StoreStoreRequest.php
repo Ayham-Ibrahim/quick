@@ -5,6 +5,7 @@ namespace App\Http\Requests\StoreRequests;
 use App\Http\Requests\BaseFormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class StoreStoreRequest extends BaseFormRequest
 {
@@ -17,7 +18,7 @@ class StoreStoreRequest extends BaseFormRequest
     {
         return [
             'store_name'                => 'required|string|max:255',
-            'phone'               => 'required|string|max:255|unique:stores,phone',
+            'phone'                     => 'required|string|max:255|unique:stores,phone',
             'store_owner_name'          => 'required|string|max:255',
             'password'                  => 'required|string|min:6|confirmed',
             'commercial_register_image' => 'required|image
@@ -31,8 +32,13 @@ class StoreStoreRequest extends BaseFormRequest
             'city'                      => 'nullable|string|max:255',
             'v_location'                => 'required|string|max:255',
             'h_location'                => 'required|string|max:255',
-            'category_id'               => 'required|exists:categories,id',
-            'subcategory_id'            => 'required|exists:sub_categories,id',
+            'category_ids'              => 'required|array',
+            'category_ids.*'            => 'exists:categories,id',
+
+            'subcategory_ids'           => 'required|array',
+            'subcategory_ids.*'         => 'exists:sub_categories,id',
+
+            'subcategory_ids.invalid_relation'  => 'بعض التصنيفات الفرعية لا تتبع التصنيفات المختارة.',
         ];
     }
 
@@ -40,7 +46,7 @@ class StoreStoreRequest extends BaseFormRequest
     {
         return [
             'store_name'                => 'اسم المتجر',
-            'phone'               => 'رقم المتجر',
+            'phone'                     => 'رقم المتجر',
             'store_owner_name'          => 'اسم مالك المتجر',
             'password'                  => 'كلمة المرور',
             'commercial_register_image' => 'صورة السجل التجاري',
@@ -48,8 +54,13 @@ class StoreStoreRequest extends BaseFormRequest
             'city'                      => 'المدينة',
             'v_location'                => 'الإحداثيات العمودية',
             'h_location'                => 'الإحداثيات الأفقية',
-            'category_id'               => 'التصنيف',
-            'subcategory_id'            => 'التصنيف الفرعي',
+
+            'category_ids'              => 'التصنيفات',
+            'category_ids.*'            => 'التصنيف',
+
+            'subcategory_ids'           => 'التصنيفات الفرعية',
+            'subcategory_ids.*'         => 'التصنيف الفرعي',
+
             'password_confirmation'     => 'تأكيد كلمة المرور',
         ];
     }
@@ -70,9 +81,16 @@ class StoreStoreRequest extends BaseFormRequest
             'numeric'    => 'حقل :attribute يجب أن يكون رقمياً.',
             'commercial_register_image.max' => 'حجم :attribute يجب ألا يتجاوز :max كيلوبايت (ما يعادل 5 ميجابايت).',
             'store_logo.max' => 'حجم :attribute يجب ألا يتجاوز :max كيلوبايت (ما يعادل 5 ميجابايت).',
+            'category_ids.required'        => 'يجب اختيار تصنيف واحد على الأقل.',
+            'category_ids.array'           => 'حقل التصنيفات يجب أن يكون مصفوفة.',
+            'category_ids.*.exists'        => 'أحد التصنيفات غير موجود.',
+
+            'subcategory_ids.required'     => 'يجب اختيار تصنيف فرعي واحد على الأقل.',
+            'subcategory_ids.array'        => 'حقل التصنيفات الفرعية يجب أن يكون مصفوفة.',
+            'subcategory_ids.*.exists'     => 'أحد التصنيفات الفرعية غير موجود.',
+
         ];
     }
-
 
     protected function failedAuthorization()
     {
@@ -80,5 +98,20 @@ class StoreStoreRequest extends BaseFormRequest
             'status' => 'error',
             'message' => 'غير مصرح لك بالقيام بهذا الإجراء.'
         ], 403));
+    }
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            if ($this->subcategory_ids && $this->category_ids) {
+                $invalid = DB::table('sub_categories')
+                    ->whereIn('id', $this->subcategory_ids)
+                    ->whereNotIn('category_id', $this->category_ids)
+                    ->exists();
+
+                if ($invalid) {
+                    $validator->errors()->add('subcategory_ids', 'بعض التصنيفات الفرعية لا تتبع التصنيفات المختارة.');
+                }
+            }
+        });
     }
 }

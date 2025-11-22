@@ -27,8 +27,6 @@ class Store extends Model
         'city',
         'v_location',
         'h_location',
-        'category_id',
-        'subcategory_id'
     ];
 
     /**
@@ -55,21 +53,22 @@ class Store extends Model
         ];
     }
 
-    /**
-     * Summary of category
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo<Category>
-     */
-    public function category()
+    public function categories()
     {
-        return $this->belongsTo(Category::class);
+        return $this->belongsToMany(Category::class, 'category_store');
     }
 
-    /**
-     * Summary of category
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo<SubCategory>
-     */
-    public function sub_category()
+    public function subCategories()
     {
-        return $this->belongsTo(SubCategory::class, 'subcategory_id');
+        return $this->belongsToMany(SubCategory::class, 'store_sub_category');
+    }
+    public function ratings()
+    {
+        return $this->morphMany(Rating::class, 'rateable');
+    }
+
+    public function averageRating()
+    {
+        return $this->ratings()->avg('rating') ?? 0;
     }
 }

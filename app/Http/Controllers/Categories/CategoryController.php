@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Categories;
 
 use Illuminate\Http\Request;
-use App\Services\Category\CategoryService;
 use App\Models\Categories\Category;
 use App\Http\Controllers\Controller;
+use App\Models\Categories\SubCategory;
+use App\Services\Category\CategoryService;
 use App\Http\Requests\Category\StoreCategoryRequest;
 use App\Http\Requests\Category\UpdateCategoryRequest;
 
@@ -87,5 +88,25 @@ class CategoryController extends Controller
             'Category deleted successfully',
             204
         );
+    }
+
+    /**
+     * get subcategories of selected category 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getSubCategories(Request $request)
+    {
+        $request->validate([
+            'category_ids' => 'required|array',
+            'category_ids.*' => 'exists:categories,id'
+        ]);
+
+        $subCategories = SubCategory::whereIn('category_id', $request->category_ids)->get();
+
+        return response()->json([
+            'status' => true,
+            'data' => $subCategories,
+        ]);
     }
 }

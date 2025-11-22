@@ -16,8 +16,8 @@ return new class extends Migration
             $table->unsignedBigInteger('store_id'); 
             $table->string('name');
             $table->text('description'); 
-            $table->integer('quantity'); 
-            $table->decimal('current_price', 12, 2); 
+            $table->integer('quantity')->nullable();  
+            $table->decimal('current_price', 12, 2)->nullable();  
             $table->decimal('previous_price', 12, 2)->nullable(); 
             $table->boolean('is_accepted')->index();
             $table->unsignedBigInteger('sub_category_id'); 
