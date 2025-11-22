@@ -14,6 +14,7 @@ use App\Http\Controllers\UserManagementControllers\UserManagementController;
 | Authentication Routes
 |--------------------------------------------------------------------------
 */
+
 Route::post('/register', [UserManagementController::class, 'register']);
 Route::post('/login', [UserManagementController::class, 'login']);
 
@@ -42,12 +43,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('/categories', CategoryController::class);
     Route::apiResource('/subcategories', SubCategoryController::class);
 
-   /** service provider */
+    /** service provider */
     Route::apiResource('/providers', ProviderController::class);
+    Route::get('/provider/profile', [ProviderController::class, 'profile']);
+    Route::put('/provider/profile', [ProviderController::class, 'updateProviderProfile']);
 
     Route::apiResource('/ads', AdsController::class);
 
-    Route::apiResource('/store', StoreController::class);
+    Route::apiResource('/stores', StoreController::class);
+    Route::get('/store/profile', [StoreController::class, 'profile']);
+    Route::put('/store/profile', [StoreController::class, 'updateStoreProfile']);
 
     Route::apiResource('/ratings', RatingController::class);
- });
+});

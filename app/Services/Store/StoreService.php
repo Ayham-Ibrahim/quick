@@ -7,6 +7,8 @@ use App\Models\Store;
 use App\Services\FileStorage;
 use App\Services\Service;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
 class StoreService extends Service
@@ -30,7 +32,7 @@ class StoreService extends Service
         return $store;
     }
     /**
-     * Store a new provider store
+     * Store a new store store
      */
     public function storeStore($data)
     {
@@ -111,7 +113,64 @@ class StoreService extends Service
             $this->throwExceptionJson();
         }
     }
+    /**
+     * Update store data
+     */
+    public function updateStoreProfile(array $data)
+    {
+        try {
+            $store = Auth::guard('store')->user();
 
+            if (!$store instanceof Store) {
+                throw new \Exception('غير مصرح لك بالقيام بهذا الإجراء.');
+            }
+
+            if (!empty($data['password'])) {
+                $data['password'] = Hash::make($data['password']);
+            }
+
+            $store->update(array_filter([
+                'store_name'                 => $data['store_name'] ?? null,
+                'phone'                => $data['phone'] ?? null,
+                'store_owner_name'           => $data['store_owner_name'] ?? null,
+                'password'                   => isset($data['password']) ? bcrypt($data['password']) : null,
+
+                'commercial_register_image'  => FileStorage::fileExists(
+                    $data['commercial_register_image'] ?? null,
+                    $store->commercial_register_image,
+                    'Store',
+                    'img'
+                ),
+
+                'store_logo'                 => FileStorage::fileExists(
+                    $data['store_logo'] ?? null,
+                    $store->store_logo,
+                    'Store',
+                    'img'
+                ),
+
+                'city'                       => array_key_exists('city', $data) ? $data['city'] : null,
+                'v_location'                 => $data['v_location'] ?? null,
+                'h_location'                 => $data['h_location'] ?? null,
+            ]));
+
+            if (isset($data['category_ids'])) {
+                $store->categories()->sync($data['category_ids']);
+            }
+
+            if (isset($data['subcategory_ids'])) {
+                $store->subcategories()->sync($data['subcategory_ids']);
+            }
+
+            return $store->load(['subCategories', 'categories']);
+        } catch (\Throwable $e) {
+            $this->throwExceptionJson(
+                'حدث خطأ أثناء تحديث بياناتك',
+                500,
+                $e->getMessage()
+            );
+        }
+    }
     /**
      * Delete store with images
      */
