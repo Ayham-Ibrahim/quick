@@ -46,10 +46,6 @@ class SubCategorySeeder extends Seeder
             ['name' => 'مستحضرات تجميل', 'category_id' => 6, 'image' => $image],
             ['name' => 'منتجات العناية', 'category_id' => 6, 'image' => $image],
 
-            // الخدمات = 7
-            ['name' => 'خدمات صيانة', 'category_id' => 7, 'image' => $image],
-            ['name' => 'خدمات التنظيف', 'category_id' => 7, 'image' => $image],
-            ['name' => 'استشارات', 'category_id' => 7, 'image' => $image],
         ];
 
         foreach ($subCategories as $sub) {

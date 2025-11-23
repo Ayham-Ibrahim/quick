@@ -16,13 +16,12 @@ class CategorySeeder extends Seeder
          $image = "/storage/Category/5vlJr5kvgzJgUn3cjic9dSo4NBLesldX.jpg";
 
         $categories = [
-            ['name' => 'المطاعم', 'image' => $image],
-            ['name' => 'المتاجر الإلكترونية', 'image' => $image],
-            ['name' => 'الأزياء والموضة', 'image' => $image],
+            ['name' => 'مواد غذائية ', 'image' => $image],
+            ['name' => 'الكترونيات', 'image' => $image],
+            ['name' => 'ملابس', 'image' => $image],
             ['name' => 'الأجهزة الكهربائية', 'image' => $image],
-            ['name' => 'السوبر ماركت', 'image' => $image],
+            ['name' => 'معجنات', 'image' => $image],
             ['name' => 'الصحة والجمال', 'image' => $image],
-            ['name' => 'الخدمات', 'image' => $image],
         ];
         
         foreach ($categories as $category) {
