@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreRequests\StoreStoreRequest;
-use App\Http\Requests\StoreRequests\UpdateStoreProfileRequest;
-use App\Http\Requests\StoreRequests\UpdateStoreRequest;
-use App\Http\Resources\StoreResource;
 use App\Models\Store;
 use App\Services\Store\StoreService;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Resources\StoreResource;
+use App\Models\Categories\SubCategory;
+use App\Http\Requests\StoreRequests\StoreStoreRequest;
+use App\Http\Requests\StoreRequests\UpdateStoreRequest;
+use App\Http\Requests\StoreRequests\UpdateStoreProfileRequest;
 
 class StoreController extends Controller
 {
@@ -71,4 +72,44 @@ class StoreController extends Controller
         $this->storeService->deleteStore($store);
         return $this->success([], 'Store deleted successfully');
     }
+
+
+    public function getStoreCategories()
+    {
+        $store = Auth::guard('store')->user();
+
+        $categories = $store->categories()->get();
+
+        return response()->json([
+            'status' => true,
+            'data' => $categories
+        ]);
+    }
+
+    public function getStoreSubCategories($category_id)
+    {
+        $store = Auth::guard('store')->user();
+
+        $hasCategory = $store->categories()->where('categories.id', $category_id)->exists();
+
+        if (!$hasCategory) {
+            return response()->json([
+                'status' => false,
+                'message' => 'This category is not assigned to the store'
+            ], 403);
+        }
+
+        $subcategoriesOfCategory = SubCategory::where('category_id', $category_id)->pluck('id');
+
+        $storeSubcategories = $store->subCategories()
+            ->whereIn('sub_categories.id', $subcategoriesOfCategory)
+            ->get();
+
+        return response()->json([
+            'status' => true,
+            'data' => $storeSubcategories
+        ]);
+    }
+
+
 }

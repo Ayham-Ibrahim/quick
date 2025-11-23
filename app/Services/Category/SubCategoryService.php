@@ -19,6 +19,7 @@ class SubCategoryService extends Service
         try {
             return SubCategory::create([
                 'name'           => $data['name'],
+                'category_id'    => $data['category_id'],
                 'image'          => FileStorage::storeFile($data['image'], 'SubCategory', 'img'),
             ]);
         } catch (\Throwable $th) {
@@ -39,6 +40,7 @@ class SubCategoryService extends Service
         try {
             $subcategory->update(array_filter([
                 'name' => $data['name'] ?? null,
+                'category_id' => $data['category_id'] ?? null,
                 'image' => FileStorage::fileExists($data['image'] ?? null, $subcategory->image, 'SubCategory', 'img')
             ]));
             return $subcategory;
