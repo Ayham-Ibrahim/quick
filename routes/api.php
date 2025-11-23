@@ -8,6 +8,7 @@ use App\Http\Controllers\RatingController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\UserManagementControllers\ProviderController;
 use App\Http\Controllers\UserManagementControllers\UserManagementController;
+use App\Http\Controllers\VehicleTypeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -55,4 +56,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/store/profile', [StoreController::class, 'updateStoreProfile']);
 
     Route::apiResource('/ratings', RatingController::class);
+
+    Route::apiResource('/vehicle-types', VehicleTypeController::class);
+
 });
