@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Categories\CategoryController;
 use App\Http\Controllers\Categories\SubCategoryController;
 use App\Http\Controllers\AdsController;
+use App\Http\Controllers\DriverController;
 use App\Http\Controllers\RatingController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\UserManagementControllers\ProviderController;
@@ -58,5 +59,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('/ratings', RatingController::class);
 
     Route::apiResource('/vehicle-types', VehicleTypeController::class);
+
+    Route::apiResource('/drivers', DriverController::class);
+    Route::get('/driver/profile', [DriverController::class, 'profile']);
+    Route::put('/driver/profile', [DriverController::class, 'updateDriverProfile']);
 
 });

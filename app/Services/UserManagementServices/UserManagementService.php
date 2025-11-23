@@ -2,6 +2,7 @@
 
 namespace App\Services\UserManagementServices;
 
+use App\Models\Driver;
 use App\Models\Store;
 use App\Models\UserManagement\Provider;
 use App\Models\UserManagement\User;
@@ -42,6 +43,7 @@ class UserManagementService
             'user' => User::class,
             'provider' => Provider::class,
             'store_manager' => Store::class,
+            'driver' => Driver::class,
         };
 
         $account = $model::where('phone', $credentials['phone'])->first();
