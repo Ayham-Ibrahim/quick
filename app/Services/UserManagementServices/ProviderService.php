@@ -4,6 +4,7 @@ namespace App\Services\UserManagementServices;
 
 use App\Models\UserManagement\Provider;
 use App\Services\Service;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class ProviderService extends Service
@@ -44,6 +45,34 @@ class ProviderService extends Service
         } catch (\Exception $e) {
             $this->throwExceptionJson(
                 'حدث خطأ أثناء تحديث حساب المزود',
+                500,
+                $e->getMessage()
+            );
+        }
+    }
+
+    /**
+     * Update provider data
+     */
+    public function updateProviderProfile(array $data)
+    {
+        try {
+            $provider = Auth::guard('provider')->user();
+
+            if (!$provider instanceof Provider) {
+                throw new \Exception('غير مصرح لك بالقيام بهذا الإجراء.');
+            }
+
+            if (!empty($data['password'])) {
+                $data['password'] = Hash::make($data['password']);
+            }
+
+            $provider->update($data);
+
+            return $provider->fresh();
+        } catch (\Throwable $e) {
+            $this->throwExceptionJson(
+                'حدث خطأ أثناء تحديث بياناتك',
                 500,
                 $e->getMessage()
             );

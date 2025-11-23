@@ -21,7 +21,6 @@ return new class extends Migration
             $table->decimal('previous_price', 12, 2)->nullable(); 
             $table->boolean('is_accepted')->index();
             $table->unsignedBigInteger('sub_category_id'); 
-            $table->timestamps();
 
             $table->foreign('store_id')->references('id')->on('stores')->onDelete('cascade');
             $table->foreign('sub_category_id')->references('id')->on('sub_categories')->onDelete('cascade');

@@ -38,8 +38,8 @@ class ProductController extends Controller
             ->with(['store:id,store_name', 'images']);
 
         // Filter by subcategory if passed
-        if ($request->has('subcategory_id')) {
-            $query->where('subcategory_id', $request->subcategory_id);
+        if ($request->has('sub_category_id')) {
+            $query->where('sub_category_id', $request->sub_category_id);
         }
 
         $products = $query->get();
@@ -55,13 +55,17 @@ class ProductController extends Controller
      */
     public function myProducts(Request $request)
     {
-        $store_id = Auth::id();
+        $store = Auth::guard('store')->user();
+        // if (! $store instanceof Store) {
+        //     throw new \Exception('غير مصرح لك بالقيام بهذا الإجراء.');
+        // }
+        $store_id = $store->id;
         $query = Product::where('store_id', $store_id)
             ->with(['store:id,store_name', 'images']);
 
         // Filter by subcategory if passed
-        if ($request->has('subcategory_id')) {
-            $query->where('subcategory_id', $request->subcategory_id);
+        if ($request->has('sub_category_id')) {
+            $query->where('sub_category_id', $request->subcategory_id);
         }
 
         $products = $query->get();
@@ -75,8 +79,11 @@ class ProductController extends Controller
     public function store(StoreProductRequest $request)
     {
         $data = $request->validated();
-        $store_id = Auth::id();
-        $data['store_id'] = $store_id;
+        $store = Auth::guard('store')->user();
+        // if (! $store instanceof Store) {
+        //     throw new \Exception('غير مصرح لك بالقيام بهذا الإجراء.');
+        // }
+        $data['store_id'] = $store->id;
         return $this->success(
             $this->productService->storeProduct($data),
             'Product created successfully',
@@ -157,6 +164,9 @@ class ProductController extends Controller
         $product->save();
         return $this->success(null, 'Product accepted successfully', 200);
     }
+
+
+    
 
 
 }

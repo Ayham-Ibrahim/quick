@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\UserManagementControllers;
 
+use App\Http\Requests\UserManagementRequests\provider\UpdateProviderProfileRequest;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\UserManagement\Provider;
 use App\Services\UserManagementServices\ProviderService;
 use App\Http\Requests\UserManagementRequests\provider\StoreProviderRequest;
 use App\Http\Requests\UserManagementRequests\provider\UpdateProviderRequest;
+use Illuminate\Support\Facades\Auth;
 
 class ProviderController extends Controller
 {
@@ -51,6 +53,19 @@ class ProviderController extends Controller
     {
         $updated = $this->providerService->updateProvider($provider, $request->validated());
         return $this->success($updated, 'تم تحديث بيانات المزود بنجاح');
+    }
+    /**
+     * Update provider data.
+     */
+    public function updateProviderProfile(UpdateProviderProfileRequest $request)
+    {
+        $updated = $this->providerService->updateProviderProfile( $request->validated());
+        return $this->success($updated, 'تم تحديث بياناتك بنجاح');
+    }
+
+    public function profile()
+    {
+        return $this->success(Auth::user(), 'بيانات المزود');
     }
 
     /**

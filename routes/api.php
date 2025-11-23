@@ -15,6 +15,7 @@ use App\Http\Controllers\UserManagementControllers\UserManagementController;
 | Authentication Routes
 |--------------------------------------------------------------------------
 */
+
 Route::post('/register', [UserManagementController::class, 'register']);
 Route::post('/login', [UserManagementController::class, 'login']);
 
@@ -52,10 +53,18 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     /** service provider */
     Route::apiResource('/providers', ProviderController::class);
+    Route::get('/provider/profile', [ProviderController::class, 'profile']);
+    Route::put('/provider/profile', [ProviderController::class, 'updateProviderProfile']);
 
     Route::apiResource('/ads', AdsController::class);
 
-    Route::apiResource('/store', StoreController::class);
+    Route::apiResource('/stores', StoreController::class);
+    Route::get('/store/profile', [StoreController::class, 'profile']);
+    Route::put('/store/profile', [StoreController::class, 'updateStoreProfile']);
+    Route::get('/store/categories', [StoreController::class, 'getStoreCategories']);
+    Route::get('/store/categories/{category_id}/subcategories', [StoreController::class, 'getStoreSubCategories']);
+
+
 
     Route::apiResource('/ratings', RatingController::class);
 
@@ -72,12 +81,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/product-image/{image}', [ProductController::class, 'deleteImage']);
 
     // Admin
-    Route::middleware('is_admin')->group(function () {
+    // Route::middleware('is_admin')->group(function () {
         // Pending products that need admin approval
         Route::get('/pending-products', [ProductController::class, 'pendingProducts']);
         // Accept a pending product
         Route::post('/accept-product/{product}', [ProductController::class, 'acceptProduct']);
-    });
+    // });
 });
+
 
 
