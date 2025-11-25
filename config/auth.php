@@ -52,6 +52,10 @@ return [
             'driver' => 'sanctum',
             'provider' => 'store',
         ],
+        'driver' => [
+            'driver' => 'sanctum',
+            'provider' => 'driver',
+        ],
     ],
 
     /*
@@ -83,6 +87,10 @@ return [
         'store' => [
             'driver' => 'eloquent',
             'model' => App\Models\Store::class,
+        ],
+        'driver' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Driver::class,
         ],
         // 'users' => [
         //     'driver' => 'database',
