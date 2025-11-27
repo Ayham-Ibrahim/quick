@@ -123,10 +123,6 @@ class StoreService extends Service
                 throw new \Exception('غير مصرح لك بالقيام بهذا الإجراء.');
             }
 
-            if (! empty($data['password'])) {
-                $data['password'] = Hash::make($data['password']);
-            }
-
             $store->update(array_filter([
                 'store_name'                => $data['store_name'] ?? null,
                 'phone'                     => $data['phone'] ?? null,
