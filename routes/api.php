@@ -18,8 +18,20 @@ use App\Http\Controllers\VehicleTypeController;
 |--------------------------------------------------------------------------
 */
 
-Route::post('/register', [UserManagementController::class, 'register']);
-Route::post('/login', [UserManagementController::class, 'login']);
+Route::post('register', [UserManagementController::class, 'register']);
+Route::post('confirm-registration', [UserManagementController::class, 'confirmRegistration']);
+
+// تسجيل الدخول والتأكيد
+Route::post('login', [UserManagementController::class, 'login']);
+Route::post('confirm-login', [UserManagementController::class, 'confirmLogin']);
+
+// نسيان كلمة المرور (منفصل)
+Route::post('forgot-password', [UserManagementController::class, 'forgotPassword']);
+Route::post('confirm-forgot-password', [UserManagementController::class, 'confirmForgotPassword']);
+Route::post('reset-password', [UserManagementController::class, 'resetPassword']);
+
+// إعادة إرسال OTP
+Route::post('resend-otp', [UserManagementController::class, 'resendOTP']);
 
 Route::middleware('auth:sanctum')->post('/logout', [UserManagementController::class, 'logout']);
 

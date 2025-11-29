@@ -21,6 +21,7 @@ class Provider extends Authenticatable
         'market_name',
         'v_location',
         'h_location',
+        'phone_verified_at',
         'phone',
         'password',
         'city'
@@ -46,5 +47,13 @@ class Provider extends Authenticatable
             'phone_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+      /**
+     * التحقق من أن رقم الهاتف مفعل
+     */
+    public function isPhoneVerified(): bool
+    {
+        return !is_null($this->phone_verified_at);
     }
 }
