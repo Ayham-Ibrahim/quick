@@ -23,6 +23,7 @@ class Store extends Authenticatable
         'store_owner_name',
         'password',
         'commercial_register_image',
+        'phone_verified_at',
         'store_logo',
         'city',
         'v_location',
@@ -70,5 +71,13 @@ class Store extends Authenticatable
     public function averageRating()
     {
         return $this->ratings()->avg('rating') ?? 0;
+    }
+
+    /**
+     * التحقق من أن رقم الهاتف مفعل
+     */
+    public function isPhoneVerified(): bool
+    {
+        return !is_null($this->phone_verified_at);
     }
 }

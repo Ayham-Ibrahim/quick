@@ -28,6 +28,7 @@ class User extends Authenticatable
         'h_location',
         'password',
         'is_admin',
+        'phone_verified_at',
         // 'walet_id'
     ];
 
@@ -53,5 +54,13 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_admin' => 'boolean',
         ];
+    }
+
+    /**
+     * التحقق من أن رقم الهاتف مفعل
+     */
+    public function isPhoneVerified(): bool
+    {
+        return !is_null($this->phone_verified_at);
     }
 }
