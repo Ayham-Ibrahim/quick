@@ -1,6 +1,7 @@
 <?php
 namespace App\Services\UserManagementServices;
 
+use App\Models\Driver;
 use Carbon\Carbon;
 use App\Models\Store;
 use App\Services\FileStorage;
@@ -157,6 +158,7 @@ class UserManagementService
             'user'          => User::class,
             'provider'      => Provider::class,
             'store_manager' => Store::class,
+            'driver' => Driver::class,
         };
 
         $account = $model::where('phone', $credentials['phone'])->first();

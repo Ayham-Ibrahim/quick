@@ -7,8 +7,10 @@ use App\Http\Controllers\RatingController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Categories\CategoryController;
 use App\Http\Controllers\Categories\SubCategoryController;
+use App\Http\Controllers\DriverController;
 use App\Http\Controllers\UserManagementControllers\ProviderController;
 use App\Http\Controllers\UserManagementControllers\UserManagementController;
+use App\Http\Controllers\VehicleTypeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -53,7 +55,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     | Category and SubCategory Routes
     |--------------------------------------------------------------------------
     */
-    
+
     // categories routes
     Route::apiResource('/categories', CategoryController::class);
 
@@ -80,8 +82,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::apiResource('/ratings', RatingController::class);
 
+    Route::apiResource('/vehicle-types', VehicleTypeController::class);
 
-    // Public (logged-in) user: list accepted products
+    Route::apiResource('/drivers', DriverController::class);
+    Route::get('/driver/profile', [DriverController::class, 'profile']);
+    Route::put('/driver/profile', [DriverController::class, 'updateDriverProfile']);
+
+     // Public (logged-in) user: list accepted products
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/products/{product}', [ProductController::class, 'show']);
 
@@ -99,6 +106,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         // Accept a pending product
         Route::post('/accept-product/{product}', [ProductController::class, 'acceptProduct']);
     // });
+    
 });
 
 
