@@ -153,5 +153,89 @@ class UserManagementController extends Controller
         return $this->success([], $result['message']);
     }
 
+  public function refreshToken(Request $request)
+{
+    $refreshToken = $request->bearerToken();
+    if (!$refreshToken) {
+        $refreshToken = $request->input('refresh_token');
+    }
+
+    $personal = \Laravel\Sanctum\PersonalAccessToken::findToken($refreshToken);
+
+    if (!$personal) {
+        return [
+            'success' => false,
+            'message' => 'Refresh token غير صالح'
+        ];
+    }
+
+    $abilities = $personal->abilities;
+    $user = $personal->tokenable;
+
+    // ---------------------------
+    //     ADMIN REFRESH SYSTEM
+    // ---------------------------
+    if (in_array('refresh-dashboard', $abilities)) {
+
+        $personal->delete();
+
+        $newAccess = $user->createToken(
+            'admin-access',
+            ['dashboard'],
+            now()->addMinutes(10)
+        )->plainTextToken;
+
+        $newRefresh = $user->createToken(
+            'admin-refresh',
+            ['refresh-dashboard'],
+            now()->addHours(2)
+        )->plainTextToken;
+
+        return [
+            'success' => true,
+            'data' => [
+                'access_token'  => $newAccess,
+                'refresh_token' => $newRefresh,
+                'expires_in'    => 600, // 10 min
+                'type'          => 'admin'
+            ]
+        ];
+    }
+
+    // ---------------------------
+    //     MOBILE REFRESH SYSTEM
+    // ---------------------------
+    if (in_array('refresh-token', $abilities)) {
+            $personal->delete();
+            $newAccess = $user->createToken(
+                'mobile-access',
+                ['access-api'],
+                now()->addHours(2)
+            )->plainTextToken;
+
+            $newRefresh = $user->createToken(
+                'mobile-refresh',
+                ['refresh-token'],
+                now()->addYear()
+            )->plainTextToken;
+
+            return [
+                'success' => true,
+                'data' => [
+                    'access_token'  => $newAccess,
+                    'refresh_token' => $newRefresh,
+                    'expires_in'    => 7200, // 2 hours
+                    'type'          => 'mobile'
+                ]
+            ];
+        }
+
+        return [
+            'success' => false,
+            'message' => 'هذا التوكن ليس Refresh Token'
+        ];
+    }
+
+
     
 }

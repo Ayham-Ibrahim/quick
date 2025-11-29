@@ -24,6 +24,8 @@ Route::post('confirm-registration', [UserManagementController::class, 'confirmRe
 // تسجيل الدخول والتأكيد
 Route::post('login', [UserManagementController::class, 'login']);
 Route::post('confirm-login', [UserManagementController::class, 'confirmLogin']);
+Route::post('refresh', [UserManagementController::class, 'refreshToken']);
+
 
 // نسيان كلمة المرور (منفصل)
 Route::post('forgot-password', [UserManagementController::class, 'forgotPassword']);
