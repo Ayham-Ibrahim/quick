@@ -129,18 +129,31 @@ class UserManagementService
             $user->update([
                 'phone_verified_at' => Carbon::now(),
             ]);
-            $token = $user->createToken('mobile-token')->plainTextToken;
+            // إنشاء token بعد التفعيل
+            $accessToken = $user->createToken(
+                'mobile-access',
+                ['access-api'],
+                now()->addHours(2)
+            )->plainTextToken;
+
+            $refreshToken = $user->createToken(
+                'mobile-refresh',
+                ['refresh-token'],
+                now()->addYear()
+            )->plainTextToken;
 
             DB::commit();
 
-            // إعادة بيانات المستخدم بعد التأكيد
             return [
                 'success' => true,
-                'data'    => [
-                    'user'    => $user->fresh(),
-                    'token'   => $token,
+                'data' => [
+                    'type' => 'user',
+                    'user' => $user->fresh(),
+                    'access_token'  => $accessToken,
+                    'refresh_token' => $refreshToken,
                     'message' => 'تم تفعيل الحساب بنجاح',
-                ],
+                    'expires_in'    => 7200, // 2 hours
+                ]
             ];
 
         } catch (\Exception $e) {
@@ -170,6 +183,38 @@ class UserManagementService
             ];
         }
 
+        if ($credentials['type'] === 'user' && $account->is_admin) {
+            if (! $account->is_admin) {
+                return [
+                    'success' => false,
+                    'message' => 'غير مصرح لك بالدخول'
+                ];
+            }
+
+            $accessToken = $account->createToken(
+                'admin-access',
+                ['dashboard'],
+                now()->addMinutes(10)
+            )->plainTextToken;
+
+            $refreshToken = $account->createToken(
+                'admin-refresh',
+                ['refresh-dashboard'],
+                now()->addHours(2)
+            )->plainTextToken;
+
+            return [
+                'success' => true,
+                'data' => [
+                    'type'           => 'user',
+                    'user'           => $account,
+                    'access_token'   => $accessToken,
+                    'refresh_token'  => $refreshToken,
+                    'expires_in'     => 600, // 10 minutes
+                ],
+            ];
+        }
+
         if ($credentials['type'] === 'user' && !$account->isPhoneVerified()) {
             try {
                 $this->otpService->generateOTP($credentials['phone'], 'register');
@@ -187,15 +232,27 @@ class UserManagementService
                 ];
             }
         }
-        $token = $account->createToken('mobile-token')->plainTextToken;
+        $accessToken = $account->createToken(
+            'mobile-access',
+            ['access-api'],
+            now()->addHours(2)
+        )->plainTextToken;
+
+        $refreshToken = $account->createToken(
+            'mobile-refresh',
+            ['refresh-token'],
+            now()->addYear()
+        )->plainTextToken;
 
         return [
             'success' => true,
-            'data'    => [
-                'type'  => $credentials['type'],
-                'user'  => $account,
-                'token' => $token,
-            ],
+            'data' => [
+                'type'          => $credentials['type'],
+                'user'          => $account,
+                'access_token'  => $accessToken,
+                'refresh_token' => $refreshToken,
+                'expires_in'    => 7200, // 2 hours
+            ]
         ];
     }
 
@@ -230,7 +287,17 @@ class UserManagementService
             ]);
 
             // إنشاء token بعد التفعيل
-            $token = $user->createToken('mobile-token')->plainTextToken;
+            $accessToken = $user->createToken(
+                'mobile-access',
+                ['access-api'],
+                now()->addHours(2)
+            )->plainTextToken;
+
+            $refreshToken = $user->createToken(
+                'mobile-refresh',
+                ['refresh-token'],
+                now()->addYear()
+            )->plainTextToken;
 
             DB::commit();
 
@@ -239,7 +306,9 @@ class UserManagementService
                 'data' => [
                     'type' => 'user',
                     'user' => $user->fresh(),
-                    'token' => $token,
+                    'access_token'  => $accessToken,
+                    'refresh_token' => $refreshToken,
+                    'expires_in'    => 7200, // 2 hours
                 ]
             ];
 
