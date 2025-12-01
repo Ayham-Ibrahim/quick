@@ -35,7 +35,7 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         $query = Product::where('is_accepted', true)
-            ->with(['store:id,store_name', 'images']);
+            ->with(['store:id,store_name,store_logo','subCategory:id,name,category_id','subCategory.category:id,name', 'images']);
 
         // Filter by subcategory if passed
         if ($request->has('sub_category_id')) {
@@ -61,7 +61,7 @@ class ProductController extends Controller
         // }
         $store_id = $store->id;
         $query = Product::where('store_id', $store_id)
-            ->with(['store:id,store_name', 'images']);
+            ->with(['store:id,store_name,store_logo','subCategory:id,name,category_id','subCategory.category:id,name', 'images']);
 
         // Filter by subcategory if passed
         if ($request->has('sub_category_id')) {
@@ -97,7 +97,7 @@ class ProductController extends Controller
     public function show(Product $product)
     {
         return $this->success(
-            $product->load(['store:id,store_name', 'images', 'subCategory:id,name']),
+            $product->load(['store:id,store_name,store_logo', 'images', 'subCategory:id,name']),
             'Product retrieved successfully'
         );
     }
