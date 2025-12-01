@@ -21,7 +21,7 @@ class StoreService extends Service
 
     public function find($id)
     {
-        $store = Store::with(['subCategories', 'categories'])->find($id);
+        $store = Store::with(['subCategories', 'categories','ratings'])->find($id);
 
         if (! $store) {
             $this->throwExceptionJson('Store not found', 404);
