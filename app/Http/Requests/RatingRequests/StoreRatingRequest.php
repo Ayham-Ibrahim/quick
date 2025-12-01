@@ -20,7 +20,7 @@ class StoreRatingRequest extends BaseFormRequest
 
             // 'rateable_type' => ['required', 'string', 'in:store,product'],
             'rateable_type' => ['required', 'string', Rule::in([\App\Models\Store::class,
-            //  \App\Models\Product::class
+             \App\Models\Product::class
              ])],
             'rateable_id'   => ['required', 'integer'],
         ];
@@ -32,9 +32,9 @@ class StoreRatingRequest extends BaseFormRequest
             $this->merge(['rateable_type' => \App\Models\Store::class]);
         }
 
-        // if ($this->rateable_type === 'product') {
-        //     $this->merge(['rateable_type' => \App\Models\Product::class]);
-        // }
+        if ($this->rateable_type === 'product') {
+            $this->merge(['rateable_type' => \App\Models\Product::class]);
+        }
     }
 
     /**
