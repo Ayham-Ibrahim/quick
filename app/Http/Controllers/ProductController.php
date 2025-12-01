@@ -70,7 +70,7 @@ class ProductController extends Controller
 
         $products = $query->get();
 
-        return $this->success($products, 'My products listed successfully', 200);   
+        return $this->success($products, 'My products listed successfully', 200);
     }
 
     /**
@@ -97,7 +97,7 @@ class ProductController extends Controller
     public function show(Product $product)
     {
         return $this->success(
-            $product->load(['store:id,store_name,store_logo', 'images', 'subCategory:id,name']),
+            $product->load(['store:id,store_name,store_logo', 'images', 'subCategory:id,name','ratings']),
             'Product retrieved successfully'
         );
     }
@@ -157,7 +157,7 @@ class ProductController extends Controller
      * accept a product's request
      * @param Product $product
      * @return \Illuminate\Http\JsonResponse
-     */    
+     */
     public function acceptProduct(Product $product)
     {
         $product->is_accepted = true;
@@ -166,7 +166,7 @@ class ProductController extends Controller
     }
 
 
-    
+
 
 
 }
