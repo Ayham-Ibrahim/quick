@@ -44,7 +44,7 @@ class ProductController extends Controller
 
         $products = $query->get();
 
-        return $this->success($products, 'products listed successfully', 200);
+        return $this->success($products, 'تم جلب المنتجات بنجاح', 200);
     }
 
     /**
@@ -70,7 +70,7 @@ class ProductController extends Controller
 
         $products = $query->get();
 
-        return $this->success($products, 'My products listed successfully', 200);
+        return $this->success($products, 'تم جلب منتجات المتجر بنجاح', 200);
     }
 
     /**
@@ -86,7 +86,7 @@ class ProductController extends Controller
         $data['store_id'] = $store->id;
         return $this->success(
             $this->productService->storeProduct($data),
-            'Product created successfully',
+            'تم انشاء المنتج بنجاح',
             201
         );
     }
@@ -98,7 +98,7 @@ class ProductController extends Controller
     {
         return $this->success(
             $product->load(['store:id,store_name,store_logo', 'images', 'subCategory:id,name','ratings']),
-            'Product retrieved successfully'
+            'تم جلب معلومات المنتج بنجاح'
         );
     }
 
@@ -109,7 +109,7 @@ class ProductController extends Controller
     {
         return $this->success(
             $this->productService->updateProduct($request->validated(), $product),
-            'Product updated successfully'
+            'تم تحديث المنتج بنجاح'
         );
     }
 
@@ -121,7 +121,7 @@ class ProductController extends Controller
         $product->images()->delete();
         // $product->variants()->delete();
         $product->delete();
-        return $this->success(null, 'Product deleted successfully', 200);
+        return $this->success(null, 'تم حذف المنتج بنجاح', 200);
     }
 
     /**
@@ -133,7 +133,7 @@ class ProductController extends Controller
     public function deleteImage(ProductImage $image)
     {
         $image->delete();
-        return $this->success(null, 'Product Image deleted successfully', 200);
+        return $this->success(null, 'تم حذف صورة المنتج بنجاح', 200);
     }
 
 
@@ -149,7 +149,7 @@ class ProductController extends Controller
             ->with(['store:id,store_name', 'images'])
             ->get();
 
-        return $this->success($products,'requests lised successfully', 200);
+        return $this->success($products,'تم جلب طلبات المنتجات بنجاح', 200);
     }
 
     /**
@@ -162,7 +162,7 @@ class ProductController extends Controller
     {
         $product->is_accepted = true;
         $product->save();
-        return $this->success(null, 'Product accepted successfully', 200);
+        return $this->success(null, 'تم قبول المنتج بنجاح', 200);
     }
 
 

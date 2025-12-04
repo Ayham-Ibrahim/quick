@@ -28,7 +28,7 @@ class DriverController extends Controller
     public function store(StoreDriverRequest $request)
     {
         $driver = $this->driverService->storeDriver($request->validated());
-        return $this->success(new DriverResource($driver), 'Driver created successfully', 201);
+        return $this->success(new DriverResource($driver), 'تم انشاء السائق بنجاح', 201);
     }
 
     public function show($id)
@@ -40,7 +40,7 @@ class DriverController extends Controller
     public function update(UpdateDriverRequest $request, Driver $driver)
     {
         $driver = $this->driverService->updateDriver($request->validated(), $driver);
-        return $this->success(new DriverResource($driver), 'Driver updated successfully');
+        return $this->success(new DriverResource($driver), 'تم تحديث بيانات السائق بنجاح');
     }
     /**
      * Update driver profile data.
@@ -69,6 +69,6 @@ class DriverController extends Controller
     public function destroy(Driver $driver)
     {
         $this->driverService->deleteDriver($driver);
-        return $this->success([], 'Driver deleted successfully');
+        return $this->success([], 'تم حذف السائق بنجاح');
     }
 }
