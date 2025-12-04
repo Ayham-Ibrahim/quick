@@ -177,7 +177,6 @@ class UserManagementController extends Controller
     // ---------------------------
     if (in_array('refresh-dashboard', $abilities)) {
 
-        $personal->delete();
 
         $newAccess = $user->createToken(
             'admin-access',
@@ -185,17 +184,12 @@ class UserManagementController extends Controller
             now()->addMinutes(10)
         )->plainTextToken;
 
-        $newRefresh = $user->createToken(
-            'admin-refresh',
-            ['refresh-dashboard'],
-            now()->addHours(2)
-        )->plainTextToken;
 
         return [
             'success' => true,
             'data' => [
                 'access_token'  => $newAccess,
-                'refresh_token' => $newRefresh,
+                'refresh_token' => $refreshToken,
                 'expires_in'    => 600, // 10 min
                 'type'          => 'admin'
             ]
