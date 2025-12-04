@@ -21,7 +21,7 @@ class RatingController extends Controller
     public function index()
     {
         $data = $this->service->index();
-        return $this->success($data, "Data retrieved successfully");
+        return $this->success($data, "تم جلب التقييمات بنجاح");
     }
 
     /**
@@ -30,7 +30,7 @@ class RatingController extends Controller
     public function store(StoreRatingRequest $request)
     {
         $data = $this->service->store($request->validated());
-        return $this->success($data, "Rating created successfully", 201);
+        return $this->success($data, "تم انشاء التقييم بنجاح", 201);
     }
 
     /**
@@ -39,7 +39,7 @@ class RatingController extends Controller
     public function show($id)
     {
         $data = $this->service->show($id);
-        return $this->success($data, "Rating retrieved successfully");
+        return $this->success($data, "تم جلب التقييم بنجاح");
     }
 
     /**
@@ -48,7 +48,7 @@ class RatingController extends Controller
     public function update(UpdateRatingRequest $request, $id)
     {
         $data = $this->service->update($id, $request->validated());
-        return $this->success($data, "Rating updated successfully");
+        return $this->success($data, "تم تحديث التقييم بنجاح");
     }
 
     /**
@@ -57,6 +57,6 @@ class RatingController extends Controller
     public function destroy($id)
     {
         $this->service->delete($id);
-        return $this->success(null, "Rating deleted successfully");
+        return $this->success(null, "تم حذف التقييم بنجاح");
     }
 }

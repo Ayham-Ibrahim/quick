@@ -114,7 +114,7 @@ class FileStorage
 
         throw new HttpResponseException(response()->json([
             'status' => 'error',
-            'message' => 'Validation failed',
+            'message' => 'حدث خطأ في التحقق من صحة البيانات',
             'errors' => $validator->errors()
         ], 422));
     }

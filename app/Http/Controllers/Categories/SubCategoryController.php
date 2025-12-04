@@ -38,7 +38,7 @@ class SubCategoryController extends Controller
             SubCategory::with('category:id,name') 
                     ->select('id', 'name', 'image', 'category_id')
                     ->get(),
-            'SubCategories retrieved successfully'
+            'تم جلب الاقسام الفرعية بنجاح'
         );
     }
 
@@ -50,7 +50,7 @@ class SubCategoryController extends Controller
     {
         return $this->success(
             $this->subCategoryService->storeSubCategory($request->validated()),
-            'SubCategory created successfully',
+            'تم انشاء القسم الفرعي بنجاح',
             201
         );
     }
@@ -65,14 +65,14 @@ class SubCategoryController extends Controller
         if (!$subCategory) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'SubCategory not found',
+                'message' => 'الفئة الفرعية غير موجودة',
                 'data' => null
             ], 404);
         }
 
         return response()->json([
             'status' => 'success',
-            'message' => 'SubCategory retrieved successfully',
+            'message' => 'تم جلب معلومات الفئة الفرعية بنجاح',
             'data' => $subCategory
         ]);
     }
@@ -87,14 +87,14 @@ class SubCategoryController extends Controller
         if (!$subCategory) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'SubCategory not found',
+                'message' => 'الفئة الفرعية غير موجودة',
                 'data' => null
             ], 404);
         }
 
         return $this->success(
             $this->subCategoryService->updateSubCategory($request->validated(), $subCategory),
-            'SubCategory updated successfully'
+            'تم تحديث القسم الفرعي بنجاح'
         );
     }
 
@@ -108,7 +108,7 @@ class SubCategoryController extends Controller
         if (!$subCategory) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'SubCategory not found',
+                'message' => 'الفئة الفرعية غير موجودة',
                 'data' => null
             ], 404);
         }
@@ -116,7 +116,7 @@ class SubCategoryController extends Controller
         $subCategory->delete();
         return $this->success(
             null,
-            'SubCategory deleted successfully',
+            'تم حذف القسم الفرعي بنجاح',
             200
         );
     }
