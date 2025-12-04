@@ -97,7 +97,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Store Owner
     Route::get('/my-products', [ProductController::class, 'myProducts']);
     Route::post('/products', [ProductController::class, 'store']);
-    Route::post('/products/{product}', [ProductController::class, 'update']);
+    Route::put('/products/{product}', [ProductController::class, 'update']);
     Route::delete('/products/{product}', [ProductController::class, 'destroy']);
     Route::delete('/product-image/{image}', [ProductController::class, 'deleteImage']);
 
