@@ -113,7 +113,7 @@ class SubCategoryController extends Controller
             ], 404);
         }
 
-        $subCategory-delete();
+        $subCategory->delete();
         return $this->success(
             null,
             'SubCategory deleted successfully',
