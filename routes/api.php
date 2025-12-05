@@ -82,6 +82,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 
 
+
     Route::apiResource('/ratings', RatingController::class);
 
     Route::apiResource('/vehicle-types', VehicleTypeController::class);
@@ -100,6 +101,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/products/{product}', [ProductController::class, 'update']);
     Route::delete('/products/{product}', [ProductController::class, 'destroy']);
     Route::delete('/product-image/{image}', [ProductController::class, 'deleteImage']);
+    Route::get('/stores/{store_id}/products', [ProductController::class, 'getStoreProductsBySubcategory']);
+
 
     // Admin
     // Route::middleware('is_admin')->group(function () {

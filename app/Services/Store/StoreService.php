@@ -16,7 +16,7 @@ class StoreService extends Service
     {
         $stores = Store::with(['subCategories', 'categories'])->paginate($perPage);
 
-        return StoreResource::collection($stores);
+        return $stores;
     }
 
     public function find($id)
