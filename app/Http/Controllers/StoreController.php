@@ -22,7 +22,12 @@ class StoreController extends Controller
 
     public function index()
     {
-        return $this->success($this->storeService->paginate());
+        $paginatedStores = $this->storeService->paginate();
+
+        return $this->paginate(
+            StoreResource::collection($paginatedStores)->resource, 
+            "تم جلب البيانات بنجاح"
+        );
     }
 
 

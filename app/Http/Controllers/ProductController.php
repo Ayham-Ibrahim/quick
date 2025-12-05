@@ -165,6 +165,33 @@ class ProductController extends Controller
         return $this->success(null, 'تم قبول المنتج بنجاح', 200);
     }
 
+    /**
+     * Get products of a specific store, optionally filtered by subcategory.
+     *
+     * @param Request $request The HTTP request containing filter parameters
+     * @param int $store_id The ID of the store whose products are to be fetched
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getStoreProductsBySubcategory(Request $request, $store_id)
+    {
+        $query = Product::where('store_id', $store_id)
+            ->where('is_accepted', true)
+            ->with([
+                'store:id,store_name,store_logo',
+                'subCategory:id,name,category_id',
+                'subCategory.category:id,name',
+                'images'
+            ]);
+
+        // Filter by subcategory if provided
+        if ($request->has('sub_category_id') && !empty($request->sub_category_id)) {
+            $query->where('sub_category_id', $request->sub_category_id);
+        }
+
+        $products = $query->get();
+
+        return $this->success($products, 'تم جلب منتجات المتجر بنجاح', 200);
+    }
 
 
 
