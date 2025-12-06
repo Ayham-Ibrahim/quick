@@ -1,37 +1,36 @@
 <?php
 
-namespace App\Models\UserManagement;
+namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
+class Driver extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasApiTokens;
-
     /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'driver_name',
         'phone',
-        'avatar',
-        'gender',
+        'password',
+
+        'driver_image',
+        'front_id_image',
+        'back_id_image',
+
         'city',
         'v_location',
         'h_location',
-        'password',
-        'is_admin',
-        'phone_verified_at',
-        // 'walet_id'
-    ];
 
+        'vehicle_type_id',
+        'wallet_balance'
+    ];
     /**
      * The attributes that should be hidden for serialization.
      *
@@ -47,20 +46,22 @@ class User extends Authenticatable
      *
      * @return array<string, string>
      */
+
     protected function casts(): array
     {
         return [
             'phone_verified_at' => 'datetime',
             'password' => 'hashed',
-            'is_admin' => 'boolean',
         ];
     }
 
     /**
-     * التحقق من أن رقم الهاتف مفعل
+     * Define the relationship to the VehicleType model.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo<VehicleType, Driver>
      */
-    public function isPhoneVerified(): bool
+    public function vehicleType()
     {
-        return !is_null($this->phone_verified_at);
+        return $this->belongsTo(VehicleType::class, 'vehicle_type_id');
     }
 }

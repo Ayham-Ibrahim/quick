@@ -22,14 +22,19 @@ class StoreController extends Controller
 
     public function index()
     {
-        return $this->success($this->storeService->paginate());
+        $paginatedStores = $this->storeService->paginate();
+
+        return $this->paginate(
+            StoreResource::collection($paginatedStores)->resource, 
+            "تم جلب البيانات بنجاح"
+        );
     }
 
 
     public function store(StoreStoreRequest $request)
     {
         $store = $this->storeService->storeStore($request->validated());
-        return $this->success(new StoreResource($store), 'Store created successfully', 201);
+        return $this->success(new StoreResource($store), 'تم انشاء المتجر بنجاح', 201);
     }
 
     public function show($id)
@@ -41,7 +46,7 @@ class StoreController extends Controller
     public function update(UpdateStoreRequest $request, Store $store)
     {
         $store = $this->storeService->updateStore($request->validated(), $store);
-        return $this->success(new StoreResource($store), 'Store updated successfully');
+        return $this->success(new StoreResource($store), 'تم تحديث بيانات المتجر بنجاح');
     }
     /**
      * Update store profile data.
@@ -70,7 +75,7 @@ class StoreController extends Controller
     public function destroy(Store $store)
     {
         $this->storeService->deleteStore($store);
-        return $this->success([], 'Store deleted successfully');
+        return $this->success([], 'تم حذف المتجر بنجاح');
     }
 
 
@@ -95,7 +100,7 @@ class StoreController extends Controller
         if (!$hasCategory) {
             return response()->json([
                 'status' => false,
-                'message' => 'This category is not assigned to the store'
+                'message' => 'هذه الفئة غير مرتبطة بمتجرك',
             ], 403);
         }
 

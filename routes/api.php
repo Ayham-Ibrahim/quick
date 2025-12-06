@@ -8,8 +8,10 @@ use App\Http\Controllers\RatingController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Categories\CategoryController;
 use App\Http\Controllers\Categories\SubCategoryController;
+use App\Http\Controllers\DriverController;
 use App\Http\Controllers\UserManagementControllers\ProviderController;
 use App\Http\Controllers\UserManagementControllers\UserManagementController;
+use App\Http\Controllers\VehicleTypeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,8 +19,22 @@ use App\Http\Controllers\UserManagementControllers\UserManagementController;
 |--------------------------------------------------------------------------
 */
 
-Route::post('/register', [UserManagementController::class, 'register']);
-Route::post('/login', [UserManagementController::class, 'login']);
+Route::post('register', [UserManagementController::class, 'register']);
+Route::post('confirm-registration', [UserManagementController::class, 'confirmRegistration']);
+
+// تسجيل الدخول والتأكيد
+Route::post('login', [UserManagementController::class, 'login']);
+Route::post('confirm-login', [UserManagementController::class, 'confirmLogin']);
+Route::post('refresh', [UserManagementController::class, 'refreshToken']);
+
+
+// نسيان كلمة المرور (منفصل)
+Route::post('forgot-password', [UserManagementController::class, 'forgotPassword']);
+Route::post('confirm-forgot-password', [UserManagementController::class, 'confirmForgotPassword']);
+Route::post('reset-password', [UserManagementController::class, 'resetPassword']);
+
+// إعادة إرسال OTP
+Route::post('resend-otp', [UserManagementController::class, 'resendOTP']);
 
 Route::middleware('auth:sanctum')->post('/logout', [UserManagementController::class, 'logout']);
 
@@ -42,7 +58,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     | Category and SubCategory Routes
     |--------------------------------------------------------------------------
     */
-    
+
     // categories routes
     Route::apiResource('/categories', CategoryController::class);
 
@@ -67,10 +83,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 
 
+
     Route::apiResource('/ratings', RatingController::class);
 
+    Route::apiResource('/vehicle-types', VehicleTypeController::class);
 
-    // Public (logged-in) user: list accepted products
+    Route::apiResource('/drivers', DriverController::class);
+    Route::get('/driver/profile', [DriverController::class, 'profile']);
+    Route::put('/driver/profile', [DriverController::class, 'updateDriverProfile']);
+
+     // Public (logged-in) user: list accepted products
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/products/{product}', [ProductController::class, 'show']);
 
@@ -80,6 +102,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/products/{product}', [ProductController::class, 'update']);
     Route::delete('/products/{product}', [ProductController::class, 'destroy']);
     Route::delete('/product-image/{image}', [ProductController::class, 'deleteImage']);
+    Route::get('/stores/{store_id}/products', [ProductController::class, 'getStoreProductsBySubcategory']);
+
 
     // Admin
     // Route::middleware('is_admin')->group(function () {
@@ -88,6 +112,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         // Accept a pending product
         Route::post('/accept-product/{product}', [ProductController::class, 'acceptProduct']);
     // });
+    
 });
 Route::apiResource('/attributes',AttributeController::class);
 Route::get('/attribute/value/{attribute}', [AttributeController::class, 'getValue']);

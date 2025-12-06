@@ -35,7 +35,7 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         $query = Product::where('is_accepted', true)
-            ->with(['store:id,store_name', 'images']);
+            ->with(['store:id,store_name,store_logo','subCategory:id,name,category_id','subCategory.category:id,name', 'images']);
 
         // Filter by subcategory if passed
         if ($request->has('sub_category_id')) {
@@ -44,7 +44,7 @@ class ProductController extends Controller
 
         $products = $query->get();
 
-        return $this->success($products, 'products listed successfully', 200);
+        return $this->success($products, 'تم جلب المنتجات بنجاح', 200);
     }
 
     /**
@@ -61,7 +61,7 @@ class ProductController extends Controller
         // }
         $store_id = $store->id;
         $query = Product::where('store_id', $store_id)
-            ->with(['store:id,store_name', 'images']);
+            ->with(['store:id,store_name,store_logo','subCategory:id,name,category_id','subCategory.category:id,name', 'images']);
 
         // Filter by subcategory if passed
         if ($request->has('sub_category_id')) {
@@ -70,7 +70,7 @@ class ProductController extends Controller
 
         $products = $query->get();
 
-        return $this->success($products, 'My products listed successfully', 200);   
+        return $this->success($products, 'تم جلب منتجات المتجر بنجاح', 200);
     }
 
     /**
@@ -86,7 +86,7 @@ class ProductController extends Controller
         $data['store_id'] = $store->id;
         return $this->success(
             $this->productService->storeProduct($data),
-            'Product created successfully',
+            'تم انشاء المنتج بنجاح',
             201
         );
     }
@@ -97,8 +97,8 @@ class ProductController extends Controller
     public function show(Product $product)
     {
         return $this->success(
-            $product->load(['store:id,store_name', 'images', 'subCategory:id,name']),
-            'Product retrieved successfully'
+            $product->load(['store:id,store_name,store_logo', 'images', 'subCategory:id,name','ratings']),
+            'تم جلب معلومات المنتج بنجاح'
         );
     }
 
@@ -109,7 +109,7 @@ class ProductController extends Controller
     {
         return $this->success(
             $this->productService->updateProduct($request->validated(), $product),
-            'Product updated successfully'
+            'تم تحديث المنتج بنجاح'
         );
     }
 
@@ -121,7 +121,7 @@ class ProductController extends Controller
         $product->images()->delete();
         // $product->variants()->delete();
         $product->delete();
-        return $this->success(null, 'Product deleted successfully', 200);
+        return $this->success(null, 'تم حذف المنتج بنجاح', 200);
     }
 
     /**
@@ -133,7 +133,7 @@ class ProductController extends Controller
     public function deleteImage(ProductImage $image)
     {
         $image->delete();
-        return $this->success(null, 'Product Image deleted successfully', 200);
+        return $this->success(null, 'تم حذف صورة المنتج بنجاح', 200);
     }
 
 
@@ -149,7 +149,7 @@ class ProductController extends Controller
             ->with(['store:id,store_name', 'images'])
             ->get();
 
-        return $this->success($products,'requests lised successfully', 200);
+        return $this->success($products,'تم جلب طلبات المنتجات بنجاح', 200);
     }
 
     /**
@@ -157,16 +157,43 @@ class ProductController extends Controller
      * accept a product's request
      * @param Product $product
      * @return \Illuminate\Http\JsonResponse
-     */    
+     */
     public function acceptProduct(Product $product)
     {
         $product->is_accepted = true;
         $product->save();
-        return $this->success(null, 'Product accepted successfully', 200);
+        return $this->success(null, 'تم قبول المنتج بنجاح', 200);
+    }
+
+    /**
+     * Get products of a specific store, optionally filtered by subcategory.
+     *
+     * @param Request $request The HTTP request containing filter parameters
+     * @param int $store_id The ID of the store whose products are to be fetched
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getStoreProductsBySubcategory(Request $request, $store_id)
+    {
+        $query = Product::where('store_id', $store_id)
+            ->where('is_accepted', true)
+            ->with([
+                'store:id,store_name,store_logo',
+                'subCategory:id,name,category_id',
+                'subCategory.category:id,name',
+                'images'
+            ]);
+
+        // Filter by subcategory if provided
+        if ($request->has('sub_category_id') && !empty($request->sub_category_id)) {
+            $query->where('sub_category_id', $request->sub_category_id);
+        }
+
+        $products = $query->get();
+
+        return $this->success($products, 'تم جلب منتجات المتجر بنجاح', 200);
     }
 
 
-    
 
 
 }

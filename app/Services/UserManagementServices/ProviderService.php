@@ -33,7 +33,11 @@ class ProviderService extends Service
     public function updateProvider(Provider $provider, array $data)
     {
         try {
+             if (!empty($data['password'])) {
+                $data['password'] = Hash::make($data['password']);
+            }
             $provider->provider_name = $data['provider_name'] ??  $provider->provider_name;
+            $provider->password = $data['password'] ??  $provider->password;
             $provider->market_name = $data['market_name'] ??  $provider->market_name;
             $provider->v_location = $data['v_location'] ??  $provider->v_location;
             $provider->h_location = $data['h_location'] ??  $provider->h_location;
