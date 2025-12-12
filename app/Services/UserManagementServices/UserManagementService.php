@@ -487,5 +487,33 @@ class UserManagementService
         };
     }
 
+    /**
+     * delete user account
+     * @param User $user
+     * @return array{message: string, success: bool}
+     */
+    public function deleteAccount($authAccount)
+    {
+        try {
+            if (method_exists($authAccount, 'tokens')) {
+                $authAccount->tokens()->delete();
+            }
+
+            $authAccount->delete();
+
+            return [
+                'success' => true,
+                'message' => 'Account deleted'
+            ];
+
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Failed to delete account'
+            ];
+        }
+    }
+
+
 
 }
