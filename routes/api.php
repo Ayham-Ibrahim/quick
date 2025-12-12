@@ -8,9 +8,11 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Categories\CategoryController;
 use App\Http\Controllers\Categories\SubCategoryController;
 use App\Http\Controllers\DriverController;
+use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\UserManagementControllers\ProviderController;
 use App\Http\Controllers\UserManagementControllers\UserManagementController;
 use App\Http\Controllers\VehicleTypeController;
+use App\Http\Controllers\WalletController;
 
 /*
 |--------------------------------------------------------------------------
@@ -43,8 +45,6 @@ Route::middleware('auth:sanctum')->post('/logout', [UserManagementController::cl
 |--------------------------------------------------------------------------
 */
 
-
-
 /*
 |--------------------------------------------------------------------------
 | Authenticated Routes
@@ -71,7 +71,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('/providers', ProviderController::class);
     Route::get('/provider/profile', [ProviderController::class, 'profile']);
     Route::put('/provider/profile', [ProviderController::class, 'updateProviderProfile']);
-
+    Route::post('/provider/add-balance', [WalletController::class, 'addBalance']);
+    
     Route::apiResource('/ads', AdsController::class);
 
     Route::apiResource('/stores', StoreController::class);
@@ -91,7 +92,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/driver/profile', [DriverController::class, 'profile']);
     Route::put('/driver/profile', [DriverController::class, 'updateDriverProfile']);
 
-     // Public (logged-in) user: list accepted products
+    // Public (logged-in) user: list accepted products
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/products/{product}', [ProductController::class, 'show']);
 
@@ -106,13 +107,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Admin
     // Route::middleware('is_admin')->group(function () {
-        // Pending products that need admin approval
-        Route::get('/pending-products', [ProductController::class, 'pendingProducts']);
-        // Accept a pending product
-        Route::post('/accept-product/{product}', [ProductController::class, 'acceptProduct']);
+    // Pending products that need admin approval
+    Route::get('/pending-products', [ProductController::class, 'pendingProducts']);
+    // Accept a pending product
+    Route::post('/accept-product/{product}', [ProductController::class, 'acceptProduct']);
     // });
-    
+
+    Route::delete('/transactions/all', [TransactionController::class, 'deleteAllTansactions']);
+    Route::delete('/transactions/provider/{provider}', [TransactionController::class, 'deleteAllProviderTansactions']);
+    Route::apiResource('/transactions', TransactionController::class);
+    Route::get('/my-wallet', [WalletController::class, 'getWallet']);
 });
-
-
-

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Helpers\WalletHelper;
 use App\Models\UserManagement\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -26,7 +27,7 @@ class DatabaseSeeder extends Seeder
         //     'password' =>  bcrypt('password@123'),
         //     'is_admin' => 1,
         // ]);
-        User::create([
+        $admin = User::create([
             'name' => 'new Admin',
             'phone' => '+963939811355',
             'avatar' => null,
@@ -35,9 +36,15 @@ class DatabaseSeeder extends Seeder
             'password' =>  bcrypt('password@123'),
             'is_admin' => 1,
         ]);
-        // $this->call([
-        //     CategorySeeder::class,
-        //     SubCategorySeeder::class,
-        // ]);
+        $admin->wallet()->create([
+            'wallet_code' => WalletHelper::generateUniqueWalletCode(),
+            'balance'     => 0,
+        ]);
+
+        $this->call([
+            // CategorySeeder::class,
+            // SubCategorySeeder::class,
+            VehicleTypeSeeder::class,
+        ]);
     }
 }

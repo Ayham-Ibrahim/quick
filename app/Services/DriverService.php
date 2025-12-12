@@ -56,7 +56,6 @@ class DriverService extends Service
                 'h_location'       => $data['h_location'] ?? null,
 
                 'vehicle_type_id'  => $data['vehicle_type_id'],
-                'wallet_balance'   => $data['wallet_balance'] ?? 0,
             ]);
 
             return $driver->load('vehicleType');
@@ -108,7 +107,6 @@ class DriverService extends Service
                 'h_location'       => $data['h_location'] ?? null,
 
                 'vehicle_type_id'  => $data['vehicle_type_id'] ?? null,
-                'wallet_balance'   => $data['wallet_balance'] ?? null,
             ]));
 
             return $driver->load('vehicleType');

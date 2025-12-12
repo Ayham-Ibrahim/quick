@@ -25,9 +25,14 @@ class ProviderController extends Controller
      */
     public function index()
     {
-        $providers = Provider::latest()->paginate(10);
-        return $this->paginate($providers, 'تم جلب قائمة المزودين بنجاح');
-    }
+        if(Auth::user()->is_admin){
+            $providers = Provider::where('id',Auth::id())->latest()->paginate(10);
+            return $this->paginate($providers, 'تم جلب قائمة المزودين بنجاح');
+        }else{
+            $providers = Provider::latest()->select(['id', 'provider_name', 'market_name'])->get();
+            return $this->success($providers, 'تم جلب قائمة المزودين بنجاح');
+        }
+       }
 
     /**
      * Store a newly created provider.

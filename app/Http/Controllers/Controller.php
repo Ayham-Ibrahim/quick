@@ -64,4 +64,19 @@ abstract class Controller
             ]
         ], 200);
     }
+     protected function paginateWithData($paginatedData,$data, $message = 'تم جلب البيانات بنجاح')
+    {
+        return response()->json([
+            'status' => 'success',
+            'message' => $message,
+            'data' => $paginatedData->items(),
+            'additional_data' => $data,
+            'meta' => [
+                'current_page' => $paginatedData->currentPage(),
+                'per_page' => $paginatedData->perPage(),
+                'total' => $paginatedData->total(),
+                'last_page' => $paginatedData->lastPage()
+            ]
+        ], 200);
+    }
 }

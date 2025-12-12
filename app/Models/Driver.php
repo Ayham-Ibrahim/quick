@@ -29,7 +29,6 @@ class Driver extends Authenticatable
         'h_location',
 
         'vehicle_type_id',
-        'wallet_balance'
     ];
     /**
      * The attributes that should be hidden for serialization.
@@ -63,5 +62,15 @@ class Driver extends Authenticatable
     public function vehicleType()
     {
         return $this->belongsTo(VehicleType::class, 'vehicle_type_id');
+    }
+    // Define the relationship to the Wallet model.
+    public function wallet()
+    {
+        return $this->morphOne(Wallet::class, 'owner');
+    }
+
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class, 'driver_id');
     }
 }
