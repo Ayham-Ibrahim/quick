@@ -33,7 +33,7 @@ class DriverResource extends JsonResource
                 'note' => $this->vehicleType->note,
             ] : null,
 
-            'wallet_balance'     => $this->wallet_balance,
+            'wallet_balance'     => $this->wallet ? $this->wallet->balance : null,
 
             'created_at'         => $this->created_at,
             'updated_at'         => $this->updated_at,

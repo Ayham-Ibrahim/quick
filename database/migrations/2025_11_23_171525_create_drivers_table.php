@@ -26,7 +26,6 @@ return new class extends Migration
                 ->nullable()
                 ->constrained('vehicle_types')
                 ->nullOnDelete();
-            $table->decimal('wallet_balance', 10, 2)->default(0);
             $table->timestamps();
         });
     }

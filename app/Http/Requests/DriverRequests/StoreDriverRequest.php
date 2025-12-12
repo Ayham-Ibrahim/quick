@@ -41,8 +41,6 @@ class StoreDriverRequest extends BaseFormRequest
             'h_location'      => 'required|string|max:255',
 
             'vehicle_type_id' => 'required|exists:vehicle_types,id',
-
-            'wallet_balance'  => 'nullable|numeric|min:0',
         ];
     }
 
@@ -63,7 +61,6 @@ class StoreDriverRequest extends BaseFormRequest
             'h_location'      => 'الإحداثيات الأفقية',
 
             'vehicle_type_id' => 'نوع المركبة',
-            'wallet_balance'  => 'رصيد المحفظة'
         ];
     }
 

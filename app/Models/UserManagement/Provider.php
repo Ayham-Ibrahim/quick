@@ -2,6 +2,7 @@
 
 namespace App\Models\UserManagement;
 
+use App\Models\Transaction;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -55,5 +56,9 @@ class Provider extends Authenticatable
     public function isPhoneVerified(): bool
     {
         return !is_null($this->phone_verified_at);
+    }
+
+    public function transactions(){
+        return $this->hasMany(Transaction::class, 'provider_id');
     }
 }
