@@ -230,6 +230,19 @@ class UserManagementController extends Controller
         ];
     }
 
+    /**
+     * delete user account
+     */
+    public function deleteAccount(Request $request)
+    {
+        $authAccount = $request->user(); 
 
-    
+        $result = $this->service->deleteAccount($authAccount);
+
+        if (! $result['success']) {
+            return $this->error($result['message'], 400);
+        }
+
+        return $this->success([], "Account deleted successfully");
+    }
 }
