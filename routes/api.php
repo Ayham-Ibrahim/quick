@@ -38,6 +38,7 @@ Route::post('reset-password', [UserManagementController::class, 'resetPassword']
 Route::post('resend-otp', [UserManagementController::class, 'resendOTP']);
 
 Route::middleware('auth:sanctum')->post('/logout', [UserManagementController::class, 'logout']);
+Route::middleware('auth:sanctum')->delete('/account/delete', [UserManagementController::class, 'deleteAccount']);
 
 /*
 |--------------------------------------------------------------------------
