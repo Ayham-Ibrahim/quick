@@ -18,8 +18,8 @@ class AdsController extends Controller
 
     public function index()
     {
-        $ads = Ads::latest()->paginate(10);
-        return $this->paginate($ads, 'تم جلب الإعلانات بنجاح');
+        $ads = Ads::latest()->get();
+        return $this->success($ads, 'تم جلب الإعلانات بنجاح');
     }
 
     public function store(AdRequest $request)
