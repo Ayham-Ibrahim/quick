@@ -19,6 +19,13 @@ class StoreService extends Service
         return $stores;
     }
 
+    public function listOfStores()
+    {
+        $stores = Store::select(['store_name', 'store_logo'])->get();
+
+        return $stores;
+    }
+
     public function find($id)
     {
         $store = Store::with(['subCategories', 'categories','ratings'])->find($id);
