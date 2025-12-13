@@ -72,8 +72,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('/providers', ProviderController::class);
     Route::get('/provider/profile', [ProviderController::class, 'profile']);
     Route::put('/provider/profile', [ProviderController::class, 'updateProviderProfile']);
-    Route::post('/provider/add-balance', [WalletController::class, 'addBalance']);
-    
+
     Route::apiResource('/ads', AdsController::class);
 
     Route::apiResource('/stores', StoreController::class);
@@ -117,5 +116,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/transactions/all', [TransactionController::class, 'deleteAllTansactions']);
     Route::delete('/transactions/provider/{provider}', [TransactionController::class, 'deleteAllProviderTansactions']);
     Route::apiResource('/transactions', TransactionController::class);
+
+    /** Wallet routes */
     Route::get('/my-wallet', [WalletController::class, 'getWallet']);
+    Route::post('/wallet/add-balance', [WalletController::class, 'addBalance']);
 });

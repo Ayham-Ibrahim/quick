@@ -14,7 +14,7 @@ class AddBalanceRequest extends BaseFormRequest
      */
     public function authorize(): bool
     {
-         return Auth::guard('provider')->check();
+         return Auth::guard('provider')->check() || Auth::user()->is_admin;
     }
 
     /**

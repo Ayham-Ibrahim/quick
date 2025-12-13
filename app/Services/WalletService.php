@@ -28,11 +28,13 @@ class WalletService
 
             $wallet->increment('balance', $data['amount']);
 
-            Transaction::create([
+            if(Auth::guard('provider')->check()){
+                Transaction::create([
                 'provider_id' => Auth::guard('provider')->id(),
                 'driver_id'    => $wallet->owner_id,
                 'amount'       => $data['amount'],
             ]);
+            }
 
             return [
                 'error' => false,
