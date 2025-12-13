@@ -80,8 +80,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/store/profile', [StoreController::class, 'updateStoreProfile']);
     Route::get('/store/categories', [StoreController::class, 'getStoreCategories']);
     Route::get('/store/categories/{category_id}/subcategories', [StoreController::class, 'getStoreSubCategories']);
-
-
+    Route::get('/stores-list', [StoreController::class, 'listOfStores']);
+    Route::get('/store/categories/{store_id}', [StoreController::class, 'getCategoriesOfStore']);
+    Route::get('/store/subcategories/{store_id}/{category_id}', [StoreController::class, 'getSubCategoriesOfStore']);
+    Route::get('/store/subcategories/{store_id}/{subcategory_id}/products', [StoreController::class, 'getStoreProductsBySubcategory']);
+    Route::get('/store/{store_id}/products', [StoreController::class, 'showAllProducts']);
 
 
     Route::apiResource('/ratings', RatingController::class);
