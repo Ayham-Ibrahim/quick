@@ -73,4 +73,14 @@ class Driver extends Authenticatable
     {
         return $this->hasMany(Transaction::class, 'driver_id');
     }
+
+    public function ratings()
+    {
+        return $this->morphMany(Rating::class, 'rateable');
+    }
+
+     public function averageRating()
+    {
+        return $this->ratings()->avg('rating') ?? 0;
+    }
 }

@@ -27,7 +27,7 @@ class DriverService extends Service
      */
     public function find($id)
     {
-        $driver = Driver::with('vehicleType')->find($id);
+        $driver = Driver::with('vehicleType','ratings')->find($id);
 
         if (!$driver) {
             $this->throwExceptionJson('Driver not found', 404);
