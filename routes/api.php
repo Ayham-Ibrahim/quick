@@ -9,9 +9,11 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Categories\CategoryController;
 use App\Http\Controllers\Categories\SubCategoryController;
 use App\Http\Controllers\DriverController;
+use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\UserManagementControllers\ProviderController;
 use App\Http\Controllers\UserManagementControllers\UserManagementController;
 use App\Http\Controllers\VehicleTypeController;
+use App\Http\Controllers\WalletController;
 
 /*
 |--------------------------------------------------------------------------
@@ -37,14 +39,13 @@ Route::post('reset-password', [UserManagementController::class, 'resetPassword']
 Route::post('resend-otp', [UserManagementController::class, 'resendOTP']);
 
 Route::middleware('auth:sanctum')->post('/logout', [UserManagementController::class, 'logout']);
+Route::middleware('auth:sanctum')->delete('/account/delete', [UserManagementController::class, 'deleteAccount']);
 
 /*
 |--------------------------------------------------------------------------
 | Forget Password Routes
 |--------------------------------------------------------------------------
 */
-
-
 
 /*
 |--------------------------------------------------------------------------
@@ -80,8 +81,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/store/profile', [StoreController::class, 'updateStoreProfile']);
     Route::get('/store/categories', [StoreController::class, 'getStoreCategories']);
     Route::get('/store/categories/{category_id}/subcategories', [StoreController::class, 'getStoreSubCategories']);
-
-
+    Route::get('/stores-list', [StoreController::class, 'listOfStores']);
+    Route::get('/store/categories/{store_id}', [StoreController::class, 'getCategoriesOfStore']);
+    Route::get('/store/subcategories/{store_id}/{category_id}', [StoreController::class, 'getSubCategoriesOfStore']);
+    Route::get('/store/subcategories/{store_id}/{subcategory_id}/products', [StoreController::class, 'getStoreProductsBySubcategory']);
+    Route::get('/store/{store_id}/products', [StoreController::class, 'showAllProducts']);
 
 
     Route::apiResource('/ratings', RatingController::class);
@@ -92,7 +96,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/driver/profile', [DriverController::class, 'profile']);
     Route::put('/driver/profile', [DriverController::class, 'updateDriverProfile']);
 
-     // Public (logged-in) user: list accepted products
+    // Public (logged-in) user: list accepted products
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/products/{product}', [ProductController::class, 'show']);
 
@@ -107,16 +111,21 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Admin
     // Route::middleware('is_admin')->group(function () {
-        // Pending products that need admin approval
-        Route::get('/pending-products', [ProductController::class, 'pendingProducts']);
-        // Accept a pending product
-        Route::post('/accept-product/{product}', [ProductController::class, 'acceptProduct']);
+    // Pending products that need admin approval
+    Route::get('/pending-products', [ProductController::class, 'pendingProducts']);
+    // Accept a pending product
+    Route::post('/accept-product/{product}', [ProductController::class, 'acceptProduct']);
     // });
-    
+
+    Route::delete('/transactions/all', [TransactionController::class, 'deleteAllTansactions']);
+    Route::delete('/transactions/provider/{provider}', [TransactionController::class, 'deleteAllProviderTansactions']);
+    Route::apiResource('/transactions', TransactionController::class);
+
+    /** Wallet routes */
+    Route::get('/my-wallet', [WalletController::class, 'getWallet']);
+    Route::post('/wallet/add-balance', [WalletController::class, 'addBalance']);
 });
 Route::apiResource('/attributes',AttributeController::class);
 Route::get('/attribute/value/{attribute}', [AttributeController::class, 'getValue']);
 Route::put('/attribute/value/{attributevalue}', [AttributeController::class, 'updateValue']);
 Route::delete('/attribute/value/{attributevalue}', [AttributeController::class, 'destroyValue']);
-
-

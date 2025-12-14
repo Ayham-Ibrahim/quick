@@ -49,7 +49,6 @@ class UpdateDriverRequest extends BaseFormRequest
 
             'vehicle_type_id' => 'nullable|exists:vehicle_types,id',
 
-            'wallet_balance'  => 'nullable|numeric|min:0',
         ];
     }
 
@@ -71,7 +70,6 @@ class UpdateDriverRequest extends BaseFormRequest
             'h_location'      => 'الإحداثيات الأفقية',
 
             'vehicle_type_id' => 'نوع المركبة',
-            'wallet_balance'  => 'رصيد المحفظة',
         ];
     }
 

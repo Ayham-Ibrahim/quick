@@ -33,7 +33,11 @@ class DriverResource extends JsonResource
                 'note' => $this->vehicleType->note,
             ] : null,
 
-            'wallet_balance'     => $this->wallet_balance,
+            'wallet_balance'     => $this->wallet ? $this->wallet->balance : null,
+
+            'average_rating' => round($this->averageRating(), 1),
+            'ratings_count' => $this->ratings()->count(),
+            'ratings' => RatingResource::collection($this->whenLoaded('ratings')),
 
             'created_at'         => $this->created_at,
             'updated_at'         => $this->updated_at,
