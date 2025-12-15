@@ -21,7 +21,7 @@ class StoreService extends Service
 
     public function listOfStores()
     {
-        $stores = Store::select(['store_name', 'store_logo'])->get();
+        $stores = Store::select(['id','store_name', 'store_logo'])->get();
 
         return $stores;
     }
