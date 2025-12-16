@@ -214,7 +214,16 @@ class StoreController extends Controller
             ], 403);
         }
 
-        $products = $store->products()->where('sub_category_id', $subcategory_id)->get();
+        $products = $store->products()
+            ->where('sub_category_id', $subcategory_id)
+            ->where('is_accepted', true)
+            ->with([
+                'store:id,store_name,store_logo',
+                'subCategory:id,name,category_id',
+                'subCategory.category:id,name',
+                'images'
+            ])
+            ->get();
 
         return response()->json([
             'status' => true,
@@ -235,7 +244,15 @@ class StoreController extends Controller
             ], 404);
         }
 
-        $products = $store->products()->get();
+        $products = $store->products()
+            ->where('is_accepted', true)
+            ->with([
+                'store:id,store_name,store_logo',
+                'subCategory:id,name,category_id',
+                'subCategory.category:id,name',
+                'images'
+            ])
+            ->get();
 
         return response()->json([
             'status' => true,
