@@ -2,11 +2,12 @@
 
 namespace App\Models;
 
+use App\Models\Product;
+use Laravel\Sanctum\HasApiTokens;
 use App\Models\Categories\Category;
 use App\Models\Categories\SubCategory;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class Store extends Authenticatable
@@ -79,5 +80,10 @@ class Store extends Authenticatable
     public function isPhoneVerified(): bool
     {
         return !is_null($this->phone_verified_at);
+    }
+
+    public function products()
+    {
+        return $this->hasMany(Product::class);
     }
 }
