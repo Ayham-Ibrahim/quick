@@ -2,16 +2,19 @@
 
 namespace App\Http\Requests\UserManagementRequests;
 
+use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\BaseFormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Validation\Rule;
 
-class StoreUserFormRequest extends BaseFormRequest
+class UpdateUserProfileRequest extends BaseFormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return true;
+        return Auth::check();
     }
 
     /**
@@ -22,21 +25,25 @@ class StoreUserFormRequest extends BaseFormRequest
     public function rules(): array
     {
         return [
-            'name'     => 'required|string|max:255',
-            'phone'    => 'required|string|max:255|unique:users,phone',
-            'password' => 'required|string|min:6|confirmed',
+            'name' => 'nullable|string|max:255',
             'avatar'   => 'nullable|image
                                     |mimes:png,jpg,jpeg
                                     |mimetypes:image/jpeg,image/png,image/jpg
                                     |max:5000',
-            'gender' => 'required|string|max:255|in:male,female',
-            'city' => 'required|string|max:255',
-            'v_location' => 'required|string|max:255',
-            'h_location' => 'required|string|max:255',
-            'is_admin' => 'nullable|boolean|in:0,1',
+            'v_location'    => 'nullable|string|max:255',
+            'h_location'    => 'nullable|string|max:255',
+            'phone' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('users', 'phone')->ignore(Auth::id())
+            ],
+            'gender' => 'nullable|string|max:255|in:male,female',
+            'city'          => 'nullable|string|max:255',
+            'password'      => 'nullable|string|min:6|max:255|confirmed',
         ];
     }
-     /**
+    /**
      * Get custom attributes for validator errors.
      *
      * @return array<string, string>
@@ -44,19 +51,18 @@ class StoreUserFormRequest extends BaseFormRequest
     public function attributes(): array
     {
         return [
-            'name' => 'الاسم',
+            'name' => 'اسم المستخدم',
             'phone' => 'رقم الواتساب',
             'password' => 'كلمة المرور',
             'password_confirmation' => 'تأكيد كلمة المرور',
-            'avatar' => 'الصورة',
             'v_location' => 'الاحداثيات العمودية',
             'h_location' => 'الاحداثيات الأفقية',
-            'is_admin' => 'الدور',
-            'gender' => 'الجنس',
             'city' => 'المدينة',
+            'avatar' => 'الصورة الشخصية',
+            'gender' => 'الجنس',
         ];
     }
-     /**
+    /**
      * Get custom messages for validator errors.
      *
      * @return array<string, string>
@@ -64,7 +70,6 @@ class StoreUserFormRequest extends BaseFormRequest
     public function messages(): array
     {
         return [
-            'required' => 'حقل :attribute مطلوب.',
             'string' => 'حقل :attribute يجب أن يكون نصاً.',
             'max' => 'حقل :attribute يجب ألا يتجاوز :max حرف/أحرف.',
             'unique' => ':attribute مسجل مسبقاً.',
@@ -78,5 +83,12 @@ class StoreUserFormRequest extends BaseFormRequest
             'avatar.max' => 'حجم :attribute يجب ألا يتجاوز :max كيلوبايت (ما يعادل 5 ميجابايت).',
             'avatar.mimetypes' => 'نوع ملف الصورة غير مسموح به. الأنواع المسموحة: :values.',
         ];
+    }
+    protected function failedAuthorization()
+    {
+        throw new HttpResponseException(response()->json([
+            'status' => 'error',
+            'message' => 'غير مصرح لك بالقيام بهذا الإجراء.'
+        ], 403));
     }
 }
