@@ -3,6 +3,8 @@
 namespace App\Models\UserManagement;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+
+use App\Models\Wallet;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -28,7 +30,7 @@ class User extends Authenticatable
         'h_location',
         'password',
         'is_admin',
-        // 'walet_id'
+        'phone_verified_at',
     ];
 
     /**
@@ -53,5 +55,23 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_admin' => 'boolean',
         ];
+    }
+
+    /**
+     * التحقق من أن رقم الهاتف مفعل
+     */
+    public function isPhoneVerified(): bool
+    {
+        return !is_null($this->phone_verified_at);
+    }
+
+    /**
+     * Define the relationship to the Wallet model.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\MorphOne<Wallet, User>
+     */
+    public function wallet()
+    {
+        return $this->morphOne(Wallet::class, 'owner');
     }
 }

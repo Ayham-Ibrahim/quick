@@ -6,7 +6,7 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 
 class Service
 {
-    public function throwExceptionJson($message = 'An error occurred', $code = 500, $errors = null)
+    public function throwExceptionJson($message = 'حدث خطأ ما', $code = 500, $errors = null)
     {
         $response = [
             'status' => 'error',

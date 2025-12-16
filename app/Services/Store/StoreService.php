@@ -1,14 +1,14 @@
 <?php
 namespace App\Services\Store;
 
-use App\Http\Resources\StoreResource;
 use App\Models\Store;
-use App\Services\FileStorage;
 use App\Services\Service;
-use Illuminate\Http\Exceptions\HttpResponseException;
+use App\Services\FileStorage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
+use App\Http\Resources\StoreResource;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StoreService extends Service
 {
@@ -16,12 +16,19 @@ class StoreService extends Service
     {
         $stores = Store::with(['subCategories', 'categories'])->paginate($perPage);
 
-        return StoreResource::collection($stores);
+        return $stores;
+    }
+
+    public function listOfStores()
+    {
+        $stores = Store::select(['id','store_name', 'store_logo'])->get();
+
+        return $stores;
     }
 
     public function find($id)
     {
-        $store = Store::with(['subCategories', 'categories'])->find($id);
+        $store = Store::with(['subCategories', 'categories','ratings'])->find($id);
 
         if (! $store) {
             $this->throwExceptionJson('Store not found', 404);
@@ -121,10 +128,6 @@ class StoreService extends Service
 
             if (! $store instanceof Store) {
                 throw new \Exception('غير مصرح لك بالقيام بهذا الإجراء.');
-            }
-
-            if (! empty($data['password'])) {
-                $data['password'] = Hash::make($data['password']);
             }
 
             $store->update(array_filter([

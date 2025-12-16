@@ -12,7 +12,7 @@ abstract class Controller
      * @param int $code
      * @return \Illuminate\Http\JsonResponse
      */
-    protected function success($data, $message = 'Operation successful', $code = 200)
+    protected function success($data, $message = 'نجاح العملية', $code = 200)
     {
         return response()->json([
             'status' => 'success',
@@ -29,7 +29,7 @@ abstract class Controller
      * @param mixed $errors
      * @return \Illuminate\Http\JsonResponse
      */
-    protected function error($message = 'An error occurred', $code = 500, $errors = null)
+    protected function error($message = 'حدث خطأ ما', $code = 500, $errors = null)
     {
         $response = [
             'status' => 'error',
@@ -50,12 +50,27 @@ abstract class Controller
      * @param string $message
      * @return \Illuminate\Http\JsonResponse
      */
-    protected function paginate($paginatedData, $message = 'Data retrieved successfully')
+    protected function paginate($paginatedData, $message = 'تم جلب البيانات بنجاح')
     {
         return response()->json([
             'status' => 'success',
             'message' => $message,
             'data' => $paginatedData->items(),
+            'meta' => [
+                'current_page' => $paginatedData->currentPage(),
+                'per_page' => $paginatedData->perPage(),
+                'total' => $paginatedData->total(),
+                'last_page' => $paginatedData->lastPage()
+            ]
+        ], 200);
+    }
+     protected function paginateWithData($paginatedData,$data, $message = 'تم جلب البيانات بنجاح')
+    {
+        return response()->json([
+            'status' => 'success',
+            'message' => $message,
+            'data' => $paginatedData->items(),
+            'additional_data' => $data,
             'meta' => [
                 'current_page' => $paginatedData->currentPage(),
                 'per_page' => $paginatedData->perPage(),

@@ -2,6 +2,7 @@
 
 namespace App\Models\UserManagement;
 
+use App\Models\Transaction;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -21,6 +22,7 @@ class Provider extends Authenticatable
         'market_name',
         'v_location',
         'h_location',
+        'phone_verified_at',
         'phone',
         'password',
         'city'
@@ -46,5 +48,17 @@ class Provider extends Authenticatable
             'phone_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+      /**
+     * التحقق من أن رقم الهاتف مفعل
+     */
+    public function isPhoneVerified(): bool
+    {
+        return !is_null($this->phone_verified_at);
+    }
+
+    public function transactions(){
+        return $this->hasMany(Transaction::class, 'provider_id');
     }
 }

@@ -24,7 +24,7 @@ class LoginRequest extends BaseFormRequest
         return [
             'phone'    => 'required|string|max:255',
             'password' => 'required|string|min:6|max:255',
-            'type' => 'required|in:user,provider,store_manager'
+            'type' => 'required|in:user,provider,store_manager,driver'
         ];
     }
      /**

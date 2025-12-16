@@ -2,11 +2,12 @@
 
 namespace App\Models;
 
+use App\Models\Product;
+use Laravel\Sanctum\HasApiTokens;
 use App\Models\Categories\Category;
 use App\Models\Categories\SubCategory;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class Store extends Authenticatable
@@ -23,6 +24,7 @@ class Store extends Authenticatable
         'store_owner_name',
         'password',
         'commercial_register_image',
+        'phone_verified_at',
         'store_logo',
         'city',
         'v_location',
@@ -70,5 +72,18 @@ class Store extends Authenticatable
     public function averageRating()
     {
         return $this->ratings()->avg('rating') ?? 0;
+    }
+
+    /**
+     * التحقق من أن رقم الهاتف مفعل
+     */
+    public function isPhoneVerified(): bool
+    {
+        return !is_null($this->phone_verified_at);
+    }
+
+    public function products()
+    {
+        return $this->hasMany(Product::class);
     }
 }

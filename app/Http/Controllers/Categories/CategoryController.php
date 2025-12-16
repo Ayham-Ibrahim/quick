@@ -37,7 +37,7 @@ class CategoryController extends Controller
         return $this->success(
             Category::select('id', 'name', 'image')
                 ->get(),
-            'Categories retrieved successfully'
+            'تم جلب الاقسام بنجاح'
         );
     }
 
@@ -49,7 +49,7 @@ class CategoryController extends Controller
     {
         return $this->success(
             $this->categoryService->storeCategory($request->validated()),
-            'Category created successfully',
+            'تم انشاء القسم بنجاح',
             201
         );
     }
@@ -62,7 +62,7 @@ class CategoryController extends Controller
         $data = $category->load('subCategories');
         return $this->success(
             $data,
-            'Category retrieved successfully'
+            'تم جلب معلومات  القسم بنجاح'
         );
     }
 
@@ -73,7 +73,7 @@ class CategoryController extends Controller
     {
         return $this->success(
             $this->categoryService->updateCategory($request->validated(), $category),
-            'Category updated successfully'
+            'تم تحديث القسم بنجاح'
         );
     }
 
@@ -85,7 +85,7 @@ class CategoryController extends Controller
         $category->delete();
         return $this->success(
             null,
-            'Category deleted successfully',
+            'تم حذف القسم بنجاح',
             204
         );
     }
@@ -110,6 +110,6 @@ class CategoryController extends Controller
         ]);
     }
 
-
+    
     
 }
