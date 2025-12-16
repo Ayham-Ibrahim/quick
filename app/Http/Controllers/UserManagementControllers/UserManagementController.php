@@ -13,6 +13,8 @@ use App\Http\Requests\UserManagementRequests\StoreUserFormRequest;
 use App\Http\Requests\UserManagementRequests\ForgotPasswordRequest;
 use App\Http\Requests\UserManagementRequests\ConfirmRegistrationRequest;
 use App\Http\Requests\UserManagementRequests\ConfirmForgotPasswordRequest;
+use App\Http\Requests\UserManagementRequests\UpdateUserProfileRequest;
+use Illuminate\Support\Facades\Auth;
 
 class UserManagementController extends Controller
 {
@@ -26,7 +28,7 @@ class UserManagementController extends Controller
     public function register(StoreUserFormRequest $request)
     {
         $result = $this->service->register($request->validated());
-        
+
         if (!$result['success']) {
             return $this->error($result['message'], 400);
         }
@@ -235,7 +237,7 @@ class UserManagementController extends Controller
      */
     public function deleteAccount(Request $request)
     {
-        $authAccount = $request->user(); 
+        $authAccount = $request->user();
 
         $result = $this->service->deleteAccount($authAccount);
 
@@ -244,5 +246,23 @@ class UserManagementController extends Controller
         }
 
         return $this->success([], "Account deleted successfully");
+    }
+
+
+    /**
+     * user profile
+     */
+    public function profile(){
+        $user = Auth::user();
+        return $this->success($user,'تم جلب بيانات المستخدم بنجاح');
+    }
+
+    /**
+     * Update provider data.
+     */
+    public function updateProfile(UpdateUserProfileRequest $request)
+    {
+        $updated = $this->service->updateProfile( $request->validated());
+        return $this->success($updated, 'تم تحديث بياناتك بنجاح');
     }
 }

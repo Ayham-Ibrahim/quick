@@ -1,17 +1,21 @@
 <?php
+
 namespace App\Services\UserManagementServices;
 
-use App\Models\Driver;
 use Carbon\Carbon;
 use App\Models\Store;
+use App\Models\Driver;
+use App\Services\Service;
 use App\Services\FileStorage;
 use Illuminate\Support\Facades\DB;
 use App\Models\UserManagement\User;
 use Illuminate\Support\Facades\Hash;
 use App\Models\UserManagement\Provider;
 use App\Services\UserManagementServices\OTPService;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
-class UserManagementService
+class UserManagementService extends Service
 {
     protected $otpService;
 
@@ -40,7 +44,7 @@ class UserManagementService
                         'success' => false,
                         'message' => 'رقم الهاتف مسجل مسبقاً',
                     ];
-                } 
+                }
             }
 
             // إنشاء حساب جديد غير مؤكد
@@ -80,7 +84,6 @@ class UserManagementService
                     'message' => 'فشل في إرسال كود التحقق',
                 ];
             }
-
         } catch (\Exception $e) {
             DB::rollBack();
             return [
@@ -155,7 +158,6 @@ class UserManagementService
                     'expires_in'    => 7200, // 2 hours
                 ]
             ];
-
         } catch (\Exception $e) {
             DB::rollBack();
             return [
@@ -218,7 +220,7 @@ class UserManagementService
         if ($credentials['type'] === 'user' && !$account->isPhoneVerified()) {
             try {
                 $this->otpService->generateOTP($credentials['phone'], 'register');
-                
+
                 return [
                     'success' => true,
                     'otp_required' => true,
@@ -311,7 +313,6 @@ class UserManagementService
                     'expires_in'    => 7200, // 2 hours
                 ]
             ];
-
         } catch (\Exception $e) {
             DB::rollBack();
             return [
@@ -328,7 +329,7 @@ class UserManagementService
     }
 
 
-    
+
 
     /**
      * نسيان كلمة المرور - إرسال OTP فقط
@@ -418,7 +419,7 @@ class UserManagementService
             $account->refresh();
 
             $passwordUpdated = Hash::check($data['password'], $account->password);
-        
+
             if (!$passwordUpdated) {
                 DB::rollBack();
                 return [
@@ -430,7 +431,7 @@ class UserManagementService
 
             DB::commit();
 
-            \Log::info('Password reset successfully', [
+            Log::info('Password reset successfully', [
                 'phone' => $data['phone'],
                 'type' => $data['type'],
                 'account_id' => $account->id
@@ -440,14 +441,13 @@ class UserManagementService
                 'success' => true,
                 'message' => 'تم إعادة تعيين كلمة المرور بنجاح'
             ];
-
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Password reset failed', [
-            'phone' => $data['phone'],
-            'type' => $data['type'],
-            'error' => $e->getMessage()
-        ]);
+            Log::error('Password reset failed', [
+                'phone' => $data['phone'],
+                'type' => $data['type'],
+                'error' => $e->getMessage()
+            ]);
             return [
                 'success' => false,
                 'message' => 'فشل في إعادة تعيين كلمة المرور'
@@ -505,7 +505,6 @@ class UserManagementService
                 'success' => true,
                 'message' => 'Account deleted'
             ];
-
         } catch (\Exception $e) {
             return [
                 'success' => false,
@@ -514,6 +513,34 @@ class UserManagementService
         }
     }
 
+    public function updateProfile(array $data)
+    {
+        try {
+            /**
+             * @var User $user
+             */
+            $user = Auth::user();
 
+            if (!empty($data['password'])) {
+                $data['password'] = Hash::make($data['password']);
+            }
 
+            $data['avatar'] = FileStorage::fileExists(
+                $data['avatar'] ?? null,
+                $user->avatar,
+                'avatars',
+                'img'
+            ) ?? $data['avatar'];
+
+            $user->update($data);
+
+            return $user->fresh();
+        } catch (\Throwable $e) {
+            $this->throwExceptionJson(
+                'حدث خطأ أثناء تحديث بياناتك',
+                500,
+                $e->getMessage()
+            );
+        }
+    }
 }
