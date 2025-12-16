@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdsController;
+use App\Http\Controllers\AttributeController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\RatingController;
 use App\Http\Controllers\ProductController;
@@ -115,6 +116,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Accept a pending product
     Route::post('/accept-product/{product}', [ProductController::class, 'acceptProduct']);
     // });
+
+
+Route::apiResource('/attributes',AttributeController::class);
+Route::get('/attribute/value/{attribute}', [AttributeController::class, 'getValue']);
+Route::put('/attribute/value/{attributevalue}', [AttributeController::class, 'updateValue']);
+Route::delete('/attribute/value/{attributevalue}', [AttributeController::class, 'destroyValue']);
+
 
     Route::delete('/transactions/all', [TransactionController::class, 'deleteAllTansactions']);
     Route::delete('/transactions/provider/{provider}', [TransactionController::class, 'deleteAllProviderTansactions']);
