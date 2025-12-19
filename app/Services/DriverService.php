@@ -41,7 +41,7 @@ class DriverService extends Service
      */
     public function storeDriver(array $data)
     {
-        try {
+        // try {
             $driver = Driver::create([
                 'driver_name'      => $data['driver_name'],
                 'phone'            => $data['phone'],
@@ -59,15 +59,15 @@ class DriverService extends Service
             ]);
 
             return $driver->load('vehicleType');
-        } catch (\Throwable $th) {
-            Log::error($th);
+        // } catch (\Throwable $th) {
+        //     Log::error($th);
 
-            if ($th instanceof HttpResponseException) {
-                throw $th;
-            }
+        //     if ($th instanceof HttpResponseException) {
+        //         throw $th;
+        //     }
 
-            $this->throwExceptionJson();
-        }
+        //     $this->throwExceptionJson();
+        // }
     }
 
     /**
