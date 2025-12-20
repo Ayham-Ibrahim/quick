@@ -25,7 +25,7 @@ class ResetPasswordRequest extends FormRequest
             'phone' => 'required|string',
             'password' => 'required|string|min:8|confirmed',
             'password_confirmation' => 'required|string|min:8',
-            'type' => 'required|in:user,provider,store_manager'
+            'type' => 'required|in:user,provider,store_manager,driver'
         ];
     }
 
@@ -45,7 +45,7 @@ class ResetPasswordRequest extends FormRequest
             'password_confirmation.required' => 'تأكيد كلمة المرور مطلوب',
             'password_confirmation.min' => 'تأكيد كلمة المرور يجب أن تكون 8 محارف',
             'type.required' => 'نوع الحساب مطلوب',
-            'type.in' => 'نوع الحساب يجب أن يكون: user, provider, store'
+            'type.in' => 'نوع الحساب يجب أن يكون: user, provider, store_manager,driver'
         ];
     }
 
