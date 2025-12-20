@@ -483,6 +483,7 @@ class UserManagementService extends Service
             'user' => User::class,
             'provider' => Provider::class,
             'store_manager' => Store::class,
+            'driver' => Driver::class,
             default => User::class,
         };
     }

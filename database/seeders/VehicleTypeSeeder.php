@@ -13,6 +13,9 @@ class VehicleTypeSeeder extends Seeder
      */
     public function run(): void
     {
-        VehicleType::create(['type' => 'Car']);
+        VehicleType::create(['type' => 'دراجة نارية']);
+        VehicleType::create(['type' => 'سيارة']);
+        VehicleType::create(['type' => 'شاحنة']);
+        VehicleType::create(['type' => 'دراجة هوائية']);
     }
 }
