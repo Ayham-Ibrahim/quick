@@ -8,6 +8,7 @@ use App\Http\Controllers\RatingController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Categories\CategoryController;
 use App\Http\Controllers\Categories\SubCategoryController;
+use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\UserManagementControllers\ProviderController;
@@ -135,4 +136,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     /** user routes */
     Route::get('/user/profile',[UserManagementController::class, 'profile']);
     Route::put('/user/profile',[UserManagementController::class, 'updateProfile']);
+
+
+    Route::apiResource('/complaint',ComplaintController::class)->except('update','destroy');
 });
