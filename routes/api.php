@@ -117,6 +117,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/accept-product/{product}', [ProductController::class, 'acceptProduct']);
     // });
 
+
+    Route::apiResource('/attributes', AttributeController::class);
+    Route::get('/attribute/value/{attribute}', [AttributeController::class, 'getValue']);
+    Route::put('/attribute/value/{attributevalue}', [AttributeController::class, 'updateValue']);
+    Route::delete('/attribute/value/{attributevalue}', [AttributeController::class, 'destroyValue']);
+
+
     Route::delete('/transactions/all', [TransactionController::class, 'deleteAllTansactions']);
     Route::delete('/transactions/provider/{provider}', [TransactionController::class, 'deleteAllProviderTansactions']);
     Route::apiResource('/transactions', TransactionController::class);
@@ -124,8 +131,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     /** Wallet routes */
     Route::get('/my-wallet', [WalletController::class, 'getWallet']);
     Route::post('/wallet/add-balance', [WalletController::class, 'addBalance']);
+
+    /** user routes */
+    Route::get('/user/profile',[UserManagementController::class, 'profile']);
+    Route::put('/user/profile',[UserManagementController::class, 'updateProfile']);
 });
-Route::apiResource('/attributes',AttributeController::class);
-Route::get('/attribute/value/{attribute}', [AttributeController::class, 'getValue']);
-Route::put('/attribute/value/{attributevalue}', [AttributeController::class, 'updateValue']);
-Route::delete('/attribute/value/{attributevalue}', [AttributeController::class, 'destroyValue']);
