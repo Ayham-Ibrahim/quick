@@ -27,7 +27,7 @@ class Driver extends Authenticatable
         'city',
         'v_location',
         'h_location',
-
+        'is_active',
         'vehicle_type_id',
     ];
     /**

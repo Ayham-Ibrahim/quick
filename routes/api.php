@@ -96,6 +96,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('/drivers', DriverController::class);
     Route::get('/driver/profile', [DriverController::class, 'profile']);
     Route::put('/driver/profile', [DriverController::class, 'updateDriverProfile']);
+    Route::post('/driver/toggle-active-status', [DriverController::class, 'toggleActiveStatus']);
 
     // Public (logged-in) user: list accepted products
     Route::get('/products', [ProductController::class, 'index']);
