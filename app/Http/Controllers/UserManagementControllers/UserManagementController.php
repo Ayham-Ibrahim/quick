@@ -265,4 +265,42 @@ class UserManagementController extends Controller
         $updated = $this->service->updateProfile( $request->validated());
         return $this->success($updated, 'تم تحديث بياناتك بنجاح');
     }
+
+    /**
+     * List users (exclude admins). Supports optional `search` and `per_page` query params.
+     */
+    public function listUsers(Request $request)
+    {
+        $params = $request->only(['search', 'per_page']);
+        $paginated = $this->service->listUsers($params);
+        return $this->paginate($paginated);
+    }
+
+    /**
+     * Get user details by id
+     */
+    public function userDetails($id)
+    {
+        $user = $this->service->getUserById($id);
+
+        if (! $user) {
+            return $this->error('المستخدم غير موجود', 404);
+        }
+
+        return $this->success($user, 'تم جلب بيانات المستخدم');
+    }
+
+    /**
+     * Delete user by id (admin action)
+     */
+    public function deleteUser($id)
+    {
+        $result = $this->service->deleteUserById($id);
+
+        if (! $result['success']) {
+            return $this->error($result['message'] ?? 'فشل في حذف المستخدم', 400);
+        }
+
+        return $this->success([], 'تم حذف المستخدم بنجاح');
+    }
 }

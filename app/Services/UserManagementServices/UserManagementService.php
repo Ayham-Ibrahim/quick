@@ -544,4 +544,71 @@ class UserManagementService extends Service
             );
         }
     }
+
+    /**
+     * List non-admin users with optional search and pagination
+     *
+     * @param array $params
+     * @return \Illuminate\Pagination\LengthAwarePaginator
+     */
+    public function listUsers(array $params = [])
+    {
+        $query = User::where('is_admin', 0);
+
+        if (!empty($params['search'])) {
+            $s = $params['search'];
+            $query->where(function ($q) use ($s) {
+                $q->where('name', 'like', "%{$s}%")
+                    ->orWhere('phone', 'like', "%{$s}%");
+            });
+        }
+
+        $perPage = isset($params['per_page']) ? (int) $params['per_page'] : 9;
+
+        return $query->orderBy('id', 'desc')->paginate($perPage);
+    }
+
+    /**
+     * Get user by id
+     */
+    public function getUserById($id)
+    {
+        return User::find($id);
+    }
+
+    /**
+     * Delete user by id (also removes tokens)
+     *
+     * @param int $id
+     * @return array
+     */
+    public function deleteUserById($id)
+    {
+        try {
+            $user = User::find($id);
+
+            if (! $user) {
+                return [
+                    'success' => false,
+                    'message' => 'User not found'
+                ];
+            }
+
+            if (method_exists($user, 'tokens')) {
+                $user->tokens()->delete();
+            }
+
+            $user->delete();
+
+            return [
+                'success' => true,
+                'message' => 'User deleted'
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Failed to delete user'
+            ];
+        }
+    }
 }

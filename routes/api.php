@@ -137,6 +137,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user/profile',[UserManagementController::class, 'profile']);
     Route::put('/user/profile',[UserManagementController::class, 'updateProfile']);
 
+    // User management (exclude admins) - list, details, delete
+    Route::get('/users', [UserManagementController::class, 'listUsers']);
+    Route::get('/users/{id}', [UserManagementController::class, 'userDetails']);
+    Route::delete('/users/{id}', [UserManagementController::class, 'deleteUser']);
+
 
     Route::apiResource('/complaint',ComplaintController::class)->except('update','destroy');
 });
