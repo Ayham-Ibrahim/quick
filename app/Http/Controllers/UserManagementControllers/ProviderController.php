@@ -26,7 +26,7 @@ class ProviderController extends Controller
     public function index()
     {
         if(Auth::user()->is_admin){
-            $providers = Provider::where('id',Auth::id())->latest()->paginate(10);
+            $providers = Provider::paginate(10);
             return $this->paginate($providers, 'تم جلب قائمة المزودين بنجاح');
         }else{
             $providers = Provider::latest()->select(['id', 'provider_name', 'market_name'])->get();
