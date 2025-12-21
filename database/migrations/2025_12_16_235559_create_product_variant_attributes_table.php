@@ -13,7 +13,18 @@ return new class extends Migration
     {
         Schema::create('product_variant_attributes', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('product_variant_id')
+                ->constrained('product_variants')
+                ->cascadeOnDelete();
+            $table->foreignId('attribute_id')
+                ->constrained('attributes')
+                ->restrictOnDelete();
+            $table->foreignId('attribute_value_id')
+                ->constrained('attribute_values')
+                ->restrictOnDelete();
             $table->timestamps();
+
+            $table->unique(['product_variant_id', 'attribute_id']);
         });
     }
 
