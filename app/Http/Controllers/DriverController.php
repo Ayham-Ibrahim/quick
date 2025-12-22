@@ -61,7 +61,7 @@ class DriverController extends Controller
         $driver = Auth::guard('driver')->user();
 
         return $this->success(
-            new DriverResource($driver->load(['vehicleType'])),
+            new DriverResource($driver->load(['vehicleType','wallet'])),
             'بيانات السائق'
         );
     }
