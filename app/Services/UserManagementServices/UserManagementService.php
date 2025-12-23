@@ -526,12 +526,18 @@ class UserManagementService extends Service
                 $data['password'] = Hash::make($data['password']);
             }
 
-            $data['avatar'] = FileStorage::fileExists(
+            $avatar = FileStorage::fileExists(
                 $data['avatar'] ?? null,
                 $user->avatar,
                 'avatars',
                 'img'
-            ) ?? $data['avatar'];
+            );
+
+            if ($avatar !== null) {
+                $data['avatar'] = $avatar;
+            } else {
+                unset($data['avatar']);
+            }
 
             $user->update($data);
 
