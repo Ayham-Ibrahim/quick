@@ -61,7 +61,7 @@ class DriverController extends Controller
         $driver = Auth::guard('driver')->user();
 
         return $this->success(
-            new DriverResource($driver->load(['vehicleType'])),
+            new DriverResource($driver->load(['vehicleType','wallet'])),
             'بيانات السائق'
         );
     }
@@ -70,5 +70,14 @@ class DriverController extends Controller
     {
         $this->driverService->deleteDriver($driver);
         return $this->success([], 'تم حذف السائق بنجاح');
+    }
+
+    // toggle driver active status
+    public function toggleActiveStatus()
+    {
+        $driver = Auth::guard('driver')->user();
+        $driver->is_active = ! $driver->is_active;
+        $driver->save();    
+        return $this->success(new DriverResource($driver), 'تم تحديث حالة السائق بنجاح');
     }
 }

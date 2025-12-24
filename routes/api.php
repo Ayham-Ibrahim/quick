@@ -12,6 +12,7 @@ use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\VehicleTypeController;
 use App\Http\Controllers\Categories\CategoryController;
 use App\Http\Controllers\Categories\SubCategoryController;
+use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\DiscountManagement\CouponController;
 use App\Http\Controllers\DiscountManagement\DiscountController;
 use App\Http\Controllers\UserManagementControllers\ProviderController;
@@ -101,6 +102,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('/drivers', DriverController::class);
     Route::get('/driver/profile', [DriverController::class, 'profile']);
     Route::put('/driver/profile', [DriverController::class, 'updateDriverProfile']);
+    Route::post('/driver/toggle-active-status', [DriverController::class, 'toggleActiveStatus']);
 
     // Public (logged-in) user: list accepted products
     Route::get('/products', [ProductController::class, 'index']);
@@ -139,6 +141,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/wallet/add-balance', [WalletController::class, 'addBalance']);
 
     /** user routes */
-    Route::get('/user/profile', [UserManagementController::class, 'profile']);
-    Route::put('/user/profile', [UserManagementController::class, 'updateProfile']);
+
+    Route::get('/user/profile',[UserManagementController::class, 'profile']);
+    Route::put('/user/profile',[UserManagementController::class, 'updateProfile']);
+
+    // User management (exclude admins) - list, details, delete
+    Route::get('/users', [UserManagementController::class, 'listUsers']);
+    Route::get('/users/{id}', [UserManagementController::class, 'userDetails']);
+    Route::delete('/users/{id}', [UserManagementController::class, 'deleteUser']);
+
+
+    Route::apiResource('/complaint',ComplaintController::class)->except('update','destroy');
 });

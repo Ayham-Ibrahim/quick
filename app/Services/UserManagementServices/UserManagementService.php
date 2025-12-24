@@ -483,6 +483,7 @@ class UserManagementService extends Service
             'user' => User::class,
             'provider' => Provider::class,
             'store_manager' => Store::class,
+            'driver' => Driver::class,
             default => User::class,
         };
     }
@@ -525,12 +526,18 @@ class UserManagementService extends Service
                 $data['password'] = Hash::make($data['password']);
             }
 
-            $data['avatar'] = FileStorage::fileExists(
+            $avatar = FileStorage::fileExists(
                 $data['avatar'] ?? null,
                 $user->avatar,
                 'avatars',
                 'img'
-            ) ?? $data['avatar'];
+            );
+
+            if ($avatar !== null) {
+                $data['avatar'] = $avatar;
+            } else {
+                unset($data['avatar']);
+            }
 
             $user->update($data);
 
@@ -541,6 +548,73 @@ class UserManagementService extends Service
                 500,
                 $e->getMessage()
             );
+        }
+    }
+
+    /**
+     * List non-admin users with optional search and pagination
+     *
+     * @param array $params
+     * @return \Illuminate\Pagination\LengthAwarePaginator
+     */
+    public function listUsers(array $params = [])
+    {
+        $query = User::where('is_admin', 0);
+
+        if (!empty($params['search'])) {
+            $s = $params['search'];
+            $query->where(function ($q) use ($s) {
+                $q->where('name', 'like', "%{$s}%")
+                    ->orWhere('phone', 'like', "%{$s}%");
+            });
+        }
+
+        $perPage = isset($params['per_page']) ? (int) $params['per_page'] : 9;
+
+        return $query->orderBy('id', 'desc')->paginate($perPage);
+    }
+
+    /**
+     * Get user by id
+     */
+    public function getUserById($id)
+    {
+        return User::find($id);
+    }
+
+    /**
+     * Delete user by id (also removes tokens)
+     *
+     * @param int $id
+     * @return array
+     */
+    public function deleteUserById($id)
+    {
+        try {
+            $user = User::find($id);
+
+            if (! $user) {
+                return [
+                    'success' => false,
+                    'message' => 'User not found'
+                ];
+            }
+
+            if (method_exists($user, 'tokens')) {
+                $user->tokens()->delete();
+            }
+
+            $user->delete();
+
+            return [
+                'success' => true,
+                'message' => 'User deleted'
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Failed to delete user'
+            ];
         }
     }
 }

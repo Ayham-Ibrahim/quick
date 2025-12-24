@@ -23,7 +23,7 @@ class ForgotPasswordRequest extends FormRequest
     {
         return [
             'phone' => 'required|string',
-            'type' => 'required|in:user,provider,store_manager'
+            'type' => 'required|in:user,provider,store_manager,driver'
         ];
     }
 
@@ -33,7 +33,7 @@ class ForgotPasswordRequest extends FormRequest
             'phone.required' => 'رقم الهاتف مطلوب',
             'phone.string' => 'رقم الهاتف يجب أن يكون نصاً',
             'type.required' => 'نوع الحساب مطلوب',
-            'type.in' => 'نوع الحساب يجب أن يكون: user, provider, store'
+            'type.in' => 'نوع الحساب يجب أن يكون: user, provider, store_manager,driver'
         ];
     }
 

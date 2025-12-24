@@ -18,6 +18,7 @@ class DriverResource extends JsonResource
             'id'                 => $this->id,
             'driver_name'        => $this->driver_name,
             'phone'              => $this->phone,
+            'is_active'          => $this->is_active,
 
             'driver_image'       => $this->driver_image,
             'front_id_image'     => $this->front_id_image,
@@ -34,7 +35,7 @@ class DriverResource extends JsonResource
             ] : null,
 
             'wallet_balance'     => $this->wallet ? $this->wallet->balance : null,
-
+            'wallet_code'     => $this->wallet ? $this->wallet->wallet_code : null,
             'average_rating' => round($this->averageRating(), 1),
             'ratings_count' => $this->ratings()->count(),
             'ratings' => RatingResource::collection($this->whenLoaded('ratings')),
