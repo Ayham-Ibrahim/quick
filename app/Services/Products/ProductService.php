@@ -98,7 +98,7 @@ class ProductService extends Service
     protected function storeProductImages(Product $product, array $images)
     {
         $productImages = collect($images)->map(function ($imageItem) {
-        
+
             // Expecting: [ "file" => UploadedFile ]
             $file = $imageItem['file'] ?? null;
 

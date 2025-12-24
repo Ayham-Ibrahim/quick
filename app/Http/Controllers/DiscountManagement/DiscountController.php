@@ -10,9 +10,12 @@ use App\Services\DiscountManagement\DiscountService;
 
 class DiscountController extends Controller
 {
-    public function __construct(
-        protected DiscountService $discountService
-    ) {}
+   protected $discountService;
+
+    public function __construct(DiscountService $discountService)
+    {
+        $this->discountService = $discountService;
+    }
 
     public function index()
     {

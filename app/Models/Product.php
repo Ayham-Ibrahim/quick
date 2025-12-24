@@ -6,6 +6,7 @@ use App\Models\Store;
 use App\Models\ProductImage;
 use App\Models\Categories\SubCategory;
 use App\Models\DiscountManagement\Coupon;
+use App\Models\DiscountManagement\CouponProduct;
 use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model
@@ -70,7 +71,11 @@ class Product extends Model
     {
         return $this->ratings()->avg('rating') ?? 0;
     }
-    public function coupons(){
-        return $this->hasMany(Coupon::class);
+    public function coupons()
+    {
+        return $this->belongsToMany(
+            Coupon::class,
+            'coupon_products'
+        )->withTimestamps();
     }
 }

@@ -12,6 +12,7 @@ use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\VehicleTypeController;
 use App\Http\Controllers\Categories\CategoryController;
 use App\Http\Controllers\Categories\SubCategoryController;
+use App\Http\Controllers\DiscountManagement\CouponController;
 use App\Http\Controllers\DiscountManagement\DiscountController;
 use App\Http\Controllers\UserManagementControllers\ProviderController;
 use App\Http\Controllers\UserManagementControllers\UserManagementController;
@@ -78,7 +79,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('/ads', AdsController::class);
 
     /** discount routes */
-    Route::apiResource('discounts', DiscountController::class);
+    Route::apiResource('/discounts', DiscountController::class);
+    Route::apiResource('/coupons', CouponController::class);
 
     Route::apiResource('/stores', StoreController::class);
     Route::get('/store/profile', [StoreController::class, 'profile']);
