@@ -223,6 +223,7 @@ class StoreController extends Controller
                 'subCategory.category:id,name',
                 'images'
             ])
+            ->orderBy('created_at', 'desc')
             ->get();
 
         return response()->json([
@@ -252,6 +253,7 @@ class StoreController extends Controller
                 'subCategory.category:id,name',
                 'images'
             ])
+            ->orderBy('created_at', 'desc')
             ->get();
 
         return response()->json([
