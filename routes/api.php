@@ -83,6 +83,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/store/categories', [StoreController::class, 'getStoreCategories']);
     Route::get('/store/categories/{category_id}/subcategories', [StoreController::class, 'getStoreSubCategories']);
     Route::get('/stores-list', [StoreController::class, 'listOfStores']);
+    Route::get('/stores/category/{category_id}', [StoreController::class, 'getStoresByCategory']);
     Route::get('/store/categories/{store_id}', [StoreController::class, 'getCategoriesOfStore']);
     Route::get('/store/subcategories/{store_id}/{category_id}', [StoreController::class, 'getSubCategoriesOfStore']);
     Route::get('/store/subcategories/{store_id}/{subcategory_id}/products', [StoreController::class, 'getStoreProductsBySubcategory']);
