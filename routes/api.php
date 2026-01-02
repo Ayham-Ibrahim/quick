@@ -15,6 +15,7 @@ use App\Http\Controllers\Categories\SubCategoryController;
 use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\DiscountManagement\CouponController;
 use App\Http\Controllers\DiscountManagement\DiscountController;
+use App\Http\Controllers\ProfitRatiosController;
 use App\Http\Controllers\UserManagementControllers\ProviderController;
 use App\Http\Controllers\UserManagementControllers\UserManagementController;
 
@@ -143,8 +144,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     /** user routes */
 
-    Route::get('/user/profile',[UserManagementController::class, 'profile']);
-    Route::put('/user/profile',[UserManagementController::class, 'updateProfile']);
+    Route::get('/user/profile', [UserManagementController::class, 'profile']);
+    Route::put('/user/profile', [UserManagementController::class, 'updateProfile']);
 
     // User management (exclude admins) - list, details, delete
     Route::get('/users', [UserManagementController::class, 'listUsers']);
@@ -152,5 +153,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/users/{id}', [UserManagementController::class, 'deleteUser']);
 
 
-    Route::apiResource('/complaint',ComplaintController::class)->except('update','destroy');
+    Route::apiResource('/complaint', ComplaintController::class)->except('update', 'destroy');
+
+    Route::put('/profit-ratios/update-all', [ProfitRatiosController::class, 'updateAll']);
+    Route::get('/profit-ratios', [ProfitRatiosController::class, 'index']);
 });
