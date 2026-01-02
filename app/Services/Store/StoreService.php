@@ -26,6 +26,15 @@ class StoreService extends Service
         return $stores;
     }
 
+    public function getStoresByCategory($categoryId)
+    {
+        $stores = Store::whereHas('categories', function ($query) use ($categoryId) {
+            $query->where('categories.id', $categoryId);
+        })->with(['subCategories', 'categories'])->get();
+
+        return $stores;
+    }
+
     public function find($id)
     {
         $store = Store::with(['subCategories', 'categories','ratings'])->find($id);

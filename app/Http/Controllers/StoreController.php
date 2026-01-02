@@ -223,6 +223,7 @@ class StoreController extends Controller
                 'subCategory.category:id,name',
                 'images'
             ])
+            ->orderBy('created_at', 'desc')
             ->get();
 
         return response()->json([
@@ -252,6 +253,7 @@ class StoreController extends Controller
                 'subCategory.category:id,name',
                 'images'
             ])
+            ->orderBy('created_at', 'desc')
             ->get();
 
         return response()->json([
@@ -259,4 +261,13 @@ class StoreController extends Controller
             'data' => $products
         ]);
     }
+
+    public function getStoresByCategory($category_id)
+    {
+        $stores = $this->storeService->getStoresByCategory($category_id);
+        return $this->success(StoreResource::collection($stores), 'تم جلب المتاجر بنجاح');
+    }
+
+
+    // 
 }

@@ -8,6 +8,7 @@ use App\Http\Controllers\RatingController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Categories\CategoryController;
 use App\Http\Controllers\Categories\SubCategoryController;
+use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\UserManagementControllers\ProviderController;
@@ -82,6 +83,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/store/categories', [StoreController::class, 'getStoreCategories']);
     Route::get('/store/categories/{category_id}/subcategories', [StoreController::class, 'getStoreSubCategories']);
     Route::get('/stores-list', [StoreController::class, 'listOfStores']);
+    Route::get('/stores/category/{category_id}', [StoreController::class, 'getStoresByCategory']);
     Route::get('/store/categories/{store_id}', [StoreController::class, 'getCategoriesOfStore']);
     Route::get('/store/subcategories/{store_id}/{category_id}', [StoreController::class, 'getSubCategoriesOfStore']);
     Route::get('/store/subcategories/{store_id}/{subcategory_id}/products', [StoreController::class, 'getStoreProductsBySubcategory']);
@@ -95,6 +97,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('/drivers', DriverController::class);
     Route::get('/driver/profile', [DriverController::class, 'profile']);
     Route::put('/driver/profile', [DriverController::class, 'updateDriverProfile']);
+    Route::post('/driver/toggle-active-status', [DriverController::class, 'toggleActiveStatus']);
 
     // Public (logged-in) user: list accepted products
     Route::get('/products', [ProductController::class, 'index']);
@@ -135,4 +138,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
     /** user routes */
     Route::get('/user/profile',[UserManagementController::class, 'profile']);
     Route::put('/user/profile',[UserManagementController::class, 'updateProfile']);
+
+    // User management (exclude admins) - list, details, delete
+    Route::get('/users', [UserManagementController::class, 'listUsers']);
+    Route::get('/users/{id}', [UserManagementController::class, 'userDetails']);
+    Route::delete('/users/{id}', [UserManagementController::class, 'deleteUser']);
+
+
+    Route::apiResource('/complaint',ComplaintController::class)->except('update','destroy');
 });
