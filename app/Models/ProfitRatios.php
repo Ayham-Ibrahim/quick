@@ -17,4 +17,10 @@ class ProfitRatios extends Model
     protected $hidden = [
         'tag'
     ];
+
+    // scope for get value by tag
+    public function scopeGetValueByTag($query, $tag)
+    {
+        return $query->where('tag', $tag)->value('value');
+    }
 }
