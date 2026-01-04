@@ -221,7 +221,9 @@ class StoreController extends Controller
                 'store:id,store_name,store_logo',
                 'subCategory:id,name,category_id',
                 'subCategory.category:id,name',
-                'images'
+                'images',
+                'variants.attributes.attribute',
+                'variants.attributes.value'
             ])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -251,7 +253,9 @@ class StoreController extends Controller
                 'store:id,store_name,store_logo',
                 'subCategory:id,name,category_id',
                 'subCategory.category:id,name',
-                'images'
+                'images',
+                'variants.attributes.attribute',
+                'variants.attributes.value'
             ])
             ->orderBy('created_at', 'desc')
             ->get();

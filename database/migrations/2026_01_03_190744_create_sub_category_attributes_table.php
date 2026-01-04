@@ -11,20 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('product_variant_attributes', function (Blueprint $table) {
+        Schema::create('sub_category_attributes', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('product_variant_id')
-                ->constrained('product_variants')
+            $table->foreignId('sub_category_id')
+                ->constrained('sub_categories')
                 ->cascadeOnDelete();
             $table->foreignId('attribute_id')
                 ->constrained('attributes')
-                ->restrictOnDelete();
-            $table->foreignId('attribute_value_id')
-                ->constrained('attribute_values')
-                ->restrictOnDelete();
+                ->cascadeOnDelete();
             $table->timestamps();
 
-            $table->unique(['product_variant_id', 'attribute_id'], 'pva_variant_attribute_unique');
+            $table->unique(['sub_category_id', 'attribute_id']);
         });
     }
 
@@ -33,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('product_variant_attributes');
+        Schema::dropIfExists('sub_category_attributes');
     }
 };

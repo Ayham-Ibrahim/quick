@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdsController;
 use App\Http\Controllers\AttributeController;
+use App\Http\Controllers\CartController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\RatingController;
 use App\Http\Controllers\ProductController;
@@ -69,6 +70,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // subcategories routes
     Route::apiResource('/subcategories', SubCategoryController::class);
+    // Get attributes for product form (used by store app when adding product)
+    Route::get('/subcategories/{subCategoryId}/attributes', [SubCategoryController::class, 'getAttributesForProduct']);
 
     /** service provider */
     Route::apiResource('/providers', ProviderController::class);
@@ -102,6 +105,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Public (logged-in) user: list accepted products
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/products/{product}', [ProductController::class, 'show']);
+    Route::post('/products/check-stock', [ProductController::class, 'checkVariantStock']);
 
     // Store Owner
     Route::get('/my-products', [ProductController::class, 'myProducts']);
@@ -146,4 +150,20 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 
     Route::apiResource('/complaint',ComplaintController::class)->except('update','destroy');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cart Routes
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('cart')->group(function () {
+        Route::get('/', [CartController::class, 'index']);           // Get cart
+        Route::get('/summary', [CartController::class, 'summary']);  // Quick summary
+        Route::post('/items', [CartController::class, 'addItem']);   // Add item
+        Route::put('/items/{itemId}', [CartController::class, 'updateItem']);   // Update quantity
+        Route::delete('/items/{itemId}', [CartController::class, 'removeItem']); // Remove item
+        Route::delete('/clear', [CartController::class, 'clear']);   // Clear cart
+        Route::get('/validate', [CartController::class, 'validate']); // Validate before checkout
+        Route::post('/sync-prices', [CartController::class, 'syncPrices']); // Sync prices
+    });
 });

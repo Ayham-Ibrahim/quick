@@ -38,17 +38,21 @@ class AttributeController extends Controller
             
             $attribute = Attribute::create([
                 'name' => trim($data['name']),
+                'slug' => \Illuminate\Support\Str::slug($data['name']),
             ]);
 
-            $attribute->attributeValues()->createMany(array_map(function($value) {
-                return ['value' => trim($value)];
+            $attribute->values()->createMany(array_map(function($value) {
+                return [
+                    'value' => trim($value),
+                    'slug' => \Illuminate\Support\Str::slug($value),
+                ];
             }, $data['value']));
             
             DB::commit();
             
             
             return $this->success([
-                'attribute' => $attribute->load('attributeValues')
+                'attribute' => $attribute->load('values')
             ], 'تم إنشاء الخاصية بنجاح', 201);
             
         } catch (\Exception $e) {
@@ -67,8 +71,12 @@ class AttributeController extends Controller
      */
     public function show(Attribute $attribute)
     {
-        $data = $attribute->only('id','name');
-        return $this->success($data, 'تم جلب الخاصية بنجاح',201);
+        $attribute->load('values:id,attribute_id,value');
+        return $this->success([
+            'id' => $attribute->id,
+            'name' => $attribute->name,
+            'values' => $attribute->values
+        ], 'تم جلب الخاصية بنجاح', 200);
     }
 
     /**
@@ -86,18 +94,24 @@ class AttributeController extends Controller
         ]);
         
         if (isset($data['value'])) {
-            $values = array_map(function($value) { return ['value' => trim($value)]; } ,$data['value']);
-            $attribute->attributeValues()->upsert(
+            $values = array_map(function($value) use ($attribute) {
+                return [
+                    'attribute_id' => $attribute->id,
+                    'value' => trim($value),
+                    'slug' => \Illuminate\Support\Str::slug($value),
+                ];
+            }, $data['value']);
+            $attribute->values()->upsert(
                 $values,
-                ['value'],
-                null
+                ['attribute_id', 'value'],
+                ['slug']
             );
         }
         
         DB::commit();
         
         return $this->success(
-            $attribute->load('attributeValues'), 
+            $attribute->load('values'), 
             'تم تحديث الخاصية بنجاح', 
             200
         );
