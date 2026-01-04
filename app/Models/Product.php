@@ -4,9 +4,10 @@ namespace App\Models;
 
 use App\Models\Store;
 use App\Models\ProductImage;
+use App\Models\ProductVariant;
 use App\Models\Categories\SubCategory;
-use App\Models\DiscountManagement\Coupon;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\DiscountManagement\Coupon;
 
 class Product extends Model
 {
@@ -73,4 +74,13 @@ class Product extends Model
     public function coupons(){
         return $this->hasMany(Coupon::class);
     }
+
+    /**
+     * Product has many variants
+     */
+    public function variants()
+    {
+        return $this->hasMany(ProductVariant::class);
+    }
+
 }

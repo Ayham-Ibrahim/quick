@@ -31,6 +31,14 @@ class UpdateSubCategoryRequest extends FormRequest
             ],
             'category_id' => 'nullable|exists:categories,id',
             'image' => 'nullable|file|image|mimes:png,jpg,jpeg|max:10000|mimetypes:image/jpeg,image/png,image/jpg',
+
+            // Attribute settings
+            'price_depends_on_attributes' => 'nullable|boolean',
+            'quantity_depends_on_attributes' => 'nullable|boolean',
+
+            // Linked attributes (simple array of IDs, will replace existing)
+            'attributes' => 'nullable|array',
+            'attributes.*' => 'required|exists:attributes,id',
         ];
     }
 
