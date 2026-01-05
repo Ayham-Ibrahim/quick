@@ -43,7 +43,7 @@ class CartService extends Service
     /**
      * Add item to cart
      */
-    public function addItem(array $data): Cart
+    public function addItem(array $data)
     {
         try {
             DB::beginTransaction();
@@ -149,7 +149,7 @@ class CartService extends Service
     /**
      * Update cart item quantity
      */
-    public function updateItemQuantity(int $cartItemId, int $quantity): Cart
+    public function updateItemQuantity(int $cartItemId, int $quantity)
     {
         try {
             DB::beginTransaction();

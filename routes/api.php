@@ -9,7 +9,6 @@ use App\Http\Controllers\DriverController;
 use App\Http\Controllers\RatingController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\ProductController;
-use App\Http\Controllers\AttributeController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\VehicleTypeController;
 use App\Http\Controllers\Categories\CategoryController;

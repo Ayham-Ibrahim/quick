@@ -11,7 +11,6 @@ use App\Models\DiscountManagement\Coupon;
 use App\Models\DiscountManagement\CouponProduct;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\DiscountManagement\Coupon;
 
 class Product extends Model
 {
