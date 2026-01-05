@@ -30,12 +30,16 @@ class AttributeSeeder extends Seeder
 
         foreach ($attributes as $attributeData) {
             $attribute = Attribute::create([
-                'name' => $attributeData['name']
+                'name' => $attributeData['name'],
+                'slug' => \Illuminate\Support\Str::slug($attributeData['name']),
             ]);
 
             
-            $attribute->attributeValues()->createMany(array_map(function($value) {
-            return ['value' => trim($value)];
+            $attribute->values()->createMany(array_map(function($value) {
+                return [
+                    'value' => trim($value),
+                    'slug' => \Illuminate\Support\Str::slug($value),
+                ];
             }, $attributeData['value']));
             
         }
