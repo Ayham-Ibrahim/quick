@@ -11,16 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('attribute_values', function (Blueprint $table) {
+        Schema::create('product_variants', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('attribute_id')->constrained()->restrictOnDelete();
-            $table->string('value');
-            $table->string('slug');
+            $table->foreignId('product_id')
+                ->constrained()
+                ->cascadeOnDelete(); 
+            $table->string('sku')->nullable();
+            $table->decimal('price', 10, 2)->nullable();
+            $table->integer('stock_quantity')->default(0);
             $table->boolean('is_active')->default(true);
-            $table->softDeletes();
             $table->timestamps();
-
-            $table->unique(['attribute_id', 'value']);
+            $table->softDeletes();
         });
     }
 
@@ -29,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('attribute_values');
+        Schema::dropIfExists('product_variants');
     }
 };

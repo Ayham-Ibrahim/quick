@@ -4,10 +4,14 @@ namespace App\Models;
 
 use App\Models\Store;
 use App\Models\ProductImage;
+use App\Models\ProductVariant;
 use App\Models\Categories\SubCategory;
+
 use App\Models\DiscountManagement\Coupon;
 use App\Models\DiscountManagement\CouponProduct;
+
 use Illuminate\Database\Eloquent\Model;
+use App\Models\DiscountManagement\Coupon;
 
 class Product extends Model
 {
@@ -78,4 +82,13 @@ class Product extends Model
             'coupon_products'
         )->withTimestamps();
     }
+
+    /**
+     * Product has many variants
+     */
+    public function variants()
+    {
+        return $this->hasMany(ProductVariant::class);
+    }
+
 }

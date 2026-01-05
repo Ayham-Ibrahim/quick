@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Resources\ProductResource;
 use App\Services\Products\ProductService;
 use App\Http\Requests\Products\StoreProductRequest;
 use App\Http\Requests\Products\UpdateProductRequest;
@@ -35,7 +36,15 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         $query = Product::where('is_accepted', true)
-            ->with(['store:id,store_name,store_logo','subCategory:id,name,category_id','subCategory.category:id,name', 'images'])->orderBy('created_at', 'desc');
+            ->with([
+                'store:id,store_name,store_logo',
+                'subCategory:id,name,category_id',
+                'subCategory.category:id,name',
+                'images',
+                'variants' => fn($q) => $q->where('is_active', true),
+                'variants.attributes.attribute',
+                'variants.attributes.value'
+            ])->orderBy('created_at', 'desc');
 
         // Filter by subcategory if passed
         if ($request->has('sub_category_id')) {
@@ -44,7 +53,7 @@ class ProductController extends Controller
 
         $products = $query->get();
 
-        return $this->success($products, 'تم جلب المنتجات بنجاح', 200);
+        return $this->success(ProductResource::collection($products), 'تم جلب المنتجات بنجاح', 200);
     }
 
     /**
@@ -56,12 +65,16 @@ class ProductController extends Controller
     public function myProducts(Request $request)
     {
         $store = Auth::guard('store')->user();
-        // if (! $store instanceof Store) {
-        //     throw new \Exception('غير مصرح لك بالقيام بهذا الإجراء.');
-        // }
         $store_id = $store->id;
         $query = Product::where('store_id', $store_id)
-            ->with(['store:id,store_name,store_logo','subCategory:id,name,category_id','subCategory.category:id,name', 'images'])
+            ->with([
+                'store:id,store_name,store_logo',
+                'subCategory:id,name,category_id',
+                'subCategory.category:id,name',
+                'images',
+                'variants.attributes.attribute',
+                'variants.attributes.value'
+            ])
             ->orderBy('created_at', 'desc');
         // Filter by subcategory if passed
         if ($request->has('subcategory_id')) {
@@ -70,7 +83,7 @@ class ProductController extends Controller
 
         $products = $query->get();
 
-        return $this->success($products, 'تم جلب منتجات المتجر بنجاح', 200);
+        return $this->success(ProductResource::collection($products), 'تم جلب منتجات المتجر بنجاح', 200);
     }
 
     /**
@@ -80,24 +93,26 @@ class ProductController extends Controller
     {
         $data = $request->validated();
         $store = Auth::guard('store')->user();
-        // if (! $store instanceof Store) {
-        //     throw new \Exception('غير مصرح لك بالقيام بهذا الإجراء.');
-        // }
         $data['store_id'] = $store->id;
+
+        $product = $this->productService->storeProduct($data);
+
         return $this->success(
-            $this->productService->storeProduct($data),
+            new ProductResource($product),
             'تم انشاء المنتج بنجاح',
             201
         );
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified resource with full variant details.
      */
     public function show(Product $product)
     {
+        $product = $this->productService->getProductWithVariants($product->id);
+
         return $this->success(
-            $product->load(['store:id,store_name,store_logo', 'images', 'subCategory:id,name','ratings']),
+            new ProductResource($product),
             'تم جلب معلومات المنتج بنجاح'
         );
     }
@@ -107,8 +122,10 @@ class ProductController extends Controller
      */
     public function update(UpdateProductRequest $request, Product $product)
     {
+        $updatedProduct = $this->productService->updateProduct($request->validated(), $product);
+
         return $this->success(
-            $this->productService->updateProduct($request->validated(), $product),
+            new ProductResource($updatedProduct),
             'تم تحديث المنتج بنجاح'
         );
     }
@@ -119,7 +136,7 @@ class ProductController extends Controller
     public function destroy(Product $product)
     {
         $product->images()->delete();
-        // $product->variants()->delete();
+        $product->variants()->delete();
         $product->delete();
         return $this->success(null, 'تم حذف المنتج بنجاح', 200);
     }
@@ -180,7 +197,9 @@ class ProductController extends Controller
                 'store:id,store_name,store_logo',
                 'subCategory:id,name,category_id',
                 'subCategory.category:id,name',
-                'images'
+                'images',
+                'variants.attributes.attribute',
+                'variants.attributes.value'
             ])->orderBy('created_at', 'desc');
 
         // Filter by subcategory if provided
@@ -190,10 +209,31 @@ class ProductController extends Controller
 
         $products = $query->get();
 
-        return $this->success($products, 'تم جلب منتجات المتجر بنجاح', 200);
+        return $this->success(ProductResource::collection($products), 'تم جلب منتجات المتجر بنجاح', 200);
     }
 
+    /**
+     * Check variant stock availability
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function checkVariantStock(Request $request)
+    {
+        $request->validate([
+            'variant_id' => 'required|exists:product_variants,id',
+            'quantity' => 'required|integer|min:1',
+        ]);
 
+        $isAvailable = $this->productService->checkVariantStock(
+            $request->variant_id,
+            $request->quantity
+        );
 
-
+        return $this->success([
+            'is_available' => $isAvailable,
+            'variant_id' => $request->variant_id,
+            'requested_quantity' => $request->quantity,
+        ], $isAvailable ? 'الكمية متوفرة' : 'الكمية غير متوفرة');
+    }
 }

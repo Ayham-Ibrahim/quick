@@ -35,8 +35,8 @@ class SubCategoryController extends Controller
     public function index(Request $request)
     {
         return $this->success(
-            SubCategory::with('category:id,name') 
-                    ->select('id', 'name', 'image', 'category_id')
+            SubCategory::with(['category:id,name', 'attributes:id,name'])
+                    ->select('id', 'name', 'image', 'category_id', 'price_depends_on_attributes', 'quantity_depends_on_attributes')
                     ->get(),
             'تم جلب الاقسام الفرعية بنجاح'
         );
@@ -60,7 +60,7 @@ class SubCategoryController extends Controller
      */
     public function show($id)
     {
-        $subCategory = SubCategory::with('category:id,name')->find($id);
+        $subCategory = $this->subCategoryService->getSubCategoryWithAttributes($id);
 
         if (!$subCategory) {
             return response()->json([
@@ -75,6 +75,24 @@ class SubCategoryController extends Controller
             'message' => 'تم جلب معلومات الفئة الفرعية بنجاح',
             'data' => $subCategory
         ]);
+    }
+
+    /**
+     * Get attributes linked to a subcategory (for product form)
+     */
+    public function getAttributesForProduct($subCategoryId)
+    {
+        $data = $this->subCategoryService->getAttributesForProductForm($subCategoryId);
+
+        if (empty($data)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'الفئة الفرعية غير موجودة',
+                'data' => null
+            ], 404);
+        }
+
+        return $this->success($data, 'تم جلب خصائص الفئة الفرعية بنجاح');
     }
 
     /**
