@@ -10,87 +10,110 @@ class Coupon extends Model
     protected $fillable = [
         'code',
         'type',
-        'discount_amount',
-        'expiration_duration',
-        'usage_limit',
-        'times_used',
+        'amount',
+        'usage_limit_total',
+        'usage_limit_per_user',
         'start_at',
-        'product_id',
+        'end_at',
     ];
 
     protected $casts = [
         'start_at' => 'datetime',
-        'discount_amount' => 'float',
-        'expiration_duration' => 'integer',
-        'usage_limit' => 'integer',
-        'times_used' => 'integer',
+        'end_at' => 'datetime',
+        'amount' => 'float',
+        'usage_limit_total' => 'integer',
+        'usage_limit_per_user' => 'integer'
     ];
 
-    protected $appends = ['is_active'];
+    protected $appends = ['is_active', 'total_usage'];
+
+    /* ================= Relations ================= */
+
+    public function products()
+    {
+        return $this->belongsToMany(Product::class, 'coupon_products')
+            ->withTimestamps();
+    }
+
+    public function usages()
+    {
+        return $this->hasMany(CouponUsage::class);
+    }
+
+    /* ================= Accessors ================= */
 
     public function getIsActiveAttribute(): bool
     {
         $now = now();
 
-        //  before start
         if ($this->start_at && $now->lt($this->start_at)) {
             return false;
         }
 
-        //  expiration at
-        $endAt = ($this->start_at ?? $this->created_at)
-            ->copy()
-            ->addDays($this->expiration_duration);
-
-        //  after expaired
-        if ($now->gt($endAt)) {
+        if ($this->end_at && $now->gt($this->end_at)) {
             return false;
         }
 
-        // usage limit = 0
-        if ($this->times_used >= $this->usage_limit) {
+        if ($this->total_usage >= $this->usage_limit_total) {
             return false;
         }
 
         return true;
     }
 
-    /**
-     * scope for activit coupons only
-     * @param mixed $query
-     */
-    public function scopeCurrentlyActive($query)
+    public function getTotalUsageAttribute(): int
     {
-        $now = now();
+        // lazy load safe
+        return $this->usages_count
+            ?? $this->usages()->count();
 
-        return $query
-            ->where(function ($q) use ($now) {
-                $q->whereNull('start_at')
-                    ->orWhere('start_at', '<=', $now);
-            })
-            ->whereRaw(
-                "DATE_ADD(start_at, INTERVAL expiration_duration DAY) >= ?",
-                [$now]
-            )
-            ->whereColumn('times_used', '<', 'usage_limit');
+        // استخدم Coupon::withCount('usages')->get();
     }
 
-    public function product()
+    /* ================= Business Logic ================= */
+
+    public function canBeUsedBy(int $userId): bool
     {
-        return $this->belongsTo(Product::class);
+        if (! $this->is_active) {
+            return false;
+        }
+
+        return $this->usedByUser($userId) < $this->usage_limit_per_user;
     }
 
-    /** scopes */
-    public function scopeActive($query)
+    public function usedByUser(int $userId): int
     {
-        return $query->where('is_active', true)
-            ->whereColumn('times_used', '<', 'usage_limit');
+        return $this->usages()
+            ->where('user_id', $userId)
+            ->count();
     }
 
     public function isExpired(): bool
     {
-        return now()->greaterThan(
-            $this->created_at->addDays($this->expiration_duration)
-        );
+        return $this->end_at
+            ? now()->gt($this->end_at)
+            : false;
+    }
+
+    /* ================= Scopes ================= */
+
+    /**
+     * Coupons currently valid by date & total usage
+     */
+    public function scopeActive($query)
+    {
+        $now = now();
+
+        return $query
+            ->withCount('usages')
+            ->where(function ($q) use ($now) {
+                $q->whereNull('start_at')
+                    ->orWhere('start_at', '<=', $now);
+            })
+            ->where(function ($q) use ($now) {
+                $q->whereNull('end_at')
+                    ->orWhere('end_at', '>=', $now);
+            })
+            ->whereColumn('usages_count', '<', 'usage_limit_total');
     }
 }

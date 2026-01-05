@@ -184,7 +184,7 @@ class ProductService extends Service
     protected function storeProductImages(Product $product, array $images)
     {
         $productImages = collect($images)->map(function ($imageItem) {
-        
+
             // Expecting: [ "file" => UploadedFile ]
             $file = $imageItem['file'] ?? null;
 
@@ -202,6 +202,7 @@ class ProductService extends Service
             $product->images()->createMany($productImages);
         }
     }
+
 
     /**
      * Store product variants with their attributes
@@ -381,3 +382,4 @@ class ProductService extends Service
         ])->find($productId);
     }
 }
+

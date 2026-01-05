@@ -45,6 +45,7 @@ class DatabaseSeeder extends Seeder
             // CategorySeeder::class,
             // SubCategorySeeder::class,
             VehicleTypeSeeder::class,
+            ProfitRatiosSeeder::class
         ]);
     }
 }

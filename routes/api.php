@@ -5,17 +5,21 @@ use App\Http\Controllers\AdsController;
 use App\Http\Controllers\AttributeController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\StoreController;
+use App\Http\Controllers\DriverController;
 use App\Http\Controllers\RatingController;
+use App\Http\Controllers\WalletController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\AttributeController;
+use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\VehicleTypeController;
 use App\Http\Controllers\Categories\CategoryController;
 use App\Http\Controllers\Categories\SubCategoryController;
 use App\Http\Controllers\ComplaintController;
-use App\Http\Controllers\DriverController;
-use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\DiscountManagement\CouponController;
+use App\Http\Controllers\DiscountManagement\DiscountController;
+use App\Http\Controllers\ProfitRatiosController;
 use App\Http\Controllers\UserManagementControllers\ProviderController;
 use App\Http\Controllers\UserManagementControllers\UserManagementController;
-use App\Http\Controllers\VehicleTypeController;
-use App\Http\Controllers\WalletController;
 
 /*
 |--------------------------------------------------------------------------
@@ -80,6 +84,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::apiResource('/ads', AdsController::class);
 
+    /** discount routes */
+    Route::apiResource('/discounts', DiscountController::class);
+    Route::apiResource('/coupons', CouponController::class);
+
     Route::apiResource('/stores', StoreController::class);
     Route::get('/store/profile', [StoreController::class, 'profile']);
     Route::put('/store/profile', [StoreController::class, 'updateStoreProfile']);
@@ -140,14 +148,21 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/wallet/add-balance', [WalletController::class, 'addBalance']);
 
     /** user routes */
-    Route::get('/user/profile',[UserManagementController::class, 'profile']);
-    Route::put('/user/profile',[UserManagementController::class, 'updateProfile']);
+
+    Route::get('/user/profile', [UserManagementController::class, 'profile']);
+    Route::put('/user/profile', [UserManagementController::class, 'updateProfile']);
 
     // User management (exclude admins) - list, details, delete
     Route::get('/users', [UserManagementController::class, 'listUsers']);
     Route::get('/users/{id}', [UserManagementController::class, 'userDetails']);
     Route::delete('/users/{id}', [UserManagementController::class, 'deleteUser']);
 
+
+
+    Route::apiResource('/complaint', ComplaintController::class)->except('update', 'destroy');
+
+    Route::put('/profit-ratios/update-all', [ProfitRatiosController::class, 'updateAll']);
+    Route::get('/profit-ratios', [ProfitRatiosController::class, 'index']);
 
     Route::apiResource('/complaint',ComplaintController::class)->except('update','destroy');
 
@@ -167,3 +182,4 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/sync-prices', [CartController::class, 'syncPrices']); // Sync prices
     });
 });
+
