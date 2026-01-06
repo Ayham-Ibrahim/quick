@@ -17,6 +17,7 @@ use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\DiscountManagement\CouponController;
 use App\Http\Controllers\DiscountManagement\DiscountController;
 use App\Http\Controllers\ProfitRatiosController;
+use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\UserManagementControllers\ProviderController;
 use App\Http\Controllers\UserManagementControllers\UserManagementController;
 
@@ -180,5 +181,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/validate', [CartController::class, 'validate']); // Validate before checkout
         Route::post('/sync-prices', [CartController::class, 'syncPrices']); // Sync prices
     });
+
+    /** Report routes */
+    Route::get('/reports/statics', [ReportController::class, 'staticsReport']);
 });
 

@@ -38,7 +38,6 @@ class StoreStoreRequest extends BaseFormRequest
             'subcategory_ids'           => 'required|array',
             'subcategory_ids.*'         => 'exists:sub_categories,id',
 
-            'subcategory_ids.invalid_relation'  => 'بعض التصنيفات الفرعية لا تتبع التصنيفات المختارة.',
         ];
     }
 
@@ -88,6 +87,7 @@ class StoreStoreRequest extends BaseFormRequest
             'subcategory_ids.required'     => 'يجب اختيار تصنيف فرعي واحد على الأقل.',
             'subcategory_ids.array'        => 'حقل التصنيفات الفرعية يجب أن يكون مصفوفة.',
             'subcategory_ids.*.exists'     => 'أحد التصنيفات الفرعية غير موجود.',
+            'subcategory_ids.invalid_relation'  => 'بعض التصنيفات الفرعية لا تتبع التصنيفات المختارة.',
 
         ];
     }
