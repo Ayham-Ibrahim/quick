@@ -27,7 +27,8 @@ class CouponController extends Controller
     public function index()
     {
         $coupons = Coupon::with([
-            'products.store'
+            'store',
+            'products'
         ])
             ->paginate(10);
 
@@ -44,7 +45,7 @@ class CouponController extends Controller
      */
     public function show(Coupon $coupon)
     {
-        $coupon = $coupon->load('products.store');
+        $coupon = $coupon->load(['store', 'products']);
         return $this->success(new CouponResource($coupon), "تم جلب الكوبون بنجاح");
     }
 

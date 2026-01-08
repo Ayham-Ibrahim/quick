@@ -24,28 +24,22 @@ class CouponResource extends JsonResource
             'is_active'    => $this->is_active,
             'total_usage' => $this->total_usage,
 
-            /* ================= Stores with Products ================= */
+            /* ================= Store Info ================= */
+            'store' => $this->whenLoaded('store', function () {
+                return [
+                    'id'   => $this->store->id,
+                    'name' => $this->store->store_name,
+                ];
+            }),
 
-            'stores' => $this->whenLoaded('products', function () {
-
-                return $this->products
-                    ->groupBy('store_id')
-                    ->map(function ($products) {
-
-                        $store = $products->first()->store;
-
-                        return [
-                            'id'   => $store->id,
-                            'name' => $store->store_name,
-                            'products' => $products->map(function ($product) {
-                                return [
-                                    'id'   => $product->id,
-                                    'name' => $product->name,
-                                ];
-                            })->values(),
-                        ];
-                    })
-                    ->values();
+            /* ================= Products ================= */
+            'products' => $this->whenLoaded('products', function () {
+                return $this->products->map(function ($product) {
+                    return [
+                        'id'   => $product->id,
+                        'name' => $product->name,
+                    ];
+                })->values();
             }),
         ];
     }

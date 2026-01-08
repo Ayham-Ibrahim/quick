@@ -3,11 +3,13 @@
 namespace App\Models\DiscountManagement;
 
 use App\Models\Product;
+use App\Models\Store;
 use Illuminate\Database\Eloquent\Model;
 
 class Coupon extends Model
 {
     protected $fillable = [
+        'store_id',
         'code',
         'type',
         'amount',
@@ -28,6 +30,14 @@ class Coupon extends Model
     protected $appends = ['is_active', 'total_usage'];
 
     /* ================= Relations ================= */
+
+    /**
+     * المتجر الذي يتبع له الكوبون
+     */
+    public function store()
+    {
+        return $this->belongsTo(Store::class);
+    }
 
     public function products()
     {

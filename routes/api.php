@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdsController;
 use App\Http\Controllers\AttributeController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\RatingController;
@@ -179,6 +180,17 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::delete('/clear', [CartController::class, 'clear']);   // Clear cart
         Route::get('/validate', [CartController::class, 'validate']); // Validate before checkout
         Route::post('/sync-prices', [CartController::class, 'syncPrices']); // Sync prices
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Checkout Routes
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('checkout')->group(function () {
+        Route::get('/preview', [CheckoutController::class, 'preview']);           // معاينة الطلب
+        Route::post('/validate-coupon', [CheckoutController::class, 'validateCoupon']); // التحقق من الكوبون
+        Route::post('/', [CheckoutController::class, 'checkout']);                  // إتمام الشراء
     });
 });
 
