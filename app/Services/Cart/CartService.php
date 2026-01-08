@@ -292,22 +292,6 @@ class CartService extends Service
     }
 
     /**
-     * Sync all cart prices to current prices
-     */
-    public function syncPrices(): Cart
-    {
-        $cart = $this->getOrCreateCart();
-
-        foreach ($cart->items as $item) {
-            if ($item->hasPriceChanged()) {
-                $item->syncPrice();
-            }
-        }
-
-        return $this->getCartWithDetails($cart->id);
-    }
-
-    /**
      * Get cart with full details
      */
     public function getCartWithDetails(int $cartId): Cart

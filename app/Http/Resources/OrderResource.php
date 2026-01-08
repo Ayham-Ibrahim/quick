@@ -67,6 +67,16 @@ class OrderResource extends JsonResource
                 })->values();
             }),
 
+            // معلومات السائق
+            'driver' => $this->when($this->has_driver && $this->relationLoaded('driver'), [
+                'id' => $this->driver?->id,
+                'name' => $this->driver?->name,
+                'phone' => $this->driver?->phone,
+                'vehicleType' => $this->driver?->vehicleType?->name,
+            ]),
+            'hasDriver' => $this->has_driver,
+            'driverAssignedAt' => $this->driver_assigned_at?->format('Y-m-d H:i'),
+
             'createdAt' => $this->created_at->format('Y-m-d H:i'),
             'updatedAt' => $this->updated_at->format('Y-m-d H:i'),
         ];

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Driver;
 use App\Models\UserManagement\User;
 use App\Models\DiscountManagement\Coupon;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +13,7 @@ class Order extends Model
 {
     protected $fillable = [
         'user_id',
+        'driver_id',
         'coupon_id',
         'coupon_code',
         'subtotal',
@@ -21,6 +23,7 @@ class Order extends Model
         'status',
         'delivery_address',
         'requested_delivery_at',
+        'driver_assigned_at',
         'notes',
         'cancellation_reason',
     ];
@@ -31,6 +34,7 @@ class Order extends Model
         'delivery_fee' => 'decimal:2',
         'total' => 'decimal:2',
         'requested_delivery_at' => 'datetime',
+        'driver_assigned_at' => 'datetime',
     ];
 
     /**
@@ -57,6 +61,11 @@ class Order extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function driver(): BelongsTo
+    {
+        return $this->belongsTo(Driver::class);
     }
 
     public function coupon(): BelongsTo
@@ -95,6 +104,14 @@ class Order extends Model
         return !is_null($this->coupon_id);
     }
 
+    /**
+     * هل تم تعيين سائق؟
+     */
+    public function getHasDriverAttribute(): bool
+    {
+        return !is_null($this->driver_id);
+    }
+
     /* ================= Scopes ================= */
 
     public function scopeByStatus($query, string $status)
@@ -115,6 +132,22 @@ class Order extends Model
         ]);
     }
 
+    /**
+     * الطلبات بدون سائق
+     */
+    public function scopeWithoutDriver($query)
+    {
+        return $query->whereNull('driver_id');
+    }
+
+    /**
+     * طلبات سائق معين
+     */
+    public function scopeForDriver($query, int $driverId)
+    {
+        return $query->where('driver_id', $driverId);
+    }
+
     /* ================= Methods ================= */
 
     /**
@@ -132,6 +165,17 @@ class Order extends Model
         ]);
 
         return true;
+    }
+
+    /**
+     * تعيين سائق للطلب
+     */
+    public function assignDriver(int $driverId): void
+    {
+        $this->update([
+            'driver_id' => $driverId,
+            'driver_assigned_at' => now(),
+        ]);
     }
 
     /**

@@ -5,6 +5,7 @@ use App\Http\Controllers\AdsController;
 use App\Http\Controllers\AttributeController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\RatingController;
@@ -180,7 +181,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::delete('/items/{itemId}', [CartController::class, 'removeItem']); // Remove item
         Route::delete('/clear', [CartController::class, 'clear']);   // Clear cart
         Route::get('/validate', [CartController::class, 'validate']); // Validate before checkout
-        Route::post('/sync-prices', [CartController::class, 'syncPrices']); // Sync prices
     });
 
     /** Report routes */
@@ -195,6 +195,41 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/preview', [CheckoutController::class, 'preview']);           // معاينة الطلب
         Route::post('/validate-coupon', [CheckoutController::class, 'validateCoupon']); // التحقق من الكوبون
         Route::post('/', [CheckoutController::class, 'checkout']);                  // إتمام الشراء
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Order Routes (للمستخدم)
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('orders')->group(function () {
+        Route::get('/', [OrderController::class, 'index']);           // جلب طلبات المستخدم
+        Route::get('/{id}', [OrderController::class, 'show']);        // تفاصيل طلب
+        Route::post('/{id}/cancel', [OrderController::class, 'cancel']); // إلغاء طلب
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Driver Order Routes (للسائق)
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('driver/orders')->group(function () {
+        Route::get('/available', [OrderController::class, 'availableOrders']); // الطلبات المتاحة للتوصيل
+        Route::get('/my', [OrderController::class, 'driverOrders']);           // طلبات السائق
+        Route::post('/{id}/accept', [OrderController::class, 'acceptOrder']);  // قبول طلب
+        Route::post('/{id}/deliver', [OrderController::class, 'deliverOrder']); // تأكيد التوصيل
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Order Routes (للأدمن/المتجر)
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('admin/orders')->group(function () {
+        Route::get('/', [OrderController::class, 'allOrders']);              // كل الطلبات
+        Route::put('/{id}/status', [OrderController::class, 'updateStatus']); // تحديث حالة
+        Route::post('/{id}/assign-driver', [OrderController::class, 'assignDriver']); // تعيين سائق
     });
 
 });

@@ -173,24 +173,4 @@ class CartController extends Controller
             'issues' => $issues,
         ], 'يوجد مشاكل في السلة تحتاج إلى معالجة');
     }
-
-    /**
-     * Sync all cart prices to current prices
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function syncPrices()
-    {
-        $cart = $this->cartService->syncPrices();
-
-        return $this->success(
-            new CartResource($cart->load([
-                'items.product.store',
-                'items.product.images',
-                'items.variant.attributes.attribute',
-                'items.variant.attributes.value',
-            ])),
-            'تم تحديث الأسعار بنجاح'
-        );
-    }
 }
