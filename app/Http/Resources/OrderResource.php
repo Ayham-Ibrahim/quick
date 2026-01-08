@@ -1,0 +1,74 @@
+<?php
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class OrderResource extends JsonResource
+{
+    /**
+     * Transform the resource into an array.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'orderNumber' => 'ORD-' . str_pad($this->id, 6, '0', STR_PAD_LEFT),
+            'status' => $this->status,
+            'statusText' => $this->status_text,
+
+            // المبالغ
+            'subtotal' => (float) $this->subtotal,
+            'discountAmount' => (float) $this->discount_amount,
+            'deliveryFee' => (float) $this->delivery_fee,
+            'total' => (float) $this->total,
+
+            // معلومات الكوبون
+            'coupon' => $this->when($this->has_coupon, [
+                'code' => $this->coupon_code,
+                'discountAmount' => (float) $this->discount_amount,
+            ]),
+
+            // عنوان التوصيل
+            'deliveryAddress' => $this->delivery_address,
+            'requestedDeliveryAt' => $this->requested_delivery_at?->format('Y-m-d H:i'),
+
+            // ملاحظات
+            'notes' => $this->notes,
+            'cancellationReason' => $this->when(
+                $this->status === 'cancelled',
+                $this->cancellation_reason
+            ),
+
+            // إحصائيات
+            'itemsCount' => $this->items_count,
+            'isCancellable' => $this->is_cancellable,
+
+            // العناصر
+            'items' => OrderItemResource::collection($this->whenLoaded('items')),
+
+            // العناصر مجمعة حسب المتجر
+            'itemsByStore' => $this->when($this->relationLoaded('items'), function () {
+                return $this->items->groupBy('store_id')->map(function ($storeItems, $storeId) {
+                    $store = $storeItems->first()->store;
+                    return [
+                        'store' => $store ? [
+                            'id' => $store->id,
+                            'storeName' => $store->store_name,
+                            'storeLogo' => $store->store_logo,
+                        ] : null,
+                        'itemsCount' => $storeItems->count(),
+                        'subtotal' => $storeItems->sum('line_total'),
+                        'items' => OrderItemResource::collection($storeItems),
+                    ];
+                })->values();
+            }),
+
+            'createdAt' => $this->created_at->format('Y-m-d H:i'),
+            'updatedAt' => $this->updated_at->format('Y-m-d H:i'),
+        ];
+    }
+}

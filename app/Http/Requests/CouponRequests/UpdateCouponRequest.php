@@ -3,9 +3,11 @@
 namespace App\Http\Requests\CouponRequests;
 
 use App\Http\Requests\BaseFormRequest;
+use App\Models\Product;
 use Carbon\Carbon;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Validator;
 
 class UpdateCouponRequest extends BaseFormRequest
 {
@@ -44,6 +46,9 @@ class UpdateCouponRequest extends BaseFormRequest
     public function rules(): array
     {
         return [
+            // المتجر اختياري عند التحديث
+            'store_id' => 'sometimes|exists:stores,id',
+
             'type' => 'sometimes|in:percentage,fixed',
 
             'amount' => [
@@ -71,11 +76,38 @@ class UpdateCouponRequest extends BaseFormRequest
     }
 
     /**
+     * التحقق من أن المنتجات تنتمي للمتجر المحدد
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            // استخدام store_id من الطلب أو من الكوبون الحالي
+            $storeId = $this->input('store_id') ?? $this->route('coupon')->store_id;
+            $productIds = $this->input('product_ids', []);
+
+            if (!empty($productIds) && $storeId) {
+                $invalidProducts = Product::whereIn('id', $productIds)
+                    ->where('store_id', '!=', $storeId)
+                    ->pluck('name')
+                    ->toArray();
+
+                if (!empty($invalidProducts)) {
+                    $validator->errors()->add(
+                        'product_ids',
+                        'المنتجات التالية لا تنتمي للمتجر المحدد: ' . implode('، ', $invalidProducts)
+                    );
+                }
+            }
+        });
+    }
+
+    /**
      * Attributes
      */
     public function attributes(): array
     {
         return [
+            'store_id' => 'المتجر',
             'type' => 'نوع الخصم',
             'amount' => 'قيمة الخصم',
             'usage_limit_total' => 'عدد مرات الاستخدام الكلي',
