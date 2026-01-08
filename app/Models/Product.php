@@ -40,6 +40,11 @@ class Product extends Model
         return $this->hasMany(ProductImage::class);
     }
 
+    public function mainProductImage()
+    {
+        return $this->hasOne(ProductImage::class)->oldest();
+    }
+
     /**
      * Scope للحصول على المنتجات المقبولة (approved).
      */
@@ -64,8 +69,10 @@ class Product extends Model
     {
         return $this->ratings()->avg('rating') ?? 0;
     }
-    protected $appends = ['average_rating', 'ratings_count'];
-
+    protected $appends = [
+        'average_rating',
+        'ratings_count',
+    ];
     public function getRatingsCountAttribute()
     {
         return $this->ratings()->count();
@@ -89,5 +96,9 @@ class Product extends Model
     {
         return $this->hasMany(ProductVariant::class);
     }
+    // public function orderItems()
+    // {
+    //     return $this->hasMany(OrderItem::class);
+    // }
 
 }
