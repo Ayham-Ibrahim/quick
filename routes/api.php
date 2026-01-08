@@ -19,6 +19,7 @@ use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\DiscountManagement\CouponController;
 use App\Http\Controllers\DiscountManagement\DiscountController;
 use App\Http\Controllers\ProfitRatiosController;
+use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\UserManagementControllers\ProviderController;
 use App\Http\Controllers\UserManagementControllers\UserManagementController;
 
@@ -182,6 +183,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/validate', [CartController::class, 'validate']); // Validate before checkout
     });
 
+    /** Report routes */
+    Route::get('/reports/statics', [ReportController::class, 'staticsReport']);
+
     /*
     |--------------------------------------------------------------------------
     | Checkout Routes
@@ -192,6 +196,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/validate-coupon', [CheckoutController::class, 'validateCoupon']); // التحقق من الكوبون
         Route::post('/', [CheckoutController::class, 'checkout']);                  // إتمام الشراء
     });
+
 
     /*
     |--------------------------------------------------------------------------
@@ -226,5 +231,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::put('/{id}/status', [OrderController::class, 'updateStatus']); // تحديث حالة
         Route::post('/{id}/assign-driver', [OrderController::class, 'assignDriver']); // تعيين سائق
     });
+
 });
 
