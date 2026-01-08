@@ -1,0 +1,885 @@
+{
+	"info": {
+		"_postman_id": "quick-api-collection-2026",
+		"name": "Quick API - Cart, Checkout, Coupon & Order",
+		"description": "مجموعة API للسلة، الدفع، الكوبونات والطلبات - Quick E-commerce Platform",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000/api",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{token}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "🔐 Authentication",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"محمد أحمد\",\n    \"phone\": \"967771234567\",\n    \"password\": \"password123\",\n    \"password_confirmation\": \"password123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/register",
+							"host": ["{{base_url}}"],
+							"path": ["register"]
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم إرسال رمز التحقق\",\n    \"data\": {\n        \"phone\": \"967771234567\",\n        \"expires_at\": \"2026-01-08 15:30:00\"\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Confirm Registration (OTP)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"phone\": \"967771234567\",\n    \"otp\": \"123456\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/confirm-registration",
+							"host": ["{{base_url}}"],
+							"path": ["confirm-registration"]
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم تأكيد التسجيل بنجاح\",\n    \"data\": {\n        \"user\": {\n            \"id\": 1,\n            \"name\": \"محمد أحمد\",\n            \"phone\": \"967771234567\"\n        },\n        \"token\": \"1|abc123xyz...\"\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"phone\": \"967771234567\",\n    \"password\": \"password123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/login",
+							"host": ["{{base_url}}"],
+							"path": ["login"]
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم إرسال رمز التحقق\",\n    \"data\": {\n        \"phone\": \"967771234567\",\n        \"expires_at\": \"2026-01-08 15:30:00\"\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Confirm Login (OTP)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.data && jsonData.data.token) {",
+									"    pm.collectionVariables.set('token', jsonData.data.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"phone\": \"967771234567\",\n    \"otp\": \"123456\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/confirm-login",
+							"host": ["{{base_url}}"],
+							"path": ["confirm-login"]
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم تسجيل الدخول بنجاح\",\n    \"data\": {\n        \"user\": {\n            \"id\": 1,\n            \"name\": \"محمد أحمد\",\n            \"phone\": \"967771234567\",\n            \"is_admin\": false\n        },\n        \"token\": \"1|abc123xyz789def456...\"\n    }\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "🛒 Cart",
+			"item": [
+				{
+					"name": "Get Cart",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/cart",
+							"host": ["{{base_url}}"],
+							"path": ["cart"]
+						}
+					},
+					"response": [
+						{
+							"name": "Success - Empty Cart",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم جلب السلة بنجاح\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"active\",\n        \"notes\": null,\n        \"items_count\": 0,\n        \"total_quantity\": 0,\n        \"subtotal\": 0,\n        \"total\": 0,\n        \"items\": [],\n        \"items_by_store\": [],\n        \"is_empty\": true,\n        \"created_at\": \"2026-01-08T12:00:00.000000Z\",\n        \"updated_at\": \"2026-01-08T12:00:00.000000Z\"\n    }\n}"
+						},
+						{
+							"name": "Success - With Items",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم جلب السلة بنجاح\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"active\",\n        \"notes\": null,\n        \"items_count\": 2,\n        \"total_quantity\": 3,\n        \"subtotal\": 45000,\n        \"total\": 45000,\n        \"items\": [\n            {\n                \"id\": 1,\n                \"product_id\": 5,\n                \"product_variant_id\": 12,\n                \"quantity\": 2,\n                \"unit_price\": 15000,\n                \"line_total\": 30000,\n                \"notes\": null,\n                \"product\": {\n                    \"id\": 5,\n                    \"name\": \"هيدفون بلوتوث\",\n                    \"current_price\": 15000,\n                    \"store\": {\n                        \"id\": 1,\n                        \"store_name\": \"متجر التقنية\"\n                    },\n                    \"images\": [\n                        {\n                            \"id\": 1,\n                            \"url\": \"products/img_abc123.jpg\"\n                        }\n                    ]\n                },\n                \"variant\": {\n                    \"id\": 12,\n                    \"sku\": \"HP-BT-BLK-L\",\n                    \"price\": 15000,\n                    \"stock_quantity\": 50,\n                    \"attributes\": [\n                        {\n                            \"attribute\": { \"id\": 1, \"name\": \"اللون\" },\n                            \"value\": { \"id\": 3, \"value\": \"أسود\" }\n                        },\n                        {\n                            \"attribute\": { \"id\": 2, \"name\": \"المقاس\" },\n                            \"value\": { \"id\": 7, \"value\": \"L\" }\n                        }\n                    ]\n                },\n                \"is_available\": true,\n                \"available_stock\": 50\n            },\n            {\n                \"id\": 2,\n                \"product_id\": 8,\n                \"product_variant_id\": null,\n                \"quantity\": 1,\n                \"unit_price\": 15000,\n                \"line_total\": 15000,\n                \"notes\": \"بدون علبة\",\n                \"product\": {\n                    \"id\": 8,\n                    \"name\": \"شاحن سريع\",\n                    \"current_price\": 15000,\n                    \"store\": {\n                        \"id\": 1,\n                        \"store_name\": \"متجر التقنية\"\n                    }\n                },\n                \"variant\": null,\n                \"is_available\": true,\n                \"available_stock\": 100\n            }\n        ],\n        \"items_by_store\": [\n            {\n                \"store\": {\n                    \"id\": 1,\n                    \"store_name\": \"متجر التقنية\",\n                    \"store_logo\": \"stores/logo_xyz.jpg\"\n                },\n                \"items_count\": 2,\n                \"subtotal\": 45000,\n                \"items\": [...]\n            }\n        ],\n        \"is_empty\": false,\n        \"created_at\": \"2026-01-08T12:00:00.000000Z\",\n        \"updated_at\": \"2026-01-08T14:30:00.000000Z\"\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Cart Summary",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/cart/summary",
+							"host": ["{{base_url}}"],
+							"path": ["cart", "summary"]
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"ملخص السلة\",\n    \"data\": {\n        \"items_count\": 2,\n        \"total_quantity\": 3,\n        \"subtotal\": 45000,\n        \"total\": 45000\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Add Item to Cart",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"product_id\": 5,\n    \"product_variant_id\": 12,\n    \"quantity\": 2,\n    \"notes\": \"اللون المفضل\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/cart/items",
+							"host": ["{{base_url}}"],
+							"path": ["cart", "items"]
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "Created",
+							"code": 201,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"تمت إضافة المنتج إلى السلة\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"active\",\n        \"items_count\": 1,\n        \"total_quantity\": 2,\n        \"subtotal\": 30000,\n        \"total\": 30000,\n        \"items\": [\n            {\n                \"id\": 1,\n                \"product_id\": 5,\n                \"product_variant_id\": 12,\n                \"quantity\": 2,\n                \"unit_price\": 15000,\n                \"line_total\": 30000,\n                \"notes\": \"اللون المفضل\",\n                \"product\": {\n                    \"id\": 5,\n                    \"name\": \"هيدفون بلوتوث\"\n                },\n                \"variant\": {\n                    \"id\": 12,\n                    \"sku\": \"HP-BT-BLK-L\",\n                    \"price\": 15000\n                }\n            }\n        ],\n        \"is_empty\": false\n    }\n}"
+						},
+						{
+							"name": "Error - Product Not Found",
+							"status": "Unprocessable Entity",
+							"code": 422,
+							"body": "{\n    \"message\": \"المنتج غير موجود\",\n    \"errors\": {\n        \"product_id\": [\"المنتج غير موجود\"]\n    }\n}"
+						},
+						{
+							"name": "Error - Out of Stock",
+							"status": "Bad Request",
+							"code": 400,
+							"body": "{\n    \"status\": \"error\",\n    \"message\": \"الكمية المطلوبة غير متوفرة. المتاح: 5\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Add Item (Without Variant)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"product_id\": 8,\n    \"quantity\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/cart/items",
+							"host": ["{{base_url}}"],
+							"path": ["cart", "items"]
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "Created",
+							"code": 201,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"تمت إضافة المنتج إلى السلة\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"active\",\n        \"items_count\": 1,\n        \"total_quantity\": 1,\n        \"subtotal\": 15000,\n        \"total\": 15000,\n        \"items\": [...],\n        \"is_empty\": false\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Update Item Quantity",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"quantity\": 3\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/cart/items/1",
+							"host": ["{{base_url}}"],
+							"path": ["cart", "items", "1"]
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم تحديث الكمية بنجاح\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"active\",\n        \"items_count\": 1,\n        \"total_quantity\": 3,\n        \"subtotal\": 45000,\n        \"total\": 45000,\n        \"items\": [...],\n        \"is_empty\": false\n    }\n}"
+						},
+						{
+							"name": "Success - Item Removed (quantity=0)",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم حذف المنتج من السلة\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"active\",\n        \"items_count\": 0,\n        \"total_quantity\": 0,\n        \"subtotal\": 0,\n        \"total\": 0,\n        \"items\": [],\n        \"is_empty\": true\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Remove Item from Cart",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/cart/items/1",
+							"host": ["{{base_url}}"],
+							"path": ["cart", "items", "1"]
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم حذف المنتج من السلة\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"active\",\n        \"items_count\": 0,\n        \"total_quantity\": 0,\n        \"subtotal\": 0,\n        \"total\": 0,\n        \"items\": [],\n        \"is_empty\": true\n    }\n}"
+						},
+						{
+							"name": "Error - Item Not Found",
+							"status": "Not Found",
+							"code": 404,
+							"body": "{\n    \"status\": \"error\",\n    \"message\": \"العنصر غير موجود في السلة\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Clear Cart",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/cart/clear",
+							"host": ["{{base_url}}"],
+							"path": ["cart", "clear"]
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم تفريغ السلة بنجاح\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"active\",\n        \"items_count\": 0,\n        \"total_quantity\": 0,\n        \"subtotal\": 0,\n        \"total\": 0,\n        \"items\": [],\n        \"is_empty\": true\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Validate Cart",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/cart/validate",
+							"host": ["{{base_url}}"],
+							"path": ["cart", "validate"]
+						}
+					},
+					"response": [
+						{
+							"name": "Success - Valid Cart",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"السلة جاهزة للدفع\",\n    \"data\": {\n        \"is_valid\": true,\n        \"issues\": []\n    }\n}"
+						},
+						{
+							"name": "Success - Has Issues",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"يوجد مشاكل في السلة تحتاج إلى معالجة\",\n    \"data\": {\n        \"is_valid\": false,\n        \"issues\": [\n            {\n                \"type\": \"unavailable\",\n                \"item_id\": 1,\n                \"product_name\": \"هيدفون بلوتوث\",\n                \"message\": \"المنتج غير متاح حالياً\"\n            },\n            {\n                \"type\": \"insufficient_stock\",\n                \"item_id\": 2,\n                \"product_name\": \"شاحن سريع\",\n                \"requested\": 10,\n                \"available\": 5,\n                \"message\": \"الكمية المطلوبة غير متوفرة\"\n            },\n            {\n                \"type\": \"price_changed\",\n                \"item_id\": 3,\n                \"product_name\": \"كابل USB\",\n                \"old_price\": 5000,\n                \"new_price\": 6000,\n                \"message\": \"تغير سعر المنتج\"\n            }\n        ]\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Sync Prices",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/cart/sync-prices",
+							"host": ["{{base_url}}"],
+							"path": ["cart", "sync-prices"]
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم تحديث الأسعار بنجاح\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"active\",\n        \"items_count\": 2,\n        \"total_quantity\": 3,\n        \"subtotal\": 48000,\n        \"total\": 48000,\n        \"items\": [...],\n        \"is_empty\": false\n    }\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "💳 Checkout",
+			"item": [
+				{
+					"name": "Preview Order",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/checkout/preview",
+							"host": ["{{base_url}}"],
+							"path": ["checkout", "preview"]
+						}
+					},
+					"response": [
+						{
+							"name": "Success - Without Coupon",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"معاينة الطلب\",\n    \"data\": {\n        \"cart_id\": 1,\n        \"items_count\": 2,\n        \"total_quantity\": 3,\n        \"subtotal\": 45000,\n        \"discount\": {\n            \"amount\": 0,\n            \"coupon_code\": null,\n            \"coupon_type\": null,\n            \"coupon_value\": null,\n            \"applicable_items_count\": 0\n        },\n        \"total\": 45000,\n        \"items_with_discount\": []\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Preview Order (With Coupon)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/checkout/preview?coupon_code=SAVE10",
+							"host": ["{{base_url}}"],
+							"path": ["checkout", "preview"],
+							"query": [
+								{
+									"key": "coupon_code",
+									"value": "SAVE10"
+								}
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Success - With Coupon",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"معاينة الطلب\",\n    \"data\": {\n        \"cart_id\": 1,\n        \"items_count\": 2,\n        \"total_quantity\": 3,\n        \"subtotal\": 45000,\n        \"discount\": {\n            \"amount\": 4500,\n            \"coupon_code\": \"SAVE10\",\n            \"coupon_type\": \"percentage\",\n            \"coupon_value\": 10,\n            \"applicable_items_count\": 2\n        },\n        \"total\": 40500,\n        \"items_with_discount\": [\n            {\n                \"cart_item_id\": 1,\n                \"product_id\": 5,\n                \"product_name\": \"هيدفون بلوتوث\",\n                \"variant_id\": 12,\n                \"quantity\": 2,\n                \"unit_price\": 15000,\n                \"subtotal\": 30000,\n                \"discount\": 3000,\n                \"total_after_discount\": 27000\n            },\n            {\n                \"cart_item_id\": 2,\n                \"product_id\": 8,\n                \"product_name\": \"شاحن سريع\",\n                \"variant_id\": null,\n                \"quantity\": 1,\n                \"unit_price\": 15000,\n                \"subtotal\": 15000,\n                \"discount\": 1500,\n                \"total_after_discount\": 13500\n            }\n        ]\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Validate Coupon",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"coupon_code\": \"SAVE10\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/checkout/validate-coupon",
+							"host": ["{{base_url}}"],
+							"path": ["checkout", "validate-coupon"]
+						}
+					},
+					"response": [
+						{
+							"name": "Success - Valid Coupon",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"الكوبون صالح للاستخدام\",\n    \"data\": {\n        \"is_valid\": true,\n        \"coupon\": {\n            \"code\": \"SAVE10\",\n            \"type\": \"percentage\",\n            \"amount\": 10\n        },\n        \"discount_amount\": 4500,\n        \"applicable_items_count\": 2,\n        \"message\": \"الكوبون صالح للاستخدام\"\n    }\n}"
+						},
+						{
+							"name": "Error - Coupon Not Found",
+							"status": "Not Found",
+							"code": 404,
+							"body": "{\n    \"status\": \"error\",\n    \"message\": \"الكوبون غير موجود\"\n}"
+						},
+						{
+							"name": "Error - Coupon Expired",
+							"status": "Bad Request",
+							"code": 400,
+							"body": "{\n    \"status\": \"error\",\n    \"message\": \"انتهت صلاحية الكوبون\"\n}"
+						},
+						{
+							"name": "Error - Usage Limit Exceeded",
+							"status": "Bad Request",
+							"code": 400,
+							"body": "{\n    \"status\": \"error\",\n    \"message\": \"لقد تجاوزت الحد المسموح لاستخدام هذا الكوبون\"\n}"
+						},
+						{
+							"name": "Error - No Applicable Products",
+							"status": "Bad Request",
+							"code": 400,
+							"body": "{\n    \"status\": \"error\",\n    \"message\": \"لا توجد منتجات في السلة يمكن تطبيق الكوبون عليها\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Checkout (Place Order)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"delivery_address\": \"صنعاء، شارع الزبيري، بناء 10\",\n    \"requested_delivery_at\": \"2026-01-09 14:00:00\",\n    \"coupon_code\": \"SAVE10\",\n    \"delivery_fee\": 1000,\n    \"notes\": \"يرجى الاتصال قبل الوصول\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/checkout",
+							"host": ["{{base_url}}"],
+							"path": ["checkout"]
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "Created",
+							"code": 201,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم إنشاء الطلب بنجاح\",\n    \"data\": {\n        \"id\": 1,\n        \"orderNumber\": \"ORD-000001\",\n        \"status\": \"pending\",\n        \"statusText\": \"بانتظار التأكيد\",\n        \"subtotal\": 45000,\n        \"discountAmount\": 4500,\n        \"deliveryFee\": 1000,\n        \"total\": 41500,\n        \"coupon\": {\n            \"code\": \"SAVE10\",\n            \"discountAmount\": 4500\n        },\n        \"deliveryAddress\": \"صنعاء، شارع الزبيري، بناء 10\",\n        \"requestedDeliveryAt\": \"2026-01-09 14:00\",\n        \"notes\": \"يرجى الاتصال قبل الوصول\",\n        \"itemsCount\": 3,\n        \"isCancellable\": true,\n        \"items\": [\n            {\n                \"id\": 1,\n                \"productId\": 5,\n                \"productName\": \"هيدفون بلوتوث\",\n                \"variantDetails\": {\n                    \"sku\": \"HP-BT-BLK-L\",\n                    \"attributes\": [\n                        { \"name\": \"اللون\", \"value\": \"أسود\" },\n                        { \"name\": \"المقاس\", \"value\": \"L\" }\n                    ]\n                },\n                \"quantity\": 2,\n                \"unitPrice\": 15000,\n                \"discountAmount\": 3000,\n                \"lineTotal\": 27000,\n                \"store\": {\n                    \"id\": 1,\n                    \"storeName\": \"متجر التقنية\"\n                }\n            },\n            {\n                \"id\": 2,\n                \"productId\": 8,\n                \"productName\": \"شاحن سريع\",\n                \"variantDetails\": null,\n                \"quantity\": 1,\n                \"unitPrice\": 15000,\n                \"discountAmount\": 1500,\n                \"lineTotal\": 13500,\n                \"store\": {\n                    \"id\": 1,\n                    \"storeName\": \"متجر التقنية\"\n                }\n            }\n        ],\n        \"itemsByStore\": [\n            {\n                \"store\": {\n                    \"id\": 1,\n                    \"storeName\": \"متجر التقنية\",\n                    \"storeLogo\": \"stores/logo_xyz.jpg\"\n                },\n                \"itemsCount\": 2,\n                \"subtotal\": 40500,\n                \"items\": [...]\n            }\n        ],\n        \"createdAt\": \"2026-01-08 15:30\",\n        \"updatedAt\": \"2026-01-08 15:30\"\n    }\n}"
+						},
+						{
+							"name": "Error - Empty Cart",
+							"status": "Bad Request",
+							"code": 400,
+							"body": "{\n    \"status\": \"error\",\n    \"message\": \"السلة فارغة\"\n}"
+						},
+						{
+							"name": "Error - Product Unavailable",
+							"status": "Bad Request",
+							"code": 400,
+							"body": "{\n    \"status\": \"error\",\n    \"message\": \"المنتج 'هيدفون بلوتوث' غير متاح حالياً\"\n}"
+						},
+						{
+							"name": "Error - Insufficient Stock",
+							"status": "Bad Request",
+							"code": 400,
+							"body": "{\n    \"status\": \"error\",\n    \"message\": \"الكمية المطلوبة من 'شاحن سريع' غير متوفرة. المتاح: 5\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Checkout (Without Coupon)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"delivery_address\": \"صنعاء، شارع الزبيري، بناء 10\",\n    \"notes\": \"التوصيل في أي وقت\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/checkout",
+							"host": ["{{base_url}}"],
+							"path": ["checkout"]
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "Created",
+							"code": 201,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم إنشاء الطلب بنجاح\",\n    \"data\": {\n        \"id\": 2,\n        \"orderNumber\": \"ORD-000002\",\n        \"status\": \"pending\",\n        \"statusText\": \"بانتظار التأكيد\",\n        \"subtotal\": 45000,\n        \"discountAmount\": 0,\n        \"deliveryFee\": 0,\n        \"total\": 45000,\n        \"deliveryAddress\": \"صنعاء، شارع الزبيري، بناء 10\",\n        \"requestedDeliveryAt\": null,\n        \"notes\": \"التوصيل في أي وقت\",\n        \"itemsCount\": 3,\n        \"isCancellable\": true,\n        \"items\": [...],\n        \"createdAt\": \"2026-01-08 15:45\",\n        \"updatedAt\": \"2026-01-08 15:45\"\n    }\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "🎟️ Coupons (Admin)",
+			"item": [
+				{
+					"name": "List All Coupons",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/coupons",
+							"host": ["{{base_url}}"],
+							"path": ["coupons"]
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم جلب الكوبونات بنجاح\",\n    \"data\": [\n        {\n            \"id\": 1,\n            \"code\": \"SAVE10\",\n            \"type\": \"percentage\",\n            \"amount\": 10,\n            \"usage_limit_total\": 100,\n            \"usage_limit_per_user\": 2,\n            \"start_at\": \"2026-01-01T00:00:00.000000Z\",\n            \"end_at\": \"2026-01-31T23:59:59.000000Z\",\n            \"is_active\": true,\n            \"total_usage\": 15,\n            \"store\": {\n                \"id\": 1,\n                \"name\": \"متجر التقنية\"\n            },\n            \"products\": [\n                { \"id\": 5, \"name\": \"هيدفون بلوتوث\" },\n                { \"id\": 8, \"name\": \"شاحن سريع\" }\n            ]\n        },\n        {\n            \"id\": 2,\n            \"code\": \"FLAT500\",\n            \"type\": \"fixed\",\n            \"amount\": 500,\n            \"usage_limit_total\": 50,\n            \"usage_limit_per_user\": 1,\n            \"start_at\": \"2026-01-05T00:00:00.000000Z\",\n            \"end_at\": \"2026-02-05T23:59:59.000000Z\",\n            \"is_active\": true,\n            \"total_usage\": 5,\n            \"store\": {\n                \"id\": 2,\n                \"name\": \"متجر الملابس\"\n            },\n            \"products\": [\n                { \"id\": 12, \"name\": \"قميص رجالي\" }\n            ]\n        }\n    ],\n    \"meta\": {\n        \"current_page\": 1,\n        \"last_page\": 1,\n        \"per_page\": 10,\n        \"total\": 2\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Single Coupon",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/coupons/1",
+							"host": ["{{base_url}}"],
+							"path": ["coupons", "1"]
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم جلب الكوبون بنجاح\",\n    \"data\": {\n        \"id\": 1,\n        \"code\": \"SAVE10\",\n        \"type\": \"percentage\",\n        \"amount\": 10,\n        \"usage_limit_total\": 100,\n        \"usage_limit_per_user\": 2,\n        \"start_at\": \"2026-01-01T00:00:00.000000Z\",\n        \"end_at\": \"2026-01-31T23:59:59.000000Z\",\n        \"is_active\": true,\n        \"total_usage\": 15,\n        \"store\": {\n            \"id\": 1,\n            \"name\": \"متجر التقنية\"\n        },\n        \"products\": [\n            { \"id\": 5, \"name\": \"هيدفون بلوتوث\" },\n            { \"id\": 8, \"name\": \"شاحن سريع\" }\n        ]\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Create Coupon",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"store_id\": 1,\n    \"type\": \"percentage\",\n    \"amount\": 15,\n    \"usage_limit_total\": 200,\n    \"usage_limit_per_user\": 3,\n    \"start_at\": \"2026-01-10\",\n    \"end_at\": \"2026-02-10\",\n    \"product_ids\": [5, 8, 10]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/coupons",
+							"host": ["{{base_url}}"],
+							"path": ["coupons"]
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "Created",
+							"code": 201,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم إنشاء الكوبون بنجاح\",\n    \"data\": {\n        \"id\": 3,\n        \"code\": \"A7BC3XY\",\n        \"type\": \"percentage\",\n        \"amount\": 15,\n        \"usage_limit_total\": 200,\n        \"usage_limit_per_user\": 3,\n        \"start_at\": \"2026-01-10T00:00:00.000000Z\",\n        \"end_at\": \"2026-02-10T00:00:00.000000Z\",\n        \"is_active\": true,\n        \"total_usage\": 0,\n        \"store\": {\n            \"id\": 1,\n            \"name\": \"متجر التقنية\"\n        },\n        \"products\": [\n            { \"id\": 5, \"name\": \"هيدفون بلوتوث\" },\n            { \"id\": 8, \"name\": \"شاحن سريع\" },\n            { \"id\": 10, \"name\": \"سماعات أذن\" }\n        ]\n    }\n}"
+						},
+						{
+							"name": "Error - Unauthorized",
+							"status": "Forbidden",
+							"code": 403,
+							"body": "{\n    \"status\": \"error\",\n    \"message\": \"غير مصرح لك بتنفيذ هذا الإجراء.\"\n}"
+						},
+						{
+							"name": "Error - Products Not From Same Store",
+							"status": "Unprocessable Entity",
+							"code": 422,
+							"body": "{\n    \"message\": \"The given data was invalid.\",\n    \"errors\": {\n        \"product_ids\": [\n            \"المنتجات التالية لا تنتمي للمتجر المحدد: قميص رجالي، بنطال جينز\"\n        ]\n    }\n}"
+						},
+						{
+							"name": "Error - Validation",
+							"status": "Unprocessable Entity",
+							"code": 422,
+							"body": "{\n    \"message\": \"The given data was invalid.\",\n    \"errors\": {\n        \"store_id\": [\"حقل المتجر مطلوب.\"],\n        \"type\": [\"حقل نوع الخصم مطلوب.\"],\n        \"amount\": [\"حقل قيمة الخصم مطلوب.\"]\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Create Fixed Amount Coupon",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"store_id\": 2,\n    \"type\": \"fixed\",\n    \"amount\": 1000,\n    \"usage_limit_total\": 50,\n    \"usage_limit_per_user\": 1,\n    \"start_at\": \"2026-01-08\",\n    \"end_at\": \"2026-01-15\",\n    \"product_ids\": [12, 15]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/coupons",
+							"host": ["{{base_url}}"],
+							"path": ["coupons"]
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "Created",
+							"code": 201,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم إنشاء الكوبون بنجاح\",\n    \"data\": {\n        \"id\": 4,\n        \"code\": \"X9KM2PQ\",\n        \"type\": \"fixed\",\n        \"amount\": 1000,\n        \"usage_limit_total\": 50,\n        \"usage_limit_per_user\": 1,\n        \"start_at\": \"2026-01-08T00:00:00.000000Z\",\n        \"end_at\": \"2026-01-15T00:00:00.000000Z\",\n        \"is_active\": true,\n        \"total_usage\": 0,\n        \"store\": {\n            \"id\": 2,\n            \"name\": \"متجر الملابس\"\n        },\n        \"products\": [\n            { \"id\": 12, \"name\": \"قميص رجالي\" },\n            { \"id\": 15, \"name\": \"بنطال جينز\" }\n        ]\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Update Coupon",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"amount\": 20,\n    \"usage_limit_total\": 300,\n    \"end_at\": \"2026-03-01\",\n    \"product_ids\": [5, 8, 10, 11]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/coupons/1",
+							"host": ["{{base_url}}"],
+							"path": ["coupons", "1"]
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم تحديث الكوبون بنجاح\",\n    \"data\": {\n        \"id\": 1,\n        \"code\": \"SAVE10\",\n        \"type\": \"percentage\",\n        \"amount\": 20,\n        \"usage_limit_total\": 300,\n        \"usage_limit_per_user\": 2,\n        \"start_at\": \"2026-01-01T00:00:00.000000Z\",\n        \"end_at\": \"2026-03-01T00:00:00.000000Z\",\n        \"is_active\": true,\n        \"total_usage\": 15,\n        \"store\": {\n            \"id\": 1,\n            \"name\": \"متجر التقنية\"\n        },\n        \"products\": [\n            { \"id\": 5, \"name\": \"هيدفون بلوتوث\" },\n            { \"id\": 8, \"name\": \"شاحن سريع\" },\n            { \"id\": 10, \"name\": \"سماعات أذن\" },\n            { \"id\": 11, \"name\": \"كابل شحن\" }\n        ]\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Delete Coupon",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/coupons/1",
+							"host": ["{{base_url}}"],
+							"path": ["coupons", "1"]
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم حذف الكوبون بنجاح\",\n    \"data\": null\n}"
+						}
+					]
+				}
+			]
+		}
+	]
+}

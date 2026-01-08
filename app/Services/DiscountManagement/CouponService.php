@@ -131,7 +131,7 @@ class CouponService extends \App\Services\Service
                 $coupon->products()->attach($data['product_ids']);
             }
 
-            return $coupon->load('products.store');
+            return $coupon->load(['store', 'products.store']);
         });
     }
     /**
@@ -151,7 +151,7 @@ class CouponService extends \App\Services\Service
                 $coupon->products()->sync($data['product_ids'] ?? []);
             }
 
-            return $coupon->load('products.store');
+            return $coupon->load(['store', 'products.store']);
         });
     }
     /**
