@@ -48,6 +48,10 @@ class CartItemResource extends JsonResource
 
             // Variant details (if applicable)
             'variant' => $this->when($this->variant, function () {
+                $attributes = $this->variant->relationLoaded('attributes')
+                    ? $this->variant->attributes
+                    : collect($this->variant->attributes ?? []);
+
                 return [
                     'id' => $this->variant->id,
                     'sku' => $this->variant->sku,
@@ -55,10 +59,10 @@ class CartItemResource extends JsonResource
                     'stock_quantity' => $this->variant->stock_quantity,
                     'is_active' => $this->variant->is_active,
                     'attributes_string' => $this->variant_attributes_string,
-                    'attributes' => $this->variant->attributes->map(function ($attr) {
+                    'attributes' => $attributes->map(function ($attr) {
                         return [
-                            'attribute_name' => $attr->attribute?->name,
-                            'attribute_value' => $attr->value?->value,
+                            'attribute_name' => $attr->attribute?->name ?? null,
+                            'attribute_value' => $attr->value?->value ?? null,
                         ];
                     }),
                 ];

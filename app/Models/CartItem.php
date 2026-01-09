@@ -112,11 +112,19 @@ class CartItem extends Model
      */
     public function getVariantAttributesStringAttribute(): ?string
     {
-        if (!$this->variant || !$this->variant->attributes) {
+        if (!$this->variant) {
             return null;
         }
 
-        return $this->variant->attributes->map(function ($attr) {
+        $attributes = $this->variant->relationLoaded('attributes')
+            ? $this->variant->attributes
+            : $this->variant->attributes()->with(['attribute', 'value'])->get();
+
+        if ($attributes->isEmpty()) {
+            return null;
+        }
+
+        return $attributes->map(function ($attr) {
             $attributeName = $attr->attribute?->name ?? '';
             $valueName = $attr->value?->value ?? '';
             return "{$attributeName}: {$valueName}";

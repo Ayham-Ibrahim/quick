@@ -50,66 +50,33 @@ Extend [BaseFormRequest.php](app/Http/Requests/BaseFormRequest.php), NOT Laravel
 ### Data Models & Architecture
 
 **Product Structure** (3-level):
-```
-Product (name, description, is_accepted)
-  └→ ProductVariant (sku, price, stock_quantity, is_active)
       └→ ProductVariantAttribute (attribute_id, attribute_value_id)
 ```
-- Products require admin approval: `is_accepted` field
-- Use scopes: `Product::accepted()`, `Product::pending()`
-- Variants handle pricing & stock; product-level `quantity` is fallback
 
 **Wallet System** (polymorphic):
-```php
 Wallet::morphTo('owner')  // Can belong to User or Driver
 // Auto-created via DriverObserver on Driver creation
 ```
-- 8-digit unique `wallet_code` via [WalletHelper](app/Helpers/WalletHelper.php)
 - Providers can add balance to Driver wallets
 - Transactions track Provider→Driver transfers
-
-**Cart & Checkout Flow**:
 1. `Cart::active()` scope gets user's current cart
 2. CartItems reference Product + optional ProductVariant
-3. Checkout: validates stock → applies coupon → creates Order → decrements stock → marks cart completed
 4. Order has 7 statuses: pending, confirmed, processing, ready, shipped, delivered, cancelled
 
-**Model Scopes** (use consistently):
 - `Product::accepted()`, `pending()`
 - `Cart::active()`
-- `Order::pending()`, `byStatus($status)`
 - `Coupon::active()`
 
-**Polymorphic Relations**:
-- `Rating::morphTo('rateable')` - Products/Stores/Drivers
-- `Wallet::morphTo('owner')` - Users/Drivers
 
 ### Observers
-[DriverObserver](app/Observers/DriverObserver.php) auto-creates Wallet on Driver creation. Register in [AppServiceProvider](app/Providers/AppServiceProvider.php).
 
 ## Commands
-```bash
-composer run dev      # Runs: server + queue + logs + vite (queue needed for OTP sending)
-composer run test     # PHPUnit with in-memory SQLite (see phpunit.xml)
-composer run setup    # Fresh install: deps + .env + key + migrate + npm
-vendor/bin/pint       # Code formatting (Laravel Pint)
-```
 
 ## Key Routes
-- **Auth**: `POST /register` → `POST /confirm-registration` (OTP flow returns Sanctum token)
-  - Also: `/login` → `/confirm-login`, `/forgot-password` → `/confirm-forgot-password` → `/reset-password`
-  - `/resend-otp` for OTP retry
 - **Products**: 
   - `GET /products` (accepted only), `POST /products` (store owner)
-  - `GET /pending-products`, `POST /accept-product/{id}` (admin approval flow)
-  - `GET /my-products` (store owner's products)
-- **Cart**: `GET /cart`, `POST /cart/items`, `PUT /cart/items/{id}`, `GET /cart/validate`
-- **Checkout**: `GET /checkout/preview`, `POST /checkout/validate-coupon`, `POST /checkout`
-- **Wallet**: `GET /my-wallet`, `POST /wallet/add-balance`
 - **Profile**: `GET /user/profile`, `GET /store/profile`, `GET /driver/profile`
 
-## Gotchas
-- **Guards**: Always specify correct guard for Store/Driver operations
 - **Arabic**: All user-facing messages in Arabic (errors, success, validation)
 - **Transactions**: Wrap wallet ops, checkout, multi-model updates in `DB::transaction()`
 - **Product approval**: Products start with `is_accepted = false`, need admin approval
