@@ -117,7 +117,7 @@ class CartItem extends Model
         }
 
         $attributes = $this->variant->relationLoaded('attributes')
-            ? $this->variant->attributes
+            ? collect($this->variant->attributes)
             : $this->variant->attributes()->with(['attribute', 'value'])->get();
 
         if ($attributes->isEmpty()) {
