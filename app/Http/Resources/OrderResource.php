@@ -46,6 +46,7 @@ class OrderResource extends JsonResource
             // إحصائيات
             'itemsCount' => $this->items_count,
             'isCancellable' => $this->is_cancellable,
+            'canDriverCancelDelivery' => $this->can_driver_cancel_delivery,
 
             // العناصر
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
@@ -76,6 +77,22 @@ class OrderResource extends JsonResource
             ]),
             'hasDriver' => $this->has_driver,
             'driverAssignedAt' => $this->driver_assigned_at?->format('Y-m-d H:i'),
+
+            // حالة انتظار السائق
+            'confirmationExpiresAt' => $this->confirmation_expires_at?->toIso8601String(),
+            'isConfirmationExpired' => $this->is_confirmation_expired,
+            'canResendToDrivers' => $this->can_resend_to_drivers,
+            'isAvailableForDriver' => $this->is_available_for_driver,
+            'isImmediateDelivery' => $this->is_immediate_delivery,
+
+            // معلومات المستخدم (للسائق)
+            'user' => $this->whenLoaded('user', function () {
+                return [
+                    'id' => $this->user->id,
+                    'userName' => $this->user->user_name,
+                    'phone' => $this->user->phone,
+                ];
+            }),
 
             'createdAt' => $this->created_at->format('Y-m-d H:i'),
             'updatedAt' => $this->updated_at->format('Y-m-d H:i'),

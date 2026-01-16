@@ -1,0 +1,461 @@
+{
+	"info": {
+		"_postman_id": "orders-simplified-2026",
+		"name": "📦 Orders API - النظام المبسط",
+		"description": "نظام الطلبات المبسط - 4 حالات فقط: pending, shipping, delivered, cancelled\n\n## آلية العمل:\n1. إنشاء الطلب → pending + انتظار 5 دقائق\n2. إذا سائق قبل → shipping\n3. إذا انتهت الصلاحية → can_resend_to_drivers=true\n4. المستخدم يضغط /resend لتجديد الصلاحية",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000/api",
+			"type": "string"
+		},
+		{
+			"key": "user_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "driver_token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "📦 Regular Orders (طلبات المنتجات)",
+			"item": [
+				{
+					"name": "User APIs",
+					"item": [
+						{
+							"name": "Get My Orders",
+							"request": {
+								"method": "GET",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{user_token}}"},
+									{"key": "Accept", "value": "application/json"}
+								],
+								"url": {
+									"raw": "{{base_url}}/orders?status=&per_page=15",
+									"host": ["{{base_url}}"],
+									"path": ["orders"],
+									"query": [
+										{"key": "status", "value": "", "description": "pending, shipping, delivered, cancelled"},
+										{"key": "per_page", "value": "15"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get Order Details",
+							"request": {
+								"method": "GET",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{user_token}}"},
+									{"key": "Accept", "value": "application/json"}
+								],
+								"url": {
+									"raw": "{{base_url}}/orders/1",
+									"host": ["{{base_url}}"],
+									"path": ["orders", "1"]
+								}
+							}
+						},
+						{
+							"name": "Cancel Order",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{user_token}}"},
+									{"key": "Accept", "value": "application/json"},
+									{"key": "Content-Type", "value": "application/json"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"reason\": \"تغيرت خططي\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/orders/1/cancel",
+									"host": ["{{base_url}}"],
+									"path": ["orders", "1", "cancel"]
+								},
+								"description": "إلغاء طلب - يعمل فقط في حالة pending"
+							}
+						},
+						{
+							"name": "⚡ Resend to Drivers",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{user_token}}"},
+									{"key": "Accept", "value": "application/json"}
+								],
+								"url": {
+									"raw": "{{base_url}}/orders/1/resend",
+									"host": ["{{base_url}}"],
+									"path": ["orders", "1", "resend"]
+								},
+								"description": "إعادة إرسال للسائقين - يعمل عندما:\n- الحالة: pending\n- لا يوجد سائق\n- انتهت الصلاحية (can_resend_to_drivers=true)"
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم إعادة إرسال الطلب للسائقين\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"pending\",\n        \"confirmationExpiresAt\": \"2026-01-16T10:45:00+00:00\",\n        \"isConfirmationExpired\": false,\n        \"canResendToDrivers\": false,\n        \"isAvailableForDriver\": true\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Retry Delivery (after cancel)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{user_token}}"},
+									{"key": "Accept", "value": "application/json"}
+								],
+								"url": {
+									"raw": "{{base_url}}/orders/1/retry-delivery",
+									"host": ["{{base_url}}"],
+									"path": ["orders", "1", "retry-delivery"]
+								},
+								"description": "إعادة المحاولة بعد الإلغاء - يعمل عندما:\n- الحالة: cancelled"
+							}
+						}
+					]
+				},
+				{
+					"name": "Driver APIs",
+					"item": [
+						{
+							"name": "Get Available Orders",
+							"request": {
+								"method": "GET",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{driver_token}}"},
+									{"key": "Accept", "value": "application/json"}
+								],
+								"url": {
+									"raw": "{{base_url}}/driver/orders/available",
+									"host": ["{{base_url}}"],
+									"path": ["driver", "orders", "available"]
+								},
+								"description": "الطلبات المتاحة للقبول:\n- الحالة: pending\n- بدون سائق\n- لم تنته الصلاحية"
+							}
+						},
+						{
+							"name": "Get My Orders",
+							"request": {
+								"method": "GET",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{driver_token}}"},
+									{"key": "Accept", "value": "application/json"}
+								],
+								"url": {
+									"raw": "{{base_url}}/driver/orders/my?status=",
+									"host": ["{{base_url}}"],
+									"path": ["driver", "orders", "my"],
+									"query": [
+										{"key": "status", "value": "", "description": "shipping, delivered, cancelled"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Accept Order",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{driver_token}}"},
+									{"key": "Accept", "value": "application/json"}
+								],
+								"url": {
+									"raw": "{{base_url}}/driver/orders/1/accept",
+									"host": ["{{base_url}}"],
+									"path": ["driver", "orders", "1", "accept"]
+								},
+								"description": "قبول طلب وبدء التوصيل:\npending → shipping"
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم قبول الطلب\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"shipping\",\n        \"statusText\": \"قيد التوصيل\",\n        \"hasDriver\": true\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Confirm Delivery",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{driver_token}}"},
+									{"key": "Accept", "value": "application/json"}
+								],
+								"url": {
+									"raw": "{{base_url}}/driver/orders/1/deliver",
+									"host": ["{{base_url}}"],
+									"path": ["driver", "orders", "1", "deliver"]
+								},
+								"description": "تأكيد التسليم:\nshipping → delivered"
+							}
+						},
+						{
+							"name": "Cancel Delivery",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{driver_token}}"},
+									{"key": "Accept", "value": "application/json"},
+									{"key": "Content-Type", "value": "application/json"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"reason\": \"العميل غير متواجد\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/driver/orders/1/cancel",
+									"host": ["{{base_url}}"],
+									"path": ["driver", "orders", "1", "cancel"]
+								},
+								"description": "إلغاء التوصيل مع سبب:\nshipping → cancelled"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "🛵 Custom Orders (اطلب أي شيء)",
+			"item": [
+				{
+					"name": "User APIs",
+					"item": [
+						{
+							"name": "Calculate Delivery Fee",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{user_token}}"},
+									{"key": "Accept", "value": "application/json"},
+									{"key": "Content-Type", "value": "application/json"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"distance_km\": 5.5\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/custom-orders/calculate-fee",
+									"host": ["{{base_url}}"],
+									"path": ["custom-orders", "calculate-fee"]
+								}
+							}
+						},
+						{
+							"name": "Create Custom Order",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{user_token}}"},
+									{"key": "Accept", "value": "application/json"},
+									{"key": "Content-Type", "value": "application/json"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"delivery_address\": \"حماة، شارع الوليد، البناية 20\",\n    \"delivery_lat\": 35.1318,\n    \"delivery_lng\": 36.7514,\n    \"distance_km\": 5.5,\n    \"is_immediate\": true,\n    \"notes\": \"الرجاء الاتصال قبل الوصول\",\n    \"items\": [\n        {\n            \"description\": \"بيتزا عائلي من مطعم بيتزا\",\n            \"pickup_address\": \"حماة، شارع القوتلي، مطعم بيتزا هت\",\n            \"pickup_lat\": 35.1298,\n            \"pickup_lng\": 36.7489\n        },\n        {\n            \"description\": \"عصير برتقال طبيعي 2 لتر\",\n            \"pickup_address\": \"حماة، شارع الثورة، سوبرماركت الأمل\",\n            \"pickup_lat\": 35.1305,\n            \"pickup_lng\": 36.7501\n        }\n    ]\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/custom-orders",
+									"host": ["{{base_url}}"],
+									"path": ["custom-orders"]
+								},
+								"description": "إنشاء طلب خاص - يصبح pending مباشرة مع فترة انتظار 5 دقائق"
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "Created",
+									"code": 201,
+									"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم إنشاء الطلب بنجاح\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"pending\",\n        \"status_text\": \"معلق\",\n        \"delivery_fee\": 27500,\n        \"confirmation_expires_at\": \"2026-01-16T10:40:00+00:00\",\n        \"is_confirmation_expired\": false,\n        \"can_resend_to_drivers\": false,\n        \"is_available_for_driver\": true\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Get My Custom Orders",
+							"request": {
+								"method": "GET",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{user_token}}"},
+									{"key": "Accept", "value": "application/json"}
+								],
+								"url": {
+									"raw": "{{base_url}}/custom-orders?status=&per_page=15",
+									"host": ["{{base_url}}"],
+									"path": ["custom-orders"],
+									"query": [
+										{"key": "status", "value": "", "description": "pending, shipping, delivered, cancelled"},
+										{"key": "per_page", "value": "15"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get Custom Order Details",
+							"request": {
+								"method": "GET",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{user_token}}"},
+									{"key": "Accept", "value": "application/json"}
+								],
+								"url": {
+									"raw": "{{base_url}}/custom-orders/1",
+									"host": ["{{base_url}}"],
+									"path": ["custom-orders", "1"]
+								}
+							}
+						},
+						{
+							"name": "Cancel Custom Order",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{user_token}}"},
+									{"key": "Accept", "value": "application/json"},
+									{"key": "Content-Type", "value": "application/json"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"reason\": \"تغيرت خططي\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/custom-orders/1/cancel",
+									"host": ["{{base_url}}"],
+									"path": ["custom-orders", "1", "cancel"]
+								}
+							}
+						},
+						{
+							"name": "⚡ Resend to Drivers",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{user_token}}"},
+									{"key": "Accept", "value": "application/json"}
+								],
+								"url": {
+									"raw": "{{base_url}}/custom-orders/1/resend",
+									"host": ["{{base_url}}"],
+									"path": ["custom-orders", "1", "resend"]
+								},
+								"description": "إعادة إرسال للسائقين بعد انتهاء الصلاحية"
+							}
+						},
+						{
+							"name": "Retry Delivery (after cancel)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{user_token}}"},
+									{"key": "Accept", "value": "application/json"}
+								],
+								"url": {
+									"raw": "{{base_url}}/custom-orders/1/retry-delivery",
+									"host": ["{{base_url}}"],
+									"path": ["custom-orders", "1", "retry-delivery"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Driver APIs",
+					"item": [
+						{
+							"name": "Get Available Orders",
+							"request": {
+								"method": "GET",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{driver_token}}"},
+									{"key": "Accept", "value": "application/json"}
+								],
+								"url": {
+									"raw": "{{base_url}}/driver/custom-orders/available",
+									"host": ["{{base_url}}"],
+									"path": ["driver", "custom-orders", "available"]
+								}
+							}
+						},
+						{
+							"name": "Get My Orders",
+							"request": {
+								"method": "GET",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{driver_token}}"},
+									{"key": "Accept", "value": "application/json"}
+								],
+								"url": {
+									"raw": "{{base_url}}/driver/custom-orders/my",
+									"host": ["{{base_url}}"],
+									"path": ["driver", "custom-orders", "my"]
+								}
+							}
+						},
+						{
+							"name": "Accept Order",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{driver_token}}"},
+									{"key": "Accept", "value": "application/json"}
+								],
+								"url": {
+									"raw": "{{base_url}}/driver/custom-orders/1/accept",
+									"host": ["{{base_url}}"],
+									"path": ["driver", "custom-orders", "1", "accept"]
+								}
+							}
+						},
+						{
+							"name": "Confirm Delivery",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{driver_token}}"},
+									{"key": "Accept", "value": "application/json"}
+								],
+								"url": {
+									"raw": "{{base_url}}/driver/custom-orders/1/deliver",
+									"host": ["{{base_url}}"],
+									"path": ["driver", "custom-orders", "1", "deliver"]
+								}
+							}
+						},
+						{
+							"name": "Cancel Delivery",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{driver_token}}"},
+									{"key": "Accept", "value": "application/json"},
+									{"key": "Content-Type", "value": "application/json"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"reason\": \"العميل غير متواجد\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/driver/custom-orders/1/cancel",
+									"host": ["{{base_url}}"],
+									"path": ["driver", "custom-orders", "1", "cancel"]
+								}
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}

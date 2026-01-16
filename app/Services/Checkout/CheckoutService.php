@@ -51,7 +51,7 @@ class CheckoutService extends Service
                 // رسوم التوصيل (يمكن إرسالها من الـ request أو حسابها مستقبلاً)
                 $deliveryFee = $data['delivery_fee'] ?? 0;
 
-                // إنشاء الطلب
+                // إنشاء الطلب مع فترة انتظار السائق
                 $order = Order::create([
                     'user_id' => $user->id,
                     'coupon_id' => $couponData['coupon']->id ?? null,
@@ -61,6 +61,7 @@ class CheckoutService extends Service
                     'delivery_fee' => $deliveryFee,
                     'total' => $totals['total'] + $deliveryFee,
                     'status' => Order::STATUS_PENDING,
+                    'confirmation_expires_at' => now()->addMinutes(Order::DRIVER_CONFIRMATION_TIMEOUT_MINUTES),
                     'delivery_address' => $data['delivery_address'],
                     'requested_delivery_at' => $data['requested_delivery_at'] ?? null,
                     'notes' => $data['notes'] ?? null,
