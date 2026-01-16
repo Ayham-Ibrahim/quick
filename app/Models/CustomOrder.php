@@ -4,16 +4,15 @@ namespace App\Models;
 
 use App\Models\Driver;
 use App\Models\UserManagement\User;
-use App\Models\DiscountManagement\Coupon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * نموذج الطلب العادي (منتجات من المتاجر)
+ * نموذج الطلب الخاص (اطلب أي شيء)
  * 
  * ═══════════════════════════════════════════════════════════════════════
- * مسار الحالات المبسط (Simplified Order Status Flow):
+ * مسار الحالات المبسط (Simplified Custom Order Status Flow):
  * ═══════════════════════════════════════════════════════════════════════
  * 
  *   pending ──────────► shipping ──────────► delivered
@@ -31,7 +30,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * 
  * ═══════════════════════════════════════════════════════════════════════
  */
-class Order extends Model
+class CustomOrder extends Model
 {
     /* ═══════════════════════════════════════════════════════════════════
      * الثوابت - Constants
@@ -57,31 +56,29 @@ class Order extends Model
     protected $fillable = [
         'user_id',
         'driver_id',
-        'coupon_id',
-        'coupon_code',
-        'subtotal',
-        'discount_amount',
         'delivery_fee',
-        'total',
+        'distance_km',
         'status',
-        'confirmation_expires_at',
         'delivery_address',
-        'requested_delivery_at',
-        'is_immediate_delivery',
+        'delivery_lat',
+        'delivery_lng',
+        'is_immediate',
+        'scheduled_at',
+        'confirmation_expires_at',
         'driver_assigned_at',
         'notes',
         'cancellation_reason',
     ];
 
     protected $casts = [
-        'subtotal' => 'decimal:2',
-        'discount_amount' => 'decimal:2',
         'delivery_fee' => 'decimal:2',
-        'total' => 'decimal:2',
-        'requested_delivery_at' => 'datetime',
+        'distance_km' => 'decimal:2',
+        'delivery_lat' => 'decimal:7',
+        'delivery_lng' => 'decimal:7',
+        'is_immediate' => 'boolean',
+        'scheduled_at' => 'datetime',
         'confirmation_expires_at' => 'datetime',
         'driver_assigned_at' => 'datetime',
-        'is_immediate_delivery' => 'boolean',
     ];
 
     /* ═══════════════════════════════════════════════════════════════════
@@ -98,14 +95,9 @@ class Order extends Model
         return $this->belongsTo(Driver::class);
     }
 
-    public function coupon(): BelongsTo
-    {
-        return $this->belongsTo(Coupon::class);
-    }
-
     public function items(): HasMany
     {
-        return $this->hasMany(OrderItem::class);
+        return $this->hasMany(CustomOrderItem::class)->orderBy('order_index');
     }
 
     /* ═══════════════════════════════════════════════════════════════════
@@ -117,7 +109,7 @@ class Order extends Model
      */
     public function getItemsCountAttribute(): int
     {
-        return $this->items->sum('quantity');
+        return $this->items->count();
     }
 
     /**
@@ -129,14 +121,6 @@ class Order extends Model
     }
 
     /**
-     * هل تم تطبيق كوبون؟
-     */
-    public function getHasCouponAttribute(): bool
-    {
-        return !is_null($this->coupon_id);
-    }
-
-    /**
      * هل تم تعيين سائق؟
      */
     public function getHasDriverAttribute(): bool
@@ -145,7 +129,7 @@ class Order extends Model
     }
 
     /**
-     * هل انتهت صلاحية انتظار السائق؟
+     * هل انتهت صلاحية طلب التأكيد؟
      */
     public function getIsConfirmationExpiredAttribute(): bool
     {
@@ -219,29 +203,18 @@ class Order extends Model
     }
 
     /**
-     * الطلبات النشطة (غير منتهية أو ملغية)
-     */
-    public function scopeActive($query)
-    {
-        return $query->whereNotIn('status', [
-            self::STATUS_DELIVERED,
-            self::STATUS_CANCELLED,
-        ]);
-    }
-
-    /**
      * الطلبات المتاحة للسائقين (معلقة بدون سائق ولم تنته الصلاحية)
      */
     public function scopeAvailableForDrivers($query)
     {
-        return $query->where('status', self::STATUS_PENDING)
-            ->whereNull('driver_id');
+        return $query->where('status', self::STATUS_SHIPPING);
+            // ->('driver_id');
     }
 
     /**
-     * الطلبات التي انتهت صلاحية انتظار السائق
+     * الطلبات التي انتهت صلاحيتها
      */
-    public function scopeConfirmationExpired($query)
+    public function scopeExpired($query)
     {
         return $query->where('status', self::STATUS_PENDING)
             ->whereNull('driver_id')
@@ -263,6 +236,17 @@ class Order extends Model
     {
         return $query->where('driver_id', $driverId)
             ->where('status', self::STATUS_SHIPPING);
+    }
+
+    /**
+     * الطلبات النشطة (غير منتهية أو ملغية)
+     */
+    public function scopeActive($query)
+    {
+        return $query->whereNotIn('status', [
+            self::STATUS_DELIVERED,
+            self::STATUS_CANCELLED,
+        ]);
     }
 
     /* ═══════════════════════════════════════════════════════════════════
@@ -348,14 +332,6 @@ class Order extends Model
     public function updateStatus(string $status): void
     {
         $this->update(['status' => $status]);
-    }
-
-    /**
-     * جلب العناصر مجمعة حسب المتجر
-     */
-    public function getItemsByStore(): \Illuminate\Support\Collection
-    {
-        return $this->items->groupBy('store_id');
     }
 
     /**

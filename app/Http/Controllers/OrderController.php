@@ -71,6 +71,36 @@ class OrderController extends Controller
         );
     }
 
+    /**
+     * إعادة محاولة التوصيل بعد الإلغاء
+     *
+     * POST /orders/{id}/retry-delivery
+     */
+    public function retryDelivery(int $id)
+    {
+        $order = $this->orderService->retryDelivery($id);
+
+        return $this->success(
+            new OrderResource($order),
+            'تم إعادة إرسال الطلب للسائقين'
+        );
+    }
+
+    /**
+     * إعادة إرسال الطلب للسائقين (تجديد فترة الانتظار)
+     *
+     * POST /orders/{id}/resend
+     */
+    public function resendToDrivers(int $id)
+    {
+        $order = $this->orderService->resendToDrivers($id);
+
+        return $this->success(
+            new OrderResource($order),
+            'تم إعادة إرسال الطلب للسائقين'
+        );
+    }
+
     /* ==========================================
      * APIs للسائق
      * ========================================== */
@@ -126,17 +156,36 @@ class OrderController extends Controller
     }
 
     /**
-     * السائق يُتم التوصيل
+     * السائق يؤكد تسليم الطلب
      *
      * POST /driver/orders/{id}/deliver
      */
     public function deliverOrder(int $id)
     {
-        $order = $this->orderService->updateOrderStatusByDriver($id, 'delivered');
+        $order = $this->orderService->confirmDeliveryByDriver($id);
 
         return $this->success(
             new OrderResource($order),
             'تم تسليم الطلب بنجاح'
+        );
+    }
+
+    /**
+     * السائق يلغي التوصيل مع سبب
+     *
+     * POST /driver/orders/{id}/cancel
+     */
+    public function cancelDelivery(Request $request, int $id)
+    {
+        $validated = $request->validate([
+            'reason' => 'required|string|max:500',
+        ]);
+
+        $order = $this->orderService->cancelDeliveryByDriver($id, $validated['reason']);
+
+        return $this->success(
+            new OrderResource($order),
+            'تم إلغاء التوصيل'
         );
     }
 
@@ -172,7 +221,7 @@ class OrderController extends Controller
     public function updateStatus(Request $request, int $id)
     {
         $validated = $request->validate([
-            'status' => 'required|string|in:pending,confirmed,processing,ready,shipped,delivered,cancelled',
+            'status' => 'required|string|in:pending,shipping,delivered,cancelled',
         ]);
 
         $order = $this->orderService->updateOrderStatus($id, $validated['status']);

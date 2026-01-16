@@ -6,14 +6,30 @@ use App\Models\Order;
 use App\Models\Driver;
 use App\Services\Service;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Pagination\LengthAwarePaginator;
 
+/**
+ * خدمة إدارة الطلبات العادية (منتجات من المتاجر)
+ * 
+ * ═══════════════════════════════════════════════════════════════════════
+ * الحالات الأربعة المبسطة:
+ * ═══════════════════════════════════════════════════════════════════════
+ * 1. pending    = معلق (بانتظار قبول سائق)
+ * 2. shipping   = قيد التوصيل
+ * 3. delivered  = تم التسليم
+ * 4. cancelled  = ملغي/فشل (مع سبب)
+ * ═══════════════════════════════════════════════════════════════════════
+ */
 class OrderService extends Service
 {
+    /* ═══════════════════════════════════════════════════════════════════
+     * وظائف المستخدم - User Functions
+     * ═══════════════════════════════════════════════════════════════════ */
+
     /**
      * جلب طلبات المستخدم الحالي
      */
-    public function getUserOrders(array $filters = [])
+    public function getUserOrders(array $filters = []): LengthAwarePaginator
     {
         $query = Order::where('user_id', Auth::id())
             ->with(['items.product', 'items.store', 'driver', 'coupon'])
@@ -50,7 +66,7 @@ class OrderService extends Service
     }
 
     /**
-     * إلغاء طلب
+     * إلغاء طلب من المستخدم (فقط في حالة معلق)
      */
     public function cancelOrder(int $orderId, ?string $reason = null): Order
     {
@@ -70,22 +86,68 @@ class OrderService extends Service
     }
 
     /**
-     * جلب الطلبات المتاحة للتوصيل (للسائقين)
+     * إعادة إرسال الطلب للسائقين (تجديد فترة الانتظار)
      */
-    public function getAvailableOrdersForDelivery(array $filters = [])
+    public function resendToDrivers(int $orderId): Order
     {
-        $query = Order::withoutDriver()
-            ->where('status', Order::STATUS_READY)
-            ->with(['items.product', 'items.store', 'user'])
-            ->latest();
+        $order = Order::where('user_id', Auth::id())->find($orderId);
 
-        return $query->paginate($filters['per_page'] ?? 15);
+        if (!$order) {
+            $this->throwExceptionJson('الطلب غير موجود', 404);
+        }
+
+        if (!$order->can_resend_to_drivers) {
+            $this->throwExceptionJson('لا يمكن إعادة إرسال هذا الطلب حالياً', 400);
+        }
+
+        $order->resendToDrivers();
+
+        // TODO: إرسال إشعار للسائقين النشطين (Firebase)
+
+        return $order->fresh(['items.product', 'items.store', 'driver']);
+    }
+
+    /**
+     * إعادة محاولة التوصيل بعد الإلغاء
+     */
+    public function retryDelivery(int $orderId): Order
+    {
+        $order = Order::where('user_id', Auth::id())->find($orderId);
+
+        if (!$order) {
+            $this->throwExceptionJson('الطلب غير موجود', 404);
+        }
+
+        if ($order->status !== Order::STATUS_CANCELLED) {
+            $this->throwExceptionJson('هذا الطلب غير ملغي', 400);
+        }
+
+        $order->retryDelivery();
+
+        // TODO: إرسال إشعار للسائقين النشطين (Firebase)
+
+        return $order->fresh(['items.product', 'items.store', 'driver']);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+     * وظائف السائق - Driver Functions
+     * ═══════════════════════════════════════════════════════════════════ */
+
+    /**
+     * جلب الطلبات المتاحة للتوصيل (المعلقة)
+     */
+    public function getAvailableOrdersForDelivery(array $filters = []): LengthAwarePaginator
+    {
+        return Order::availableForDrivers()
+            ->with(['items.product', 'items.store', 'user'])
+            ->latest()
+            ->paginate($filters['per_page'] ?? 15);
     }
 
     /**
      * جلب طلبات السائق الحالي
      */
-    public function getDriverOrders(array $filters = [])
+    public function getDriverOrders(array $filters = []): LengthAwarePaginator
     {
         $driver = Auth::guard('driver')->user();
 
@@ -101,41 +163,8 @@ class OrderService extends Service
     }
 
     /**
-     * تعيين سائق للطلب
-     */
-    public function assignDriver(int $orderId, int $driverId): Order
-    {
-        $order = Order::find($orderId);
-
-        if (!$order) {
-            $this->throwExceptionJson('الطلب غير موجود', 404);
-        }
-
-        if ($order->has_driver) {
-            $this->throwExceptionJson('تم تعيين سائق لهذا الطلب مسبقاً', 400);
-        }
-
-        if ($order->status !== Order::STATUS_READY) {
-            $this->throwExceptionJson('الطلب غير جاهز للتوصيل', 400);
-        }
-
-        // التحقق من وجود السائق ونشاطه
-        $driver = Driver::where('id', $driverId)
-            ->where('is_active', true)
-            ->first();
-
-        if (!$driver) {
-            $this->throwExceptionJson('السائق غير موجود أو غير نشط', 404);
-        }
-
-        $order->assignDriver($driverId);
-        $order->updateStatus(Order::STATUS_SHIPPED);
-
-        return $order->fresh(['items.product', 'driver', 'user']);
-    }
-
-    /**
-     * السائق يقبل الطلب بنفسه
+     * السائق يقبل طلب ويبدأ التوصيل
+     * (pending → shipping)
      */
     public function acceptOrderByDriver(int $orderId): Order
     {
@@ -151,52 +180,97 @@ class OrderService extends Service
             $this->throwExceptionJson('الطلب غير موجود', 404);
         }
 
-        if ($order->has_driver) {
+        if (!$order->is_available_for_driver) {
+            $this->throwExceptionJson('هذا الطلب غير متاح للقبول', 400);
+        }
+
+        // محاولة القبول مع التعامل مع Race Condition
+        $updated = Order::where('id', $orderId)
+            ->whereNull('driver_id')
+            ->where('status', Order::STATUS_PENDING)
+            ->update([
+                'driver_id' => $driver->id,
+                'driver_assigned_at' => now(),
+                'status' => Order::STATUS_SHIPPING,
+            ]);
+
+        if (!$updated) {
             $this->throwExceptionJson('تم قبول هذا الطلب من سائق آخر', 400);
         }
 
-        if ($order->status !== Order::STATUS_READY) {
-            $this->throwExceptionJson('الطلب غير جاهز للتوصيل', 400);
+        // TODO: إرسال إشعار للمستخدم
+
+        return $order->fresh(['items.product', 'items.store', 'user']);
+    }
+
+    /**
+     * السائق يؤكد تسليم الطلب
+     * (shipping → delivered)
+     */
+    public function confirmDeliveryByDriver(int $orderId): Order
+    {
+        $order = $this->getDriverOrder($orderId);
+
+        if ($order->status !== Order::STATUS_SHIPPING) {
+            $this->throwExceptionJson('لا يمكن تأكيد التسليم في هذه الحالة', 400);
         }
 
-        $order->assignDriver($driver->id);
-        $order->updateStatus(Order::STATUS_SHIPPED);
+        $order->markAsDelivered();
+
+        // TODO: إرسال إشعار للمستخدم
 
         return $order->fresh(['items.product', 'user']);
     }
 
     /**
-     * تحديث حالة الطلب بواسطة السائق
+     * السائق يلغي التوصيل مع سبب
+     * (shipping → cancelled)
      */
-    public function updateOrderStatusByDriver(int $orderId, string $status): Order
+    public function cancelDeliveryByDriver(int $orderId, string $reason): Order
+    {
+        $order = $this->getDriverOrder($orderId);
+
+        if ($order->status !== Order::STATUS_SHIPPING) {
+            $this->throwExceptionJson('لا يمكن إلغاء التوصيل في هذه الحالة', 400);
+        }
+
+        if (empty(trim($reason))) {
+            $this->throwExceptionJson('يجب تقديم سبب الإلغاء', 400);
+        }
+
+        $order->markAsCancelled($reason);
+
+        // TODO: إرسال إشعار للمستخدم
+
+        return $order->fresh(['items.product', 'user']);
+    }
+
+    /**
+     * جلب طلب للسائق الحالي
+     */
+    protected function getDriverOrder(int $orderId): Order
     {
         $driver = Auth::guard('driver')->user();
 
-        $order = Order::forDriver($driver->id)->find($orderId);
+        $order = Order::forDriver($driver->id)
+            ->with(['items.product', 'user'])
+            ->find($orderId);
 
         if (!$order) {
             $this->throwExceptionJson('الطلب غير موجود أو غير مسند إليك', 404);
         }
 
-        // التحقق من صحة انتقال الحالة
-        $allowedTransitions = [
-            Order::STATUS_SHIPPED => [Order::STATUS_DELIVERED],
-        ];
-
-        if (!isset($allowedTransitions[$order->status]) || 
-            !in_array($status, $allowedTransitions[$order->status])) {
-            $this->throwExceptionJson('لا يمكن تغيير الحالة إلى ' . $status, 400);
-        }
-
-        $order->updateStatus($status);
-
-        return $order->fresh(['items.product', 'user']);
+        return $order;
     }
 
+    /* ═══════════════════════════════════════════════════════════════════
+     * وظائف الإدارة - Admin Functions
+     * ═══════════════════════════════════════════════════════════════════ */
+
     /**
-     * جلب الطلبات للأدمن/المتجر
+     * جلب جميع الطلبات (للأدمن)
      */
-    public function getAllOrders(array $filters = [])
+    public function getAllOrders(array $filters = []): LengthAwarePaginator
     {
         $query = Order::with(['items.product', 'items.store', 'user', 'driver', 'coupon'])
             ->latest();
@@ -216,33 +290,10 @@ class OrderService extends Service
         return $query->paginate($filters['per_page'] ?? 15);
     }
 
-    /**
-     * تحديث حالة الطلب (للأدمن/المتجر)
-     */
-    public function updateOrderStatus(int $orderId, string $status): Order
-    {
-        $order = Order::find($orderId);
+    /* ═══════════════════════════════════════════════════════════════════
+     * وظائف النظام - System Functions
+     * ═══════════════════════════════════════════════════════════════════ */
 
-        if (!$order) {
-            $this->throwExceptionJson('الطلب غير موجود', 404);
-        }
-
-        $validStatuses = [
-            Order::STATUS_PENDING,
-            Order::STATUS_CONFIRMED,
-            Order::STATUS_PROCESSING,
-            Order::STATUS_READY,
-            Order::STATUS_SHIPPED,
-            Order::STATUS_DELIVERED,
-            Order::STATUS_CANCELLED,
-        ];
-
-        if (!in_array($status, $validStatuses)) {
-            $this->throwExceptionJson('حالة غير صالحة', 400);
-        }
-
-        $order->updateStatus($status);
-
-        return $order->fresh(['items.product', 'driver', 'user']);
-    }
+    // ملاحظة: لا نلغي الطلبات تلقائياً عند انتهاء الصلاحية
+    // المستخدم يضغط "تأكيد الطلب" مرة أخرى لتجديد فترة الانتظار
 }

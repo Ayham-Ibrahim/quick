@@ -5,6 +5,7 @@ use App\Http\Controllers\AdsController;
 use App\Http\Controllers\AttributeController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\CustomOrderController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\DriverController;
@@ -207,6 +208,23 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/', [OrderController::class, 'index']);           // جلب طلبات المستخدم
         Route::get('/{id}', [OrderController::class, 'show']);        // تفاصيل طلب
         Route::post('/{id}/cancel', [OrderController::class, 'cancel']); // إلغاء طلب
+        Route::post('/{id}/resend', [OrderController::class, 'resendToDrivers']); // إعادة إرسال للسائقين
+        Route::post('/{id}/retry-delivery', [OrderController::class, 'retryDelivery']); // إعادة محاولة بعد الإلغاء
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Custom Order Routes - اطلب أي شيء (للمستخدم)
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('custom-orders')->group(function () {
+        Route::get('/', [CustomOrderController::class, 'index']);              // جلب الطلبات الخاصة
+        Route::post('/', [CustomOrderController::class, 'store']);             // إنشاء طلب خاص (معلق مباشرة)
+        Route::post('/calculate-fee', [CustomOrderController::class, 'calculateFee']); // حساب سعر التوصيل
+        Route::get('/{id}', [CustomOrderController::class, 'show']);           // تفاصيل طلب
+        Route::post('/{id}/cancel', [CustomOrderController::class, 'cancel']); // إلغاء طلب
+        Route::post('/{id}/resend', [CustomOrderController::class, 'resendToDrivers']); // إعادة إرسال للسائقين
+        Route::post('/{id}/retry-delivery', [CustomOrderController::class, 'retryDelivery']); // إعادة محاولة بعد الإلغاء
     });
 
     /*
@@ -217,8 +235,22 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('driver/orders')->group(function () {
         Route::get('/available', [OrderController::class, 'availableOrders']); // الطلبات المتاحة للتوصيل
         Route::get('/my', [OrderController::class, 'driverOrders']);           // طلبات السائق
-        Route::post('/{id}/accept', [OrderController::class, 'acceptOrder']);  // قبول طلب
+        Route::post('/{id}/accept', [OrderController::class, 'acceptOrder']);  // قبول طلب وبدء التوصيل
         Route::post('/{id}/deliver', [OrderController::class, 'deliverOrder']); // تأكيد التوصيل
+        Route::post('/{id}/cancel', [OrderController::class, 'cancelDelivery']); // إلغاء التوصيل مع سبب
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Driver Custom Order Routes - اطلب أي شيء (للسائق)
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('driver/custom-orders')->group(function () {
+        Route::get('/available', [CustomOrderController::class, 'availableOrders']); // الطلبات الخاصة المتاحة
+        Route::get('/my', [CustomOrderController::class, 'driverOrders']);           // طلبات السائق الخاصة
+        Route::post('/{id}/accept', [CustomOrderController::class, 'acceptOrder']);  // قبول طلب وبدء التوصيل
+        Route::post('/{id}/deliver', [CustomOrderController::class, 'deliverOrder']); // تأكيد التوصيل
+        Route::post('/{id}/cancel', [CustomOrderController::class, 'cancelDelivery']); // إلغاء التوصيل مع سبب
     });
 
     /*
