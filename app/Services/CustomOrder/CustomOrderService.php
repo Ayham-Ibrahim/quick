@@ -145,19 +145,27 @@ class CustomOrderService extends Service
     }
 
     /**
-     * جلب طلبات المستخدم الحالي
+     * جلب طلبات المستخدم الحالي (مع Pagination)
      */
     public function getUserOrders(array $filters = []): LengthAwarePaginator
     {
-        $query = CustomOrder::where('user_id', Auth::id())
+        return CustomOrder::where('user_id', Auth::id())
             ->with(['items', 'driver'])
-            ->latest();
+            ->when($filters['status'] ?? null, fn($q, $status) => $q->byStatus($status))
+            ->latest()
+            ->paginate($filters['per_page'] ?? 15);
+    }
 
-        if (!empty($filters['status'])) {
-            $query->byStatus($filters['status']);
-        }
-
-        return $query->paginate($filters['per_page'] ?? 15);
+    /**
+     * جلب طلبات المستخدم الحالي (Collection للدمج)
+     */
+    public function getUserOrdersCollection(array $filters = [])
+    {
+        return CustomOrder::where('user_id', Auth::id())
+            ->with(['items', 'driver'])
+            ->when($filters['status'] ?? null, fn($q, $status) => $q->byStatus($status))
+            ->latest()
+            ->get();
     }
 
     /**
@@ -168,12 +176,38 @@ class CustomOrderService extends Service
         return $this->getUserOrder($orderId);
     }
 
+    /**
+     * جلب جميع الطلبات الخاصة (للإدارة) - مع Pagination
+     */
+    public function getAllOrders(array $filters = []): LengthAwarePaginator
+    {
+        return CustomOrder::with(['items', 'user', 'driver'])
+            ->when($filters['status'] ?? null, fn($q, $status) => $q->byStatus($status))
+            ->when($filters['user_id'] ?? null, fn($q, $userId) => $q->where('user_id', $userId))
+            ->when($filters['driver_id'] ?? null, fn($q, $driverId) => $q->where('driver_id', $driverId))
+            ->latest()
+            ->paginate($filters['per_page'] ?? 15);
+    }
+
+    /**
+     * جلب جميع الطلبات الخاصة (Collection للدمج)
+     */
+    public function getAllOrdersCollection(array $filters = [])
+    {
+        return CustomOrder::with(['items', 'user', 'driver'])
+            ->when($filters['status'] ?? null, fn($q, $status) => $q->byStatus($status))
+            ->when($filters['user_id'] ?? null, fn($q, $userId) => $q->where('user_id', $userId))
+            ->when($filters['driver_id'] ?? null, fn($q, $driverId) => $q->where('driver_id', $driverId))
+            ->latest()
+            ->get();
+    }
+
     /* ═══════════════════════════════════════════════════════════════════
      * وظائف السائق - Driver Functions
      * ═══════════════════════════════════════════════════════════════════ */
 
     /**
-     * جلب الطلبات المتاحة للسائقين (المعلقة)
+     * جلب الطلبات المتاحة للسائقين (المعلقة) - مع Pagination
      */
     public function getAvailableOrdersForDrivers(array $filters = []): LengthAwarePaginator
     {
@@ -184,21 +218,42 @@ class CustomOrderService extends Service
     }
 
     /**
-     * جلب طلبات السائق الحالي
+     * جلب الطلبات المتاحة للسائقين (Collection للدمج)
+     */
+    public function getAvailableOrdersCollection()
+    {
+        return CustomOrder::availableForDrivers()
+            ->with(['items', 'user'])
+            ->latest()
+            ->get();
+    }
+
+    /**
+     * جلب طلبات السائق الحالي (مع Pagination)
      */
     public function getDriverOrders(array $filters = []): LengthAwarePaginator
     {
         $driver = Auth::guard('driver')->user();
 
-        $query = CustomOrder::forDriver($driver->id)
+        return CustomOrder::forDriver($driver->id)
             ->with(['items', 'user'])
-            ->latest();
+            ->when($filters['status'] ?? null, fn($q, $status) => $q->byStatus($status))
+            ->latest()
+            ->paginate($filters['per_page'] ?? 15);
+    }
 
-        if (!empty($filters['status'])) {
-            $query->byStatus($filters['status']);
-        }
+    /**
+     * جلب طلبات السائق الحالي (Collection للدمج)
+     */
+    public function getDriverOrdersCollection(array $filters = [])
+    {
+        $driver = Auth::guard('driver')->user();
 
-        return $query->paginate($filters['per_page'] ?? 15);
+        return CustomOrder::forDriver($driver->id)
+            ->with(['items', 'user'])
+            ->when($filters['status'] ?? null, fn($q, $status) => $q->byStatus($status))
+            ->latest()
+            ->get();
     }
 
     /**
@@ -223,6 +278,22 @@ class CustomOrderService extends Service
             $this->throwExceptionJson('هذا الطلب غير متاح للقبول', 400);
         }
 
+        // التحقق من رصيد المحفظة
+        if (!$driver->hasEnoughBalanceForDelivery()) {
+            $this->throwExceptionJson('رصيد محفظتك غير كافٍ لقبول هذا الطلب', 400);
+        }
+
+        // التحقق من عدد الطلبات النشطة حسب نوع الطلب (فوري/مجدول)
+        if ($order->is_immediate) {
+            if (!$driver->canAcceptImmediateCustomOrder()) {
+                $this->throwExceptionJson('لديك طلب فوري قيد التوصيل بالفعل', 400);
+            }
+        } else {
+            if (!$driver->canAcceptScheduledOrder()) {
+                $this->throwExceptionJson('لقد وصلت للحد الأقصى من الطلبات المجدولة (3 طلبات)', 400);
+            }
+        }
+
         // محاولة القبول مع التعامل مع Race Condition
         $updated = CustomOrder::where('id', $orderId)
             ->whereNull('driver_id')
@@ -237,7 +308,7 @@ class CustomOrderService extends Service
             $this->throwExceptionJson('تم قبول هذا الطلب من سائق آخر', 400);
         }
 
-        // TODO: إرسال إشعار للمستخدم
+        // TODO: إرسال إشعار للمستخدم (Firebase)
 
         return $order->fresh(['items', 'user']);
     }
@@ -256,53 +327,99 @@ class CustomOrderService extends Service
 
         $order->markAsDelivered();
 
-        // TODO: إرسال إشعار للمستخدم
+        // TODO: إرسال إشعار للمستخدم (Firebase)
 
         return $order->fresh(['items', 'user']);
     }
 
     /**
-     * السائق يلغي التوصيل مع سبب
-     * (shipping → cancelled)
+     * السائق يلغي طلب مجدول (الطلبات الفورية لا يمكن إلغاؤها)
+     * ⚠️ يتم إرسال البيانات للإدارة لمعالجة الحالة
      */
-    public function cancelDeliveryByDriver(int $orderId, string $reason)
+    public function cancelScheduledOrderByDriver(int $orderId, string $reason): array
     {
+        $driver = Auth::guard('driver')->user();
         $order = $this->getDriverOrder($orderId);
 
-        if ($order->status !== CustomOrder::STATUS_SHIPPING) {
-            $this->throwExceptionJson('لا يمكن إلغاء التوصيل في هذه الحالة', 400);
+        if (!$order->can_driver_cancel_delivery) {
+            if ($order->is_immediate) {
+                $this->throwExceptionJson('لا يمكن إلغاء الطلبات الفورية - فقط الإدارة تستطيع ذلك', 400);
+            }
+            $this->throwExceptionJson('لا يمكن إلغاء هذا الطلب في حالته الحالية', 400);
         }
 
-        if (empty(trim($reason))) {
-            $this->throwExceptionJson('يجب تقديم سبب الإلغاء', 400);
+        // إلغاء الطلب
+        $order->markAsCancelled($reason);
+        $order->refresh();
+
+        // تجهيز البيانات للإدارة
+        $adminNotificationData = [
+            'order' => [
+                'id' => $order->id,
+                'type' => 'custom_order',
+                'status' => $order->status,
+                'delivery_fee' => $order->delivery_fee,
+                'delivery_address' => $order->delivery_address,
+                'scheduled_at' => $order->scheduled_at?->toDateTimeString(),
+                'items' => $order->items->map(fn($item) => [
+                    'description' => $item->description,
+                    'pickup_address' => $item->pickup_address,
+                ])->toArray(),
+            ],
+            'user' => [
+                'id' => $order->user->id,
+                'name' => $order->user->user_name,
+                'phone' => $order->user->phone,
+            ],
+            'driver' => [
+                'id' => $driver->id,
+                'name' => $driver->first_name . ' ' . $driver->last_name,
+                'phone' => $driver->phone,
+            ],
+            'cancellation_reason' => $reason,
+            'cancelled_at' => now()->toDateTimeString(),
+        ];
+
+        // TODO: إرسال إشعار للإدارة (Firebase/Email/Slack)
+        // event(new ScheduledOrderCancelledByDriver($adminNotificationData));
+
+        return [
+            'order' => $order->fresh(['items', 'user']),
+            'admin_notification' => $adminNotificationData,
+        ];
+    }
+
+    // ⚠️ ملاحظة: السائق لا يمكنه إلغاء الطلب الفوري بعد القبول
+    // الإلغاء فقط من الإدارة عبر cancelOrderByAdmin()
+
+    /**
+     * إلغاء طلب من الإدارة (يعمل في أي حالة ما عدا delivered/cancelled)
+     */
+    public function cancelOrderByAdmin(int $orderId, string $reason): CustomOrder
+    {
+        $order = CustomOrder::find($orderId);
+
+        if (!$order) {
+            $this->throwExceptionJson('الطلب غير موجود', 404);
+        }
+
+        if (!$order->can_admin_cancel) {
+            $this->throwExceptionJson('لا يمكن إلغاء هذا الطلب', 400);
         }
 
         $order->markAsCancelled($reason);
 
-        // TODO: إرسال إشعار للمستخدم
+        // TODO: إرسال إشعار للمستخدم والسائق (Firebase)
 
-        return $order->fresh(['items', 'user']);
+        return $order->fresh(['items', 'user', 'driver']);
     }
 
     /* ═══════════════════════════════════════════════════════════════════
      * وظائف النظام - System Functions
      * ═══════════════════════════════════════════════════════════════════ */
 
-    /**
-     * معالجة الطلبات المنتهية الصلاحية
-     * يُحولها إلى cancelled
-     */
-    public function processExpiredOrders(): int
-    {
-        $expiredOrders = CustomOrder::expired()->get();
-
-        foreach ($expiredOrders as $order) {
-            $order->markAsCancelled('انتهت صلاحية البحث عن سائق');
-            // TODO: إرسال إشعار للمستخدم
-        }
-
-        return $expiredOrders->count();
-    }
+    // ملاحظة: لا نلغي الطلبات تلقائياً عند انتهاء الصلاحية
+    // المستخدم يضغط "تأكيد الطلب" مرة أخرى لتجديد فترة الانتظار
 
     /* ═══════════════════════════════════════════════════════════════════
      * الوظائف المساعدة - Helper Functions

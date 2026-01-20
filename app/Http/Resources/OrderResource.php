@@ -46,7 +46,8 @@ class OrderResource extends JsonResource
             // إحصائيات
             'itemsCount' => $this->items_count,
             'isCancellable' => $this->is_cancellable,
-            'canDriverCancelDelivery' => $this->can_driver_cancel_delivery,
+            'canUserCancel' => $this->can_user_cancel,
+            'canAdminCancel' => $this->can_admin_cancel,
 
             // العناصر
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
@@ -84,6 +85,8 @@ class OrderResource extends JsonResource
             'canResendToDrivers' => $this->can_resend_to_drivers,
             'isAvailableForDriver' => $this->is_available_for_driver,
             'isImmediateDelivery' => $this->is_immediate_delivery,
+            'canReorder' => $this->can_reorder,
+            'canDriverCancelDelivery' => $this->can_driver_cancel_delivery,
 
             // معلومات المستخدم (للسائق)
             'user' => $this->whenLoaded('user', function () {

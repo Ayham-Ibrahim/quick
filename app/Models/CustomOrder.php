@@ -162,10 +162,32 @@ class CustomOrder extends Model
 
     /**
      * هل يمكن للسائق إلغاء التوصيل؟
+     * ✅ فقط للطلبات المجدولة (غير الفورية) في حالة shipping
+     * ❌ الطلبات الفورية لا يمكن إلغاؤها من السائق
      */
     public function getCanDriverCancelDeliveryAttribute(): bool
     {
-        return $this->status === self::STATUS_SHIPPING && $this->has_driver;
+        return $this->status === self::STATUS_SHIPPING
+            && $this->has_driver
+            && !$this->is_immediate; // مجدول فقط
+    }
+
+    /**
+     * هل يمكن للمستخدم إلغاء الطلب؟
+     * ✅ فقط في حالة pending
+     */
+    public function getCanUserCancelAttribute(): bool
+    {
+        return $this->status === self::STATUS_PENDING;
+    }
+
+    /**
+     * هل يمكن للإدارة إلغاء الطلب؟
+     * ✅ في أي حالة ما عدا delivered أو cancelled
+     */
+    public function getCanAdminCancelAttribute(): bool
+    {
+        return !in_array($this->status, [self::STATUS_DELIVERED, self::STATUS_CANCELLED]);
     }
 
     /**

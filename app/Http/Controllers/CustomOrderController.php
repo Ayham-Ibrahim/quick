@@ -208,21 +208,67 @@ class CustomOrderController extends Controller
     }
 
     /**
-     * السائق يلغي التوصيل مع سبب
-     *
+     * السائق يلغي طلب مجدول (الطلبات الفورية لا يمكن إلغاؤها)
+     * 
      * POST /driver/custom-orders/{id}/cancel
+     * 
+     * ⚠️ يتم إرسال تفاصيل الطلب والمستخدم وسبب الإلغاء للإدارة
      */
-    public function cancelDelivery(Request $request, int $id)
+    public function driverCancelScheduledOrder(Request $request, int $id)
     {
         $validated = $request->validate([
             'reason' => 'required|string|max:500',
         ]);
 
-        $order = $this->customOrderService->cancelDeliveryByDriver($id, $validated['reason']);
+        $result = $this->customOrderService->cancelScheduledOrderByDriver($id, $validated['reason']);
+
+        return $this->success([
+            'order' => new CustomOrderResource($result['order']),
+            'notification_sent_to_admin' => true,
+            'message_to_driver' => 'تم إلغاء الطلب وإرسال البيانات للإدارة',
+        ], 'تم إلغاء الطلب المجدول بنجاح');
+    }
+
+    /* ==========================================
+     * APIs للإدارة
+     * ========================================== */
+
+    /**
+     * جلب كل الطلبات الخاصة (للأدمن)
+     *
+     * GET /admin/custom-orders
+     */
+    public function allOrders(Request $request)
+    {
+        $orders = $this->customOrderService->getAllOrders([
+            'status' => $request->query('status'),
+            'user_id' => $request->query('user_id'),
+            'driver_id' => $request->query('driver_id'),
+            'per_page' => $request->query('per_page', 15),
+        ]);
+
+        return $this->paginate(
+            $orders->setCollection($orders->getCollection()->map(fn($o) => new CustomOrderResource($o))),
+            'تم جلب الطلبات بنجاح'
+        );
+    }
+
+    /**
+     * إلغاء طلب خاص من الإدارة
+     *
+     * POST /admin/custom-orders/{id}/cancel
+     */
+    public function adminCancelOrder(Request $request, int $id)
+    {
+        $validated = $request->validate([
+            'reason' => 'required|string|max:500',
+        ]);
+
+        $order = $this->customOrderService->cancelOrderByAdmin($id, $validated['reason']);
 
         return $this->success(
             new CustomOrderResource($order),
-            'تم إلغاء التوصيل'
+            'تم إلغاء الطلب بنجاح'
         );
     }
 }

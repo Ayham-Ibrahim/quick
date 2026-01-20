@@ -183,6 +183,7 @@ GET    /orders                           # قائمة طلباتي
 GET    /orders/{id}                      # تفاصيل طلب
 POST   /orders/{id}/cancel               # إلغاء الطلب
 POST   /orders/{id}/retry-delivery       # إعادة محاولة التوصيل
+POST   /orders/{id}/reorder              # إعادة طلب طلبية مكتملة (تم التوصيل)
 
 # Driver endpoints
 GET    /driver/orders/available          # الطلبات المتاحة

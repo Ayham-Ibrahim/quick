@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Order\ReorderRequest;
 use App\Http\Resources\OrderResource;
 use App\Services\Order\OrderService;
 use Illuminate\Http\Request;
@@ -101,6 +102,34 @@ class OrderController extends Controller
         );
     }
 
+    /**
+     * إعادة طلب طلبية سابقة (Reorder)
+     * 
+     * POST /orders/{id}/reorder
+     * 
+     * - فقط للطلبات المسلّمة
+     * - يتم جلب الأسعار الحالية للمنتجات
+     * - تُنشأ طلبية جديدة كلياً
+     */
+    public function reorder(ReorderRequest $request, int $id)
+    {
+        $newOrder = $this->orderService->reorderOrder($id, $request->validated());
+
+        $response = [
+            'new_order' => new OrderResource($newOrder),
+        ];
+
+        // إضافة تنبيه عن العناصر غير المتاحة
+        if (isset($newOrder->unavailable_items_notice)) {
+            $response['unavailable_items_notice'] = $newOrder->unavailable_items_notice;
+            $response['notice_message'] = 'بعض المنتجات لم تكن متاحة أو الكمية المطلوبة غير متوفرة';
+        }
+
+        return $this->success($response, 'تم إنشاء الطلب الجديد بنجاح', 201);
+    }
+        
+    
+
     /* ==========================================
      * APIs للسائق
      * ========================================== */
@@ -171,26 +200,29 @@ class OrderController extends Controller
     }
 
     /**
-     * السائق يلغي التوصيل مع سبب
-     *
+     * السائق يلغي طلب مجدول (الطلبات الفورية لا يمكن إلغاؤها)
+     * 
      * POST /driver/orders/{id}/cancel
+     * 
+     * ⚠️ يتم إرسال تفاصيل الطلب والمستخدم وسبب الإلغاء للإدارة
      */
-    public function cancelDelivery(Request $request, int $id)
+    public function driverCancelScheduledOrder(Request $request, int $id)
     {
         $validated = $request->validate([
             'reason' => 'required|string|max:500',
         ]);
 
-        $order = $this->orderService->cancelDeliveryByDriver($id, $validated['reason']);
+        $result = $this->orderService->cancelScheduledOrderByDriver($id, $validated['reason']);
 
-        return $this->success(
-            new OrderResource($order),
-            'تم إلغاء التوصيل'
-        );
+        return $this->success([
+            'order' => new OrderResource($result['order']),
+            'notification_sent_to_admin' => true,
+            'message_to_driver' => 'تم إلغاء الطلب وإرسال البيانات للإدارة',
+        ], 'تم إلغاء الطلب المجدول بنجاح');
     }
 
     /* ==========================================
-     * APIs للأدمن/المتجر
+     * APIs للإدارة
      * ========================================== */
 
     /**
@@ -214,40 +246,21 @@ class OrderController extends Controller
     }
 
     /**
-     * تحديث حالة الطلب (للأدمن/المتجر)
+     * إلغاء طلب من الإدارة (يعمل في أي حالة ما عدا delivered/cancelled)
      *
-     * PUT /admin/orders/{id}/status
+     * POST /admin/orders/{id}/cancel
      */
-    public function updateStatus(Request $request, int $id)
+    public function adminCancelOrder(Request $request, int $id)
     {
         $validated = $request->validate([
-            'status' => 'required|string|in:pending,shipping,delivered,cancelled',
+            'reason' => 'required|string|max:500',
         ]);
 
-        $order = $this->orderService->updateOrderStatus($id, $validated['status']);
+        $order = $this->orderService->cancelOrderByAdmin($id, $validated['reason']);
 
         return $this->success(
             new OrderResource($order),
-            'تم تحديث حالة الطلب بنجاح'
-        );
-    }
-
-    /**
-     * تعيين سائق لطلب (للأدمن/المتجر)
-     *
-     * POST /admin/orders/{id}/assign-driver
-     */
-    public function assignDriver(Request $request, int $id)
-    {
-        $validated = $request->validate([
-            'driver_id' => 'required|exists:drivers,id',
-        ]);
-
-        $order = $this->orderService->assignDriver($id, $validated['driver_id']);
-
-        return $this->success(
-            new OrderResource($order),
-            'تم تعيين السائق بنجاح'
+            'تم إلغاء الطلب بنجاح'
         );
     }
 }

@@ -21,6 +21,7 @@ use App\Http\Controllers\DiscountManagement\CouponController;
 use App\Http\Controllers\DiscountManagement\DiscountController;
 use App\Http\Controllers\ProfitRatiosController;
 use App\Http\Controllers\Reports\ReportController;
+use App\Http\Controllers\UnifiedOrderController;
 use App\Http\Controllers\UserManagementControllers\ProviderController;
 use App\Http\Controllers\UserManagementControllers\UserManagementController;
 
@@ -201,7 +202,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Order Routes (للمستخدم)
+    | Unified Order Routes - جميع الطلبات موحدة (عادية + خاصة)
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/all-orders', [UnifiedOrderController::class, 'userOrders']); // طلبات المستخدم (الكل)
+
+    /*
+    |--------------------------------------------------------------------------
+    | Order Routes (للمستخدم) - الطلبات العادية فقط
     |--------------------------------------------------------------------------
     */
     Route::prefix('orders')->group(function () {
@@ -210,11 +218,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/{id}/cancel', [OrderController::class, 'cancel']); // إلغاء طلب
         Route::post('/{id}/resend', [OrderController::class, 'resendToDrivers']); // إعادة إرسال للسائقين
         Route::post('/{id}/retry-delivery', [OrderController::class, 'retryDelivery']); // إعادة محاولة بعد الإلغاء
+        Route::post('/{id}/reorder', [OrderController::class, 'reorder']); // إعادة طلب (Reorder)
     });
 
     /*
     |--------------------------------------------------------------------------
-    | Custom Order Routes - اطلب أي شيء (للمستخدم)
+    | Custom Order Routes - اطلب أي شيء (للمستخدم) - الطلبات الخاصة فقط
     |--------------------------------------------------------------------------
     */
     Route::prefix('custom-orders')->group(function () {
@@ -229,7 +238,17 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Driver Order Routes (للسائق)
+    | Driver Unified Routes - جميع طلبات السائق موحدة (عادية + خاصة)
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('driver/all-orders')->group(function () {
+        Route::get('/available', [UnifiedOrderController::class, 'availableOrdersForDriver']); // كل الطلبات المتاحة
+        Route::get('/my', [UnifiedOrderController::class, 'driverOrders']);                    // كل طلبات السائق
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Driver Order Routes (للسائق) - الطلبات العادية فقط
     |--------------------------------------------------------------------------
     */
     Route::prefix('driver/orders')->group(function () {
@@ -237,12 +256,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/my', [OrderController::class, 'driverOrders']);           // طلبات السائق
         Route::post('/{id}/accept', [OrderController::class, 'acceptOrder']);  // قبول طلب وبدء التوصيل
         Route::post('/{id}/deliver', [OrderController::class, 'deliverOrder']); // تأكيد التوصيل
-        Route::post('/{id}/cancel', [OrderController::class, 'cancelDelivery']); // إلغاء التوصيل مع سبب
+        Route::post('/{id}/cancel', [OrderController::class, 'driverCancelScheduledOrder']); // إلغاء طلب مجدول (فقط)
     });
 
     /*
     |--------------------------------------------------------------------------
-    | Driver Custom Order Routes - اطلب أي شيء (للسائق)
+    | Driver Custom Order Routes - اطلب أي شيء (للسائق) - الطلبات الخاصة فقط
     |--------------------------------------------------------------------------
     */
     Route::prefix('driver/custom-orders')->group(function () {
@@ -250,18 +269,29 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/my', [CustomOrderController::class, 'driverOrders']);           // طلبات السائق الخاصة
         Route::post('/{id}/accept', [CustomOrderController::class, 'acceptOrder']);  // قبول طلب وبدء التوصيل
         Route::post('/{id}/deliver', [CustomOrderController::class, 'deliverOrder']); // تأكيد التوصيل
-        Route::post('/{id}/cancel', [CustomOrderController::class, 'cancelDelivery']); // إلغاء التوصيل مع سبب
+        Route::post('/{id}/cancel', [CustomOrderController::class, 'driverCancelScheduledOrder']); // إلغاء طلب مجدول (فقط)
     });
 
     /*
     |--------------------------------------------------------------------------
-    | Admin Order Routes (للأدمن/المتجر)
+    | Admin Unified Routes - جميع الطلبات للإدارة (عادية + خاصة)
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/admin/all-orders', [UnifiedOrderController::class, 'allOrders']); // كل الطلبات للأدمن
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Order Routes (للإدارة) - الطلبات العادية فقط
     |--------------------------------------------------------------------------
     */
     Route::prefix('admin/orders')->group(function () {
-        Route::get('/', [OrderController::class, 'allOrders']);              // كل الطلبات
-        Route::put('/{id}/status', [OrderController::class, 'updateStatus']); // تحديث حالة
-        Route::post('/{id}/assign-driver', [OrderController::class, 'assignDriver']); // تعيين سائق
+        Route::get('/', [OrderController::class, 'allOrders']);                      // كل الطلبات
+        Route::post('/{id}/cancel', [OrderController::class, 'adminCancelOrder']);   // إلغاء طلب (إدارة فقط)
+    });
+
+    Route::prefix('admin/custom-orders')->group(function () {
+        Route::get('/', [CustomOrderController::class, 'allOrders']);                      // كل الطلبات الخاصة
+        Route::post('/{id}/cancel', [CustomOrderController::class, 'adminCancelOrder']);   // إلغاء طلب (إدارة فقط)
     });
 
 });
