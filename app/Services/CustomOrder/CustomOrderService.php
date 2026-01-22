@@ -7,6 +7,8 @@ use App\Models\CustomOrderItem;
 use App\Models\Driver;
 use App\Models\ProfitRatios;
 use App\Services\Service;
+use App\Services\NotificationService;
+use App\Services\Geofencing\GeofencingService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -27,6 +29,14 @@ use Illuminate\Http\Exceptions\HttpResponseException;
  */
 class CustomOrderService extends Service
 {
+    protected NotificationService $notificationService;
+    protected GeofencingService $geofencingService;
+
+    public function __construct(NotificationService $notificationService, GeofencingService $geofencingService)
+    {
+        $this->notificationService = $notificationService;
+        $this->geofencingService = $geofencingService;
+    }
     /* ═══════════════════════════════════════════════════════════════════
      * الحسابات - Calculations
      * ═══════════════════════════════════════════════════════════════════ */
@@ -80,7 +90,8 @@ class CustomOrderService extends Service
                 // إضافة العناصر
                 $this->createOrderItems($order, $data['items']);
 
-                // TODO: إرسال إشعار للسائقين
+                // Notify user that order was created
+                $this->notificationService->notifyUserCustomOrderCreated($order);
 
                 return $order->load('items');
             });
@@ -105,6 +116,11 @@ class CustomOrderService extends Service
 
         $order->cancel($reason);
 
+        // Notify driver if order was assigned
+        if ($order->driver_id) {
+            $this->notificationService->notifyDriverOrderCancelledByUser($order->driver, $order);
+        }
+
         return $order->fresh(['items', 'driver']);
     }
 
@@ -121,7 +137,9 @@ class CustomOrderService extends Service
 
         $order->retryDelivery();
 
-        // TODO: إرسال إشعار للسائقين (Firebase)
+        // Notify eligible drivers about the order
+        $eligibleDrivers = $this->geofencingService->getEligibleDriversForCustomOrder($order);
+        $this->notificationService->notifyDriversNewCustomOrder($eligibleDrivers, $order);
 
         return $order->fresh(['items', 'driver']);
     }
@@ -139,7 +157,9 @@ class CustomOrderService extends Service
 
         $order->resendToDrivers();
 
-        // TODO: إرسال إشعار للسائقين (Firebase)
+        // Notify eligible drivers about the order
+        $eligibleDrivers = $this->geofencingService->getEligibleDriversForCustomOrder($order);
+        $this->notificationService->notifyDriversNewCustomOrder($eligibleDrivers, $order);
 
         return $order->fresh(['items', 'driver']);
     }
@@ -308,9 +328,12 @@ class CustomOrderService extends Service
             $this->throwExceptionJson('تم قبول هذا الطلب من سائق آخر', 400);
         }
 
-        // TODO: إرسال إشعار للمستخدم (Firebase)
+        $order = $order->fresh(['items', 'user']);
 
-        return $order->fresh(['items', 'user']);
+        // Notify user that driver accepted the order
+        $this->notificationService->notifyUserCustomOrderAccepted($order);
+
+        return $order;
     }
 
     /**
@@ -327,9 +350,12 @@ class CustomOrderService extends Service
 
         $order->markAsDelivered();
 
-        // TODO: إرسال إشعار للمستخدم (Firebase)
+        $order = $order->fresh(['items', 'user']);
 
-        return $order->fresh(['items', 'user']);
+        // Notify user that order was delivered
+        $this->notificationService->notifyUserCustomOrderDelivered($order);
+
+        return $order;
     }
 
     /**
@@ -351,6 +377,12 @@ class CustomOrderService extends Service
         // إلغاء الطلب
         $order->markAsCancelled($reason);
         $order->refresh();
+
+        // Notify user about cancellation
+        $this->notificationService->notifyUserCustomOrderCancelled($order, 'driver');
+
+        // Notify admins about driver cancellation
+        $this->notificationService->notifyAdminsDriverCancelledOrder($order, $reason);
 
         // تجهيز البيانات للإدارة
         $adminNotificationData = [
@@ -380,8 +412,7 @@ class CustomOrderService extends Service
             'cancelled_at' => now()->toDateTimeString(),
         ];
 
-        // TODO: إرسال إشعار للإدارة (Firebase/Email/Slack)
-        // event(new ScheduledOrderCancelledByDriver($adminNotificationData));
+        // Notification already sent above via notifyAdminsDriverCancelledOrder()
 
         return [
             'order' => $order->fresh(['items', 'user']),
@@ -409,7 +440,13 @@ class CustomOrderService extends Service
 
         $order->markAsCancelled($reason);
 
-        // TODO: إرسال إشعار للمستخدم والسائق (Firebase)
+        // Notify user about admin cancellation
+        $this->notificationService->notifyUserCustomOrderCancelled($order, 'admin');
+
+        // Notify driver if order was assigned
+        if ($order->driver_id) {
+            $this->notificationService->notifyDriverOrderCancelledByUser($order->driver, $order);
+        }
 
         return $order->fresh(['items', 'user', 'driver']);
     }

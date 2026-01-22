@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Device;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -30,6 +31,13 @@ class Driver extends Authenticatable
         'h_location',
         'is_active',
         'vehicle_type_id',
+        
+        // Current geolocation fields
+        'current_lat',
+        'current_lng',
+        'last_location_update',
+        'is_online',
+        'last_activity_at',
     ];
     /**
      * The attributes that should be hidden for serialization.
@@ -52,6 +60,11 @@ class Driver extends Authenticatable
         return [
             'phone_verified_at' => 'datetime',
             'password' => 'hashed',
+            'current_lat' => 'decimal:7',
+            'current_lng' => 'decimal:7',
+            'last_location_update' => 'datetime',
+            'is_online' => 'boolean',
+            'last_activity_at' => 'datetime',
         ];
     }
 
@@ -85,8 +98,40 @@ class Driver extends Authenticatable
         return $this->ratings()->avg('rating') ?? 0;
     }
 
+    /**
+     * Get the device for the driver (single-device only).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\MorphOne<Device, Driver>
+     */
+    public function device()
+    {
+        return $this->morphOne(Device::class, 'owner');
+    }
+
+    /**
+     * Register or update FCM token.
+     * Drivers only support single device - previous device will be replaced.
+     *
+     * @param string $fcmToken
+     * @return Device
+     */
+    public function registerDevice(string $fcmToken): Device
+    {
+        return Device::registerSingleDevice($this, $fcmToken);
+    }
+
+    /**
+     * Get FCM token for the driver.
+     *
+     * @return string|null
+     */
+    public function getFcmToken(): ?string
+    {
+        return $this->device?->fcm_token;
+    }
+
     /* ═══════════════════════════════════════════════════════════════════
-     * علاقات الطلبات - Order Relations
+     * Order Relations
      * ═══════════════════════════════════════════════════════════════════ */
 
     public function orders()
@@ -100,16 +145,16 @@ class Driver extends Authenticatable
     }
 
     /* ═══════════════════════════════════════════════════════════════════
-     * التحقق من الأهلية - Eligibility Checks
+     * Eligibility Checks
      * ═══════════════════════════════════════════════════════════════════ */
 
     /**
-     * الحد الأقصى للطلبات المجدولة للسائق
+     * Maximum scheduled orders per driver
      */
     const MAX_SCHEDULED_ORDERS = 3;
 
     /**
-     * عدد الطلبات العادية الفورية النشطة (shipping)
+     * Count of active immediate regular orders (shipping)
      */
     public function getActiveImmediateOrdersCountAttribute(): int
     {
@@ -120,7 +165,7 @@ class Driver extends Authenticatable
     }
 
     /**
-     * عدد الطلبات الخاصة الفورية النشطة (shipping)
+     * Count of active immediate custom orders (shipping)
      */
     public function getActiveImmediateCustomOrdersCountAttribute(): int
     {
@@ -131,7 +176,7 @@ class Driver extends Authenticatable
     }
 
     /**
-     * عدد الطلبات العادية المجدولة النشطة
+     * Count of active scheduled regular orders
      */
     public function getActiveScheduledOrdersCountAttribute(): int
     {
@@ -142,7 +187,7 @@ class Driver extends Authenticatable
     }
 
     /**
-     * عدد الطلبات الخاصة المجدولة النشطة
+     * Count of active scheduled custom orders
      */
     public function getActiveScheduledCustomOrdersCountAttribute(): int
     {
@@ -153,7 +198,7 @@ class Driver extends Authenticatable
     }
 
     /**
-     * إجمالي الطلبات المجدولة النشطة (عادية + خاصة)
+     * Total active scheduled orders (regular + custom)
      */
     public function getTotalActiveScheduledOrdersAttribute(): int
     {
@@ -161,7 +206,7 @@ class Driver extends Authenticatable
     }
 
     /**
-     * هل يمكن للسائق قبول طلب فوري عادي؟
+     * Can the driver accept an immediate regular order?
      */
     public function canAcceptImmediateOrder(): bool
     {
@@ -169,7 +214,7 @@ class Driver extends Authenticatable
     }
 
     /**
-     * هل يمكن للسائق قبول طلب فوري خاص؟
+     * Can the driver accept an immediate custom order?
      */
     public function canAcceptImmediateCustomOrder(): bool
     {
@@ -177,7 +222,7 @@ class Driver extends Authenticatable
     }
 
     /**
-     * هل يمكن للسائق قبول طلب مجدول؟
+     * Can the driver accept a scheduled order?
      */
     public function canAcceptScheduledOrder(): bool
     {
@@ -185,7 +230,7 @@ class Driver extends Authenticatable
     }
 
     /**
-     * الحصول على نسبة الربح من التوصيل حسب نوع المركبة
+     * Get delivery profit ratio by vehicle type
      */
     public function getDeliveryProfitRatioAttribute(): float
     {
@@ -195,7 +240,7 @@ class Driver extends Authenticatable
             return 0;
         }
 
-        // bike = 1, motorbike = 2 (افتراضياً)
+        // bike = 1, motorbike = 2 (default)
         $tag = $vehicleType->id === 1 
             ? 'delivery_profit_per_ride_bike' 
             : 'delivery_profit_per_ride_motorbike';
@@ -204,7 +249,7 @@ class Driver extends Authenticatable
     }
 
     /**
-     * هل رصيد المحفظة كافي للتوصيل؟
+     * Does wallet balance suffice for delivery?
      */
     public function hasEnoughBalanceForDelivery(): bool
     {
@@ -213,7 +258,7 @@ class Driver extends Authenticatable
     }
 
     /**
-     * هل السائق مؤهل لقبول طلب فوري عادي؟
+     * Is the driver eligible to accept immediate regular orders?
      */
     public function isEligibleForImmediateOrder(): bool
     {
@@ -223,7 +268,7 @@ class Driver extends Authenticatable
     }
 
     /**
-     * هل السائق مؤهل لقبول طلب فوري خاص؟
+     * Is the driver eligible to accept immediate custom orders?
      */
     public function isEligibleForImmediateCustomOrder(): bool
     {
@@ -233,7 +278,7 @@ class Driver extends Authenticatable
     }
 
     /**
-     * هل السائق مؤهل لقبول طلب مجدول؟
+     * Is the driver eligible to accept scheduled orders?
      */
     public function isEligibleForScheduledOrder(): bool
     {

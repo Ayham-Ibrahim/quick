@@ -9,48 +9,48 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * نموذج الطلب الخاص (اطلب أي شيء)
+ * Custom Order model ("Request Anything")
  * 
  * ═══════════════════════════════════════════════════════════════════════
- * مسار الحالات المبسط (Simplified Custom Order Status Flow):
+ * Simplified Custom Order Status Flow:
  * ═══════════════════════════════════════════════════════════════════════
  * 
  *   pending ──────────► shipping ──────────► delivered
  *      │                   │
  *      │                   │
  *      ▼                   ▼
- *   cancelled          cancelled (مع سبب)
+ *   cancelled          cancelled (with reason)
  * 
- * الحالات الأربعة:
+ * The four statuses:
  * ─────────────────
- * 1. pending    = معلق (بانتظار قبول سائق)
- * 2. shipping   = قيد التوصيل
- * 3. delivered  = تم التسليم
- * 4. cancelled  = ملغي/فشل التسليم (مع سبب)
+ * 1. pending    = waiting for driver to accept
+ * 2. shipping   = delivering
+ * 3. delivered  = delivered
+ * 4. cancelled  = cancelled/failed delivery (with reason)
  * 
  * ═══════════════════════════════════════════════════════════════════════
  */
 class CustomOrder extends Model
 {
     /* ═══════════════════════════════════════════════════════════════════
-     * الثوابت - Constants
+     * Constants
      * ═══════════════════════════════════════════════════════════════════ */
 
     /**
-     * الحالات الأربعة الأساسية
+     * The four core statuses
      */
-    const STATUS_PENDING = 'pending';       // معلق - بانتظار قبول سائق
-    const STATUS_SHIPPING = 'shipping';     // قيد التوصيل
-    const STATUS_DELIVERED = 'delivered';   // تم التسليم
-    const STATUS_CANCELLED = 'cancelled';   // ملغي/فشل التسليم (مع سبب)
+    const STATUS_PENDING = 'pending';       // pending - waiting for driver to accept
+    const STATUS_SHIPPING = 'shipping';     // shipping - delivering
+    const STATUS_DELIVERED = 'delivered';   // delivered - delivered
+    const STATUS_CANCELLED = 'cancelled';   // cancelled - cancelled/failed delivery (with reason)
 
     /**
-     * مدة انتظار قبول السائق (بالدقائق)
+     * Driver confirmation timeout (minutes)
      */
     const DRIVER_CONFIRMATION_TIMEOUT_MINUTES = 5;
 
     /* ═══════════════════════════════════════════════════════════════════
-     * الخصائص - Properties
+     * Properties
      * ═══════════════════════════════════════════════════════════════════ */
 
     protected $fillable = [
@@ -101,11 +101,11 @@ class CustomOrder extends Model
     }
 
     /* ═══════════════════════════════════════════════════════════════════
-     * المُحَصِّلات - Accessors
+     * Accessors
      * ═══════════════════════════════════════════════════════════════════ */
 
     /**
-     * عدد العناصر في الطلب
+     * Number of items in the order
      */
     public function getItemsCountAttribute(): int
     {
@@ -113,7 +113,7 @@ class CustomOrder extends Model
     }
 
     /**
-     * هل الطلب قابل للإلغاء؟ (فقط في حالة معلق)
+     * Is the order cancellable? (only when pending)
      */
     public function getIsCancellableAttribute(): bool
     {
@@ -121,7 +121,7 @@ class CustomOrder extends Model
     }
 
     /**
-     * هل تم تعيين سائق؟
+     * Has a driver been assigned?
      */
     public function getHasDriverAttribute(): bool
     {
@@ -129,7 +129,7 @@ class CustomOrder extends Model
     }
 
     /**
-     * هل انتهت صلاحية طلب التأكيد؟
+     * Is the confirmation request expired?
      */
     public function getIsConfirmationExpiredAttribute(): bool
     {
@@ -140,8 +140,8 @@ class CustomOrder extends Model
     }
 
     /**
-     * هل يمكن إعادة إرسال الإشعارات للسائقين؟
-     * (الطلب معلق وبدون سائق وانتهت الصلاحية)
+     * Can the order be resent to drivers?
+     * (pending, without driver, and confirmation expired)
      */
     public function getCanResendToDriversAttribute(): bool
     {
@@ -151,7 +151,7 @@ class CustomOrder extends Model
     }
 
     /**
-     * هل الطلب متاح للسائقين للقبول؟
+     * Is the order available for drivers to accept?
      */
     public function getIsAvailableForDriverAttribute(): bool
     {
@@ -161,20 +161,20 @@ class CustomOrder extends Model
     }
 
     /**
-     * هل يمكن للسائق إلغاء التوصيل؟
-     * ✅ فقط للطلبات المجدولة (غير الفورية) في حالة shipping
-     * ❌ الطلبات الفورية لا يمكن إلغاؤها من السائق
+     * Can the driver cancel delivery?
+     * ✅ only for scheduled (non-immediate) orders in shipping
+     * ❌ immediate orders cannot be cancelled by the driver
      */
     public function getCanDriverCancelDeliveryAttribute(): bool
     {
         return $this->status === self::STATUS_SHIPPING
             && $this->has_driver
-            && !$this->is_immediate; // مجدول فقط
+            && !$this->is_immediate; // scheduled only
     }
 
     /**
-     * هل يمكن للمستخدم إلغاء الطلب؟
-     * ✅ فقط في حالة pending
+     * Can the user cancel the order?
+     * ✅ only when pending
      */
     public function getCanUserCancelAttribute(): bool
     {
@@ -182,8 +182,8 @@ class CustomOrder extends Model
     }
 
     /**
-     * هل يمكن للإدارة إلغاء الطلب؟
-     * ✅ في أي حالة ما عدا delivered أو cancelled
+     * Can the admin cancel the order?
+     * ✅ in any state except delivered or cancelled
      */
     public function getCanAdminCancelAttribute(): bool
     {
@@ -191,7 +191,7 @@ class CustomOrder extends Model
     }
 
     /**
-     * الحصول على نص الحالة بالعربية
+     * Get status text (Arabic)
      */
     public function getStatusTextAttribute(): string
     {
@@ -205,11 +205,11 @@ class CustomOrder extends Model
     }
 
     /* ═══════════════════════════════════════════════════════════════════
-     * النطاقات - Scopes
+     * Scopes
      * ═══════════════════════════════════════════════════════════════════ */
 
     /**
-     * فلترة حسب الحالة
+     * Filter by status
      */
     public function scopeByStatus($query, string $status)
     {
@@ -217,7 +217,7 @@ class CustomOrder extends Model
     }
 
     /**
-     * الطلبات المعلقة (بانتظار سائق)
+     * Pending orders (waiting for driver)
      */
     public function scopePending($query)
     {
@@ -225,7 +225,7 @@ class CustomOrder extends Model
     }
 
     /**
-     * الطلبات المتاحة للسائقين (معلقة بدون سائق ولم تنته الصلاحية)
+     * Orders available for drivers (pending without driver and not expired)
      */
     public function scopeAvailableForDrivers($query)
     {
@@ -234,7 +234,7 @@ class CustomOrder extends Model
     }
 
     /**
-     * الطلبات التي انتهت صلاحيتها
+     * Orders with expired confirmation
      */
     public function scopeExpired($query)
     {
@@ -272,14 +272,14 @@ class CustomOrder extends Model
     }
 
     /* ═══════════════════════════════════════════════════════════════════
-     * العمليات - Methods
+     * Methods
      * ═══════════════════════════════════════════════════════════════════ */
 
     /**
-     * إلغاء الطلب (من المستخدم أو النظام)
+     * Cancel order (by user or system)
      * 
-     * @param string|null $reason سبب الإلغاء
-     * @return bool نجاح العملية
+     * @param string|null $reason Cancellation reason
+     * @return bool Success
      */
     public function cancel(?string $reason = null): bool
     {
@@ -296,9 +296,9 @@ class CustomOrder extends Model
     }
 
     /**
-     * تعيين سائق للطلب وبدء التوصيل
+     * Assign driver to the order and start shipping
      * 
-     * @param int $driverId معرف السائق
+     * @param int $driverId Driver id
      */
     public function assignDriverAndStartShipping(int $driverId): void
     {
@@ -310,7 +310,7 @@ class CustomOrder extends Model
     }
 
     /**
-     * تأكيد استلام الطلب (تم التوصيل بنجاح)
+     * Mark order as delivered (successfully delivered)
      */
     public function markAsDelivered(): void
     {
@@ -320,9 +320,9 @@ class CustomOrder extends Model
     }
 
     /**
-     * تسجيل فشل/إلغاء التوصيل (من السائق)
+     * Mark delivery failure/cancellation (by driver)
      * 
-     * @param string $reason سبب الفشل/الإلغاء
+     * @param string $reason Failure/cancellation reason
      */
     public function markAsCancelled(string $reason): void
     {
@@ -333,7 +333,7 @@ class CustomOrder extends Model
     }
 
     /**
-     * إعادة المحاولة بعد الإلغاء (إرسال لسائق جديد)
+     * Retry delivery after cancellation (send to a new driver)
      */
     public function retryDelivery(): void
     {
@@ -347,9 +347,9 @@ class CustomOrder extends Model
     }
 
     /**
-     * تحديث الحالة
+     * Update status
      * 
-     * @param string $status الحالة الجديدة
+     * @param string $status New status
      */
     public function updateStatus(string $status): void
     {
@@ -357,7 +357,7 @@ class CustomOrder extends Model
     }
 
     /**
-     * تجديد صلاحية انتظار السائق (إعادة إرسال للسائقين)
+     * Renew driver confirmation expiry (resend to drivers)
      */
     public function resendToDrivers(): void
     {
@@ -367,11 +367,11 @@ class CustomOrder extends Model
     }
 
     /* ═══════════════════════════════════════════════════════════════════
-     * المساعدات الثابتة - Static Helpers
+     * Static Helpers
      * ═══════════════════════════════════════════════════════════════════ */
 
     /**
-     * الحصول على جميع الحالات المتاحة
+     * Get all available statuses
      */
     public static function getAllStatuses(): array
     {

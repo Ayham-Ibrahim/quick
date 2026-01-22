@@ -5,23 +5,27 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Order\ReorderRequest;
 use App\Http\Resources\OrderResource;
 use App\Services\Order\OrderService;
+use App\Services\Geofencing\GeofencingService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class OrderController extends Controller
 {
     protected OrderService $orderService;
+    protected GeofencingService $geofencingService;
 
-    public function __construct(OrderService $orderService)
+    public function __construct(OrderService $orderService, GeofencingService $geofencingService)
     {
         $this->orderService = $orderService;
+        $this->geofencingService = $geofencingService;
     }
 
     /* ==========================================
-     * APIs للمستخدم (العميل)
+     * APIs for users (customers)
      * ========================================== */
 
     /**
-     * جلب طلبات المستخدم الحالي
+     * Get current user's orders
      *
      * GET /orders
      */
@@ -39,7 +43,7 @@ class OrderController extends Controller
     }
 
     /**
-     * جلب تفاصيل طلب معين
+     * Get specific order details
      *
      * GET /orders/{id}
      */
@@ -54,7 +58,7 @@ class OrderController extends Controller
     }
 
     /**
-     * إلغاء طلب
+     * Cancel order
      *
      * POST /orders/{id}/cancel
      */
@@ -73,7 +77,7 @@ class OrderController extends Controller
     }
 
     /**
-     * إعادة محاولة التوصيل بعد الإلغاء
+     * Retry delivery after cancellation
      *
      * POST /orders/{id}/retry-delivery
      */
@@ -88,7 +92,7 @@ class OrderController extends Controller
     }
 
     /**
-     * إعادة إرسال الطلب للسائقين (تجديد فترة الانتظار)
+     * Resend order to drivers (renew waiting period)
      *
      * POST /orders/{id}/resend
      */
@@ -103,13 +107,13 @@ class OrderController extends Controller
     }
 
     /**
-     * إعادة طلب طلبية سابقة (Reorder)
+     * Reorder a previous order
      * 
      * POST /orders/{id}/reorder
      * 
-     * - فقط للطلبات المسلّمة
-     * - يتم جلب الأسعار الحالية للمنتجات
-     * - تُنشأ طلبية جديدة كلياً
+     * - Only for delivered orders
+     * - Current product prices are used
+     * - A completely new order is created
      */
     public function reorder(ReorderRequest $request, int $id)
     {
@@ -119,7 +123,7 @@ class OrderController extends Controller
             'new_order' => new OrderResource($newOrder),
         ];
 
-        // إضافة تنبيه عن العناصر غير المتاحة
+        // Add notice about unavailable items
         if (isset($newOrder->unavailable_items_notice)) {
             $response['unavailable_items_notice'] = $newOrder->unavailable_items_notice;
             $response['notice_message'] = 'بعض المنتجات لم تكن متاحة أو الكمية المطلوبة غير متوفرة';
@@ -131,11 +135,11 @@ class OrderController extends Controller
     
 
     /* ==========================================
-     * APIs للسائق
+     * APIs for drivers
      * ========================================== */
 
     /**
-     * جلب الطلبات المتاحة للتوصيل
+     * Get available orders for delivery
      *
      * GET /driver/available-orders
      */
@@ -152,7 +156,7 @@ class OrderController extends Controller
     }
 
     /**
-     * جلب طلبات السائق
+     * Get driver's orders
      *
      * GET /driver/orders
      */
@@ -170,22 +174,26 @@ class OrderController extends Controller
     }
 
     /**
-     * السائق يقبل طلب
+     * Driver accepts an order
      *
      * POST /driver/orders/{id}/accept
      */
     public function acceptOrder(int $id)
     {
         $order = $this->orderService->acceptOrderByDriver($id);
+        $driver = Auth::guard('driver')->user();
 
-        return $this->success(
-            new OrderResource($order),
-            'تم قبول الطلب بنجاح'
-        );
+        // Calculate execution route (stores ordered from nearest to farthest)
+        $executionRoute = $this->geofencingService->getOrderExecutionRoute($order, $driver);
+
+        return $this->success([
+            'order' => new OrderResource($order),
+            'execution_route' => $executionRoute,
+        ], 'تم قبول الطلب بنجاح');
     }
 
     /**
-     * السائق يؤكد تسليم الطلب
+     * Driver confirms delivery
      *
      * POST /driver/orders/{id}/deliver
      */
@@ -200,11 +208,11 @@ class OrderController extends Controller
     }
 
     /**
-     * السائق يلغي طلب مجدول (الطلبات الفورية لا يمكن إلغاؤها)
+     * Driver cancels a scheduled order (immediate orders cannot be cancelled)
      * 
      * POST /driver/orders/{id}/cancel
      * 
-     * ⚠️ يتم إرسال تفاصيل الطلب والمستخدم وسبب الإلغاء للإدارة
+     * ⚠️ Order, user details and cancellation reason are sent to admin
      */
     public function driverCancelScheduledOrder(Request $request, int $id)
     {
@@ -222,11 +230,11 @@ class OrderController extends Controller
     }
 
     /* ==========================================
-     * APIs للإدارة
+     * Admin APIs
      * ========================================== */
 
     /**
-     * جلب كل الطلبات (للأدمن)
+     * Get all orders (admin)
      *
      * GET /admin/orders
      */
@@ -246,7 +254,7 @@ class OrderController extends Controller
     }
 
     /**
-     * إلغاء طلب من الإدارة (يعمل في أي حالة ما عدا delivered/cancelled)
+     * Cancel order by admin (works in any state except delivered/cancelled)
      *
      * POST /admin/orders/{id}/cancel
      */
@@ -261,6 +269,66 @@ class OrderController extends Controller
         return $this->success(
             new OrderResource($order),
             'تم إلغاء الطلب بنجاح'
+        );
+    }
+
+    /* ==========================================
+     * Admin APIs - entity-specific orders
+     * ========================================== */
+
+    /**
+     * Get orders of a specific user (admin)
+     *
+     * GET /admin/users/{id}/orders
+     */
+    public function userOrdersForAdmin(Request $request, int $id)
+    {
+        $orders = $this->orderService->getAllOrders([
+            'status' => $request->query('status'),
+            'user_id' => $id,
+            'per_page' => $request->query('per_page', 15),
+        ]);
+
+        return $this->paginate(
+            $orders->setCollection($orders->getCollection()->map(fn($o) => new OrderResource($o))),
+            'تم جلب طلبات المستخدم بنجاح'
+        );
+    }
+
+    /**
+     * Get orders of a specific driver (admin)
+     *
+     * GET /admin/drivers/{id}/orders
+     */
+    public function driverOrdersForAdmin(Request $request, int $id)
+    {
+        $orders = $this->orderService->getAllOrders([
+            'status' => $request->query('status'),
+            'driver_id' => $id,
+            'per_page' => $request->query('per_page', 15),
+        ]);
+
+        return $this->paginate(
+            $orders->setCollection($orders->getCollection()->map(fn($o) => new OrderResource($o))),
+            'تم جلب طلبات السائق بنجاح'
+        );
+    }
+
+    /**
+     * Get orders of a specific store (admin)
+     *
+     * GET /admin/stores/{id}/orders
+     */
+    public function storeOrdersForAdmin(Request $request, int $id)
+    {
+        $orders = $this->orderService->getStoreOrders($id, [
+            'status' => $request->query('status'),
+            'per_page' => $request->query('per_page', 15),
+        ]);
+
+        return $this->paginate(
+            $orders->setCollection($orders->getCollection()->map(fn($o) => new OrderResource($o))),
+            'تم جلب طلبات المتجر بنجاح'
         );
     }
 }

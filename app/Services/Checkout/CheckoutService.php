@@ -10,6 +10,8 @@ use App\Models\ProductVariant;
 use App\Models\DiscountManagement\Coupon;
 use App\Models\DiscountManagement\CouponUsage;
 use App\Services\Service;
+use App\Services\NotificationService;
+use App\Services\Geofencing\GeofencingService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -17,6 +19,15 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 
 class CheckoutService extends Service
 {
+    protected GeofencingService $geofencingService;
+    protected NotificationService $notificationService;
+
+    public function __construct(GeofencingService $geofencingService, NotificationService $notificationService)
+    {
+        $this->geofencingService = $geofencingService;
+        $this->notificationService = $notificationService;
+    }
+
     /**
      * إجراء عملية الدفع وإنشاء الطلب
      */
@@ -34,6 +45,9 @@ class CheckoutService extends Service
 
                 // التحقق من توفر المنتجات والكميات
                 $this->validateCartItems($cart);
+
+                // التحقق من المسافة بين المتاجر
+                $this->validateStoresDistance($cart);
 
                 // جلب وتحقق من الكوبون (إن وجد)
                 $couponData = null;
@@ -63,7 +77,10 @@ class CheckoutService extends Service
                     'status' => Order::STATUS_PENDING,
                     'confirmation_expires_at' => now()->addMinutes(Order::DRIVER_CONFIRMATION_TIMEOUT_MINUTES),
                     'delivery_address' => $data['delivery_address'],
+                    'delivery_lat' => $data['delivery_lat'] ?? null,
+                    'delivery_lng' => $data['delivery_lng'] ?? null,
                     'requested_delivery_at' => $data['requested_delivery_at'] ?? null,
+                    'is_immediate_delivery' => $data['is_immediate_delivery'] ?? true,
                     'notes' => $data['notes'] ?? null,
                 ]);
 
@@ -81,7 +98,15 @@ class CheckoutService extends Service
                 // تحديث حالة السلة
                 $cart->markAsCompleted();
 
-                return $order->load(['items.product', 'items.store', 'coupon']);
+                $order = $order->load(['items.product', 'items.store', 'coupon', 'user']);
+
+                // Notify user that order was created
+                $this->notificationService->notifyUserOrderCreated($order);
+
+                // Notify stores about new order
+                $this->notificationService->notifyStoresNewOrder($order);
+
+                return $order;
             });
         } catch (\Throwable $th) {
             Log::error('Checkout error: ' . $th->getMessage(), [
@@ -397,6 +422,44 @@ class CheckoutService extends Service
                     $item->product->decrement('quantity', $item->quantity);
                 }
             }
+        }
+    }
+
+    /**
+     * التحقق من المسافة بين المتاجر في السلة
+     * 
+     * لا يُسمح بالطلب إذا كانت المسافة بين أي متجرين > 3 كم
+     */
+    private function validateStoresDistance(Cart $cart): void
+    {
+        // جمع معرفات المتاجر الفريدة
+        $storeIds = $cart->items
+            ->pluck('product.store_id')
+            ->unique()
+            ->filter()
+            ->toArray();
+
+        // إذا كان متجر واحد فقط، لا حاجة للتحقق
+        if (count($storeIds) <= 1) {
+            return;
+        }
+
+        $result = $this->geofencingService->validateStoresDistance($storeIds);
+
+        if (!$result['valid']) {
+            $store1Name = $result['stores_pair']['store1']['name'] ?? 'متجر 1';
+            $store2Name = $result['stores_pair']['store2']['name'] ?? 'متجر 2';
+            
+            $this->throwExceptionJson(
+                "لا يمكن إتمام الطلب: المسافة بين \"{$store1Name}\" و \"{$store2Name}\" تتجاوز الحد المسموح ({$result['max_allowed']} كم). المسافة الفعلية: {$result['max_distance']} كم",
+                400,
+                [
+                    'error_type' => 'stores_distance_exceeded',
+                    'max_distance' => $result['max_distance'],
+                    'max_allowed' => $result['max_allowed'],
+                    'stores_pair' => $result['stores_pair'],
+                ]
+            );
         }
     }
 }

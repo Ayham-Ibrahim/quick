@@ -7,6 +7,8 @@ use App\Models\Driver;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Services\Service;
+use App\Services\NotificationService;
+use App\Services\Geofencing\GeofencingService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -25,6 +27,14 @@ use Illuminate\Pagination\LengthAwarePaginator;
  */
 class OrderService extends Service
 {
+    protected NotificationService $notificationService;
+    protected GeofencingService $geofencingService;
+
+    public function __construct(NotificationService $notificationService, GeofencingService $geofencingService)
+    {
+        $this->notificationService = $notificationService;
+        $this->geofencingService = $geofencingService;
+    }
     /* ═══════════════════════════════════════════════════════════════════
      * وظائف المستخدم - User Functions
      * ═══════════════════════════════════════════════════════════════════ */
@@ -93,6 +103,11 @@ class OrderService extends Service
 
         $order->cancel($reason);
 
+        // Notify driver if order was assigned
+        if ($order->driver_id) {
+            $this->notificationService->notifyDriverOrderCancelledByUser($order->driver, $order);
+        }
+
         return $order->fresh(['items.product', 'driver']);
     }
 
@@ -113,7 +128,9 @@ class OrderService extends Service
 
         $order->resendToDrivers();
 
-        // TODO: إرسال إشعار للسائقين النشطين (Firebase)
+        // Notify eligible drivers about the order
+        $eligibleDrivers = $this->geofencingService->getEligibleDriversForOrder($order);
+        $this->notificationService->notifyDriversNewOrder($eligibleDrivers, $order);
 
         return $order->fresh(['items.product', 'items.store', 'driver']);
     }
@@ -135,7 +152,9 @@ class OrderService extends Service
 
         $order->retryDelivery();
 
-        // TODO: إرسال إشعار للسائقين النشطين (Firebase)
+        // Notify eligible drivers about the order
+        $eligibleDrivers = $this->geofencingService->getEligibleDriversForOrder($order);
+        $this->notificationService->notifyDriversNewOrder($eligibleDrivers, $order);
 
         return $order->fresh(['items.product', 'items.store', 'driver']);
     }
@@ -263,9 +282,17 @@ class OrderService extends Service
                 }
             }
 
-            // TODO: إرسال إشعار للسائقين (Firebase)
+            // Notify user about the new order
+            $this->notificationService->notifyUserOrderCreated($newOrder);
 
-            $result = $newOrder->load(['items.product', 'items.store']);
+            // Notify eligible drivers about the new order
+            $eligibleDrivers = $this->geofencingService->getEligibleDriversForOrder($newOrder);
+            $this->notificationService->notifyDriversNewOrder($eligibleDrivers, $newOrder);
+
+            // Notify stores about the new order
+            $this->notificationService->notifyStoresNewOrder($newOrder);
+
+            $result = $newOrder->load(['items.product', 'items.store', 'user']);
 
             // إضافة معلومات عن العناصر غير المتاحة
             if (!empty($unavailableItems)) {
@@ -382,9 +409,12 @@ class OrderService extends Service
             $this->throwExceptionJson('تم قبول هذا الطلب من سائق آخر', 400);
         }
 
-        // TODO: إرسال إشعار للمستخدم (Firebase)
+        $order = $order->fresh(['items.product', 'items.store', 'user']);
 
-        return $order->fresh(['items.product', 'items.store', 'user']);
+        // Notify user that driver accepted the order
+        $this->notificationService->notifyUserOrderAccepted($order);
+
+        return $order;
     }
 
     /**
@@ -401,9 +431,15 @@ class OrderService extends Service
 
         $order->markAsDelivered();
 
-        // TODO: إرسال إشعار للمستخدم (Firebase)
+        $order = $order->fresh(['items.product', 'user']);
 
-        return $order->fresh(['items.product', 'user']);
+        // Notify user that order was delivered
+        $this->notificationService->notifyUserOrderDelivered($order);
+
+        // Notify stores that order was delivered
+        $this->notificationService->notifyStoresOrderDelivered($order);
+
+        return $order;
     }
 
     /**
@@ -426,7 +462,13 @@ class OrderService extends Service
         $order->markAsCancelled($reason);
         $order->refresh();
 
-        // تجهيز البيانات للإدارة
+        // Notify user about cancellation
+        $this->notificationService->notifyUserOrderCancelled($order, 'driver');
+
+        // Notify admins about driver cancellation
+        $this->notificationService->notifyAdminsDriverCancelledOrder($order, $reason);
+
+        // Prepare data for admin dashboard
         $adminNotificationData = [
             'order' => [
                 'id' => $order->id,
@@ -457,8 +499,7 @@ class OrderService extends Service
             'cancelled_at' => now()->toDateTimeString(),
         ];
 
-        // TODO: إرسال إشعار للإدارة (Firebase/Email/Slack)
-        // event(new ScheduledOrderCancelledByDriver($adminNotificationData));
+        // Notification already sent above via notifyAdminsDriverCancelledOrder()
 
         return [
             'order' => $order->fresh(['items.product', 'user']),
@@ -534,9 +575,27 @@ class OrderService extends Service
 
         $order->markAsCancelled($reason);
 
-        // TODO: إرسال إشعار للمستخدم والسائق (Firebase)
+        // Notify user about admin cancellation
+        $this->notificationService->notifyUserOrderCancelled($order, 'admin');
+
+        // Notify driver if order was assigned
+        if ($order->driver_id) {
+            $this->notificationService->notifyDriverOrderCancelledByUser($order->driver, $order);
+        }
 
         return $order->fresh(['items.product', 'user', 'driver']);
+    }
+
+    /**
+     * جلب طلبات متجر معين (للأدمن)
+     */
+    public function getStoreOrders(int $storeId, array $filters = []): LengthAwarePaginator
+    {
+        return Order::with(['items.product', 'items.store', 'user', 'driver', 'coupon'])
+            ->whereHas('items', fn($q) => $q->where('store_id', $storeId))
+            ->when($filters['status'] ?? null, fn($q, $status) => $q->byStatus($status))
+            ->latest()
+            ->paginate($filters['per_page'] ?? 15);
     }
 
     /* ═══════════════════════════════════════════════════════════════════

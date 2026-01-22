@@ -1,0 +1,479 @@
+{
+	"info": {
+		"_postman_id": "fcm-token-collection-2026",
+		"name": "Quick API - FCM Token Management",
+		"description": "FCM Token registration and management endpoints for push notifications.\n\n## Device Registration Rules:\n- **User (Customer)**: Can register multiple devices (multi-device login)\n- **Driver**: Single device only (previous device replaced)\n- **Provider**: Single device only (previous device replaced)\n- **Store**: Single device only (previous device replaced)\n\n## Authentication:\nAll endpoints require `Authorization: Bearer {token}` header.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8000/api",
+			"type": "string"
+		},
+		{
+			"key": "userToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "driverToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "providerToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "storeToken",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "User Device (Multi-device)",
+			"item": [
+				{
+					"name": "Register User Device",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fcm_token\": \"fMI9XkFGRZa9xPz8yV2qKN:APA91bHxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/device/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["device", "register"]
+						},
+						"description": "Register FCM token for authenticated user.\n\n**Users can have multiple devices** - each device gets its own token registered.\n\nIf the same token already exists, it will be updated (touch updated_at)."
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "POST",
+								"url": {
+									"raw": "{{baseUrl}}/device/register",
+									"host": ["{{baseUrl}}"],
+									"path": ["device", "register"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"success\": true,\n    \"message\": \"تم تسجيل الجهاز بنجاح\",\n    \"data\": {\n        \"device_id\": 15\n    }\n}"
+						},
+						{
+							"name": "Validation Error",
+							"originalRequest": {
+								"method": "POST",
+								"url": {
+									"raw": "{{baseUrl}}/device/register",
+									"host": ["{{baseUrl}}"],
+									"path": ["device", "register"]
+								}
+							},
+							"status": "Unprocessable Entity",
+							"code": 422,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"success\": false,\n    \"message\": \"خطأ في البيانات المدخلة\",\n    \"errors\": {\n        \"fcm_token\": [\n            \"توكن الإشعارات مطلوب\"\n        ]\n    }\n}"
+						},
+						{
+							"name": "Unauthorized",
+							"originalRequest": {
+								"method": "POST",
+								"url": {
+									"raw": "{{baseUrl}}/device/register",
+									"host": ["{{baseUrl}}"],
+									"path": ["device", "register"]
+								}
+							},
+							"status": "Unauthorized",
+							"code": 401,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"message\": \"Unauthenticated.\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Unregister User Device",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fcm_token\": \"fMI9XkFGRZa9xPz8yV2qKN:APA91bHxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/device/unregister",
+							"host": ["{{baseUrl}}"],
+							"path": ["device", "unregister"]
+						},
+						"description": "Remove FCM token for the current device (logout from this device).\n\nUsed when user logs out from a specific device."
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "POST",
+								"url": {
+									"raw": "{{baseUrl}}/device/unregister",
+									"host": ["{{baseUrl}}"],
+									"path": ["device", "unregister"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"success\": true,\n    \"message\": \"تم إلغاء تسجيل الجهاز\",\n    \"data\": null\n}"
+						}
+					]
+				}
+			],
+			"description": "User device management - supports **multiple devices** per user account."
+		},
+		{
+			"name": "Driver Device (Single-device)",
+			"item": [
+				{
+					"name": "Register Driver Device",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{driverToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fcm_token\": \"driverFCMToken123456789:APA91bHxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/driver/device/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["driver", "device", "register"]
+						},
+						"description": "Register FCM token for authenticated driver.\n\n**⚠️ Drivers only support single device** - registering a new device will automatically remove the previous one."
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "POST",
+								"url": {
+									"raw": "{{baseUrl}}/driver/device/register",
+									"host": ["{{baseUrl}}"],
+									"path": ["driver", "device", "register"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"success\": true,\n    \"message\": \"تم تسجيل الجهاز بنجاح\",\n    \"data\": {\n        \"device_id\": 22\n    }\n}"
+						},
+						{
+							"name": "Validation Error",
+							"originalRequest": {
+								"method": "POST",
+								"url": {
+									"raw": "{{baseUrl}}/driver/device/register",
+									"host": ["{{baseUrl}}"],
+									"path": ["driver", "device", "register"]
+								}
+							},
+							"status": "Unprocessable Entity",
+							"code": 422,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"success\": false,\n    \"message\": \"خطأ في البيانات المدخلة\",\n    \"errors\": {\n        \"fcm_token\": [\n            \"توكن الإشعارات غير صالح\"\n        ]\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Unregister Driver Device",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{driverToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/driver/device/unregister",
+							"host": ["{{baseUrl}}"],
+							"path": ["driver", "device", "unregister"]
+						},
+						"description": "Remove FCM token for driver (logout).\n\nNo body required - removes the driver's only registered device."
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "POST",
+								"url": {
+									"raw": "{{baseUrl}}/driver/device/unregister",
+									"host": ["{{baseUrl}}"],
+									"path": ["driver", "device", "unregister"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"success\": true,\n    \"message\": \"تم إلغاء تسجيل الجهاز\",\n    \"data\": null\n}"
+						}
+					]
+				}
+			],
+			"description": "Driver device management - **single device only** (previous device replaced on new registration)."
+		},
+		{
+			"name": "Provider Device (Single-device)",
+			"item": [
+				{
+					"name": "Register Provider Device",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{providerToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fcm_token\": \"providerFCMToken123456789:APA91bHxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/provider/device/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["provider", "device", "register"]
+						},
+						"description": "Register FCM token for authenticated provider.\n\n**⚠️ Providers only support single device** - registering a new device will automatically remove the previous one."
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "POST",
+								"url": {
+									"raw": "{{baseUrl}}/provider/device/register",
+									"host": ["{{baseUrl}}"],
+									"path": ["provider", "device", "register"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"success\": true,\n    \"message\": \"تم تسجيل الجهاز بنجاح\",\n    \"data\": {\n        \"device_id\": 33\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Unregister Provider Device",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{providerToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/provider/device/unregister",
+							"host": ["{{baseUrl}}"],
+							"path": ["provider", "device", "unregister"]
+						},
+						"description": "Remove FCM token for provider (logout)."
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "POST",
+								"url": {
+									"raw": "{{baseUrl}}/provider/device/unregister",
+									"host": ["{{baseUrl}}"],
+									"path": ["provider", "device", "unregister"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"success\": true,\n    \"message\": \"تم إلغاء تسجيل الجهاز\",\n    \"data\": null\n}"
+						}
+					]
+				}
+			],
+			"description": "Provider device management - **single device only**."
+		},
+		{
+			"name": "Store Device (Single-device)",
+			"item": [
+				{
+					"name": "Register Store Device",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{storeToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fcm_token\": \"storeFCMToken123456789:APA91bHxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/store/device/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["store", "device", "register"]
+						},
+						"description": "Register FCM token for authenticated store.\n\n**⚠️ Stores only support single device** - registering a new device will automatically remove the previous one."
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "POST",
+								"url": {
+									"raw": "{{baseUrl}}/store/device/register",
+									"host": ["{{baseUrl}}"],
+									"path": ["store", "device", "register"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"success\": true,\n    \"message\": \"تم تسجيل الجهاز بنجاح\",\n    \"data\": {\n        \"device_id\": 44\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Unregister Store Device",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{storeToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/store/device/unregister",
+							"host": ["{{baseUrl}}"],
+							"path": ["store", "device", "unregister"]
+						},
+						"description": "Remove FCM token for store (logout)."
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "POST",
+								"url": {
+									"raw": "{{baseUrl}}/store/device/unregister",
+									"host": ["{{baseUrl}}"],
+									"path": ["store", "device", "unregister"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"success\": true,\n    \"message\": \"تم إلغاء تسجيل الجهاز\",\n    \"data\": null\n}"
+						}
+					]
+				}
+			],
+			"description": "Store device management - **single device only**."
+		}
+	]
+}

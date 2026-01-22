@@ -2,6 +2,7 @@
 
 namespace App\Models\UserManagement;
 
+use App\Models\Device;
 use App\Models\Transaction;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
@@ -60,5 +61,37 @@ class Provider extends Authenticatable
 
     public function transactions(){
         return $this->hasMany(Transaction::class, 'provider_id');
+    }
+
+    /**
+     * Get the device for the provider (single-device only).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\MorphOne<Device, Provider>
+     */
+    public function device()
+    {
+        return $this->morphOne(Device::class, 'owner');
+    }
+
+    /**
+     * Register or update FCM token.
+     * Providers only support single device - previous device will be replaced.
+     *
+     * @param string $fcmToken
+     * @return Device
+     */
+    public function registerDevice(string $fcmToken): Device
+    {
+        return Device::registerSingleDevice($this, $fcmToken);
+    }
+
+    /**
+     * Get FCM token for the provider.
+     *
+     * @return string|null
+     */
+    public function getFcmToken(): ?string
+    {
+        return $this->device?->fcm_token;
     }
 }
