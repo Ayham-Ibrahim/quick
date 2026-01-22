@@ -22,8 +22,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            // Index for faster lookups
-            $table->index(['owner_type', 'owner_id']);
+            // Note: morphs() already creates index on owner_type + owner_id
         });
     }
 
