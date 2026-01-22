@@ -4,6 +4,7 @@ namespace App\Models\UserManagement;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+use App\Models\Device;
 use App\Models\Wallet;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -73,5 +74,37 @@ class User extends Authenticatable
     public function wallet()
     {
         return $this->morphOne(Wallet::class, 'owner');
+    }
+
+    /**
+     * Get all devices for the user (multi-device support).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\MorphMany<Device, User>
+     */
+    public function devices()
+    {
+        return $this->morphMany(Device::class, 'owner');
+    }
+
+    /**
+     * Register or update FCM token for a device.
+     * Users support multiple devices.
+     *
+     * @param string $fcmToken
+     * @return Device
+     */
+    public function registerDevice(string $fcmToken): Device
+    {
+        return Device::registerMultiDevice($this, $fcmToken);
+    }
+
+    /**
+     * Get all FCM tokens for the user.
+     *
+     * @return \Illuminate\Support\Collection<string>
+     */
+    public function getFcmTokens()
+    {
+        return Device::getTokens($this);
     }
 }

@@ -23,6 +23,7 @@ use App\Http\Controllers\ProfitRatiosController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\UserManagementControllers\ProviderController;
 use App\Http\Controllers\UserManagementControllers\UserManagementController;
+use App\Http\Controllers\Api\Device\DeviceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -62,6 +63,28 @@ Route::middleware('auth:sanctum')->delete('/account/delete', [UserManagementCont
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth:sanctum'])->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | Device FCM Token Routes
+    |--------------------------------------------------------------------------
+    */
+    
+    // User device (multi-device support)
+    Route::post('/device/register', [DeviceController::class, 'registerUserDevice']);
+    Route::post('/device/unregister', [DeviceController::class, 'removeUserDevice']);
+    
+    // Driver device (single-device only)
+    Route::post('/driver/device/register', [DeviceController::class, 'registerDriverDevice']);
+    Route::post('/driver/device/unregister', [DeviceController::class, 'removeDriverDevice']);
+    
+    // Provider device (single-device only)
+    Route::post('/provider/device/register', [DeviceController::class, 'registerProviderDevice']);
+    Route::post('/provider/device/unregister', [DeviceController::class, 'removeProviderDevice']);
+    
+    // Store device (single-device only)
+    Route::post('/store/device/register', [DeviceController::class, 'registerStoreDevice']);
+    Route::post('/store/device/unregister', [DeviceController::class, 'removeStoreDevice']);
 
     /*
     |--------------------------------------------------------------------------
@@ -112,6 +135,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/driver/profile', [DriverController::class, 'profile']);
     Route::put('/driver/profile', [DriverController::class, 'updateDriverProfile']);
     Route::post('/driver/toggle-active-status', [DriverController::class, 'toggleActiveStatus']);
+    
+    // Driver Location & Status
+    Route::post('/driver/location', [DriverController::class, 'updateLocation']);      // تحديث الموقع
+    Route::post('/driver/toggle-online', [DriverController::class, 'toggleOnlineStatus']); // تبديل حالة الاتصال
+    Route::post('/driver/heartbeat', [DriverController::class, 'heartbeat']);           // تسجيل النشاط
 
     // Public (logged-in) user: list accepted products
     Route::get('/products', [ProductController::class, 'index']);
@@ -199,9 +227,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 
 
+
     /*
     |--------------------------------------------------------------------------
-    | Order Routes (للمستخدم)
+    | Order Routes (للمستخدم) - الطلبات العادية فقط
     |--------------------------------------------------------------------------
     */
     Route::prefix('orders')->group(function () {
@@ -210,11 +239,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/{id}/cancel', [OrderController::class, 'cancel']); // إلغاء طلب
         Route::post('/{id}/resend', [OrderController::class, 'resendToDrivers']); // إعادة إرسال للسائقين
         Route::post('/{id}/retry-delivery', [OrderController::class, 'retryDelivery']); // إعادة محاولة بعد الإلغاء
+        Route::post('/{id}/reorder', [OrderController::class, 'reorder']); // إعادة طلب (Reorder)
     });
 
     /*
     |--------------------------------------------------------------------------
-    | Custom Order Routes - اطلب أي شيء (للمستخدم)
+    | Custom Order Routes - اطلب أي شيء (للمستخدم) - الطلبات الخاصة فقط
     |--------------------------------------------------------------------------
     */
     Route::prefix('custom-orders')->group(function () {
@@ -229,7 +259,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Driver Order Routes (للسائق)
+    | Driver Order Routes (للسائق) - الطلبات العادية فقط
     |--------------------------------------------------------------------------
     */
     Route::prefix('driver/orders')->group(function () {
@@ -237,12 +267,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/my', [OrderController::class, 'driverOrders']);           // طلبات السائق
         Route::post('/{id}/accept', [OrderController::class, 'acceptOrder']);  // قبول طلب وبدء التوصيل
         Route::post('/{id}/deliver', [OrderController::class, 'deliverOrder']); // تأكيد التوصيل
-        Route::post('/{id}/cancel', [OrderController::class, 'cancelDelivery']); // إلغاء التوصيل مع سبب
+        Route::post('/{id}/cancel', [OrderController::class, 'driverCancelScheduledOrder']); // إلغاء طلب مجدول (فقط)
     });
 
     /*
     |--------------------------------------------------------------------------
-    | Driver Custom Order Routes - اطلب أي شيء (للسائق)
+    | Driver Custom Order Routes - اطلب أي شيء (للسائق) - الطلبات الخاصة فقط
     |--------------------------------------------------------------------------
     */
     Route::prefix('driver/custom-orders')->group(function () {
@@ -250,19 +280,51 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/my', [CustomOrderController::class, 'driverOrders']);           // طلبات السائق الخاصة
         Route::post('/{id}/accept', [CustomOrderController::class, 'acceptOrder']);  // قبول طلب وبدء التوصيل
         Route::post('/{id}/deliver', [CustomOrderController::class, 'deliverOrder']); // تأكيد التوصيل
-        Route::post('/{id}/cancel', [CustomOrderController::class, 'cancelDelivery']); // إلغاء التوصيل مع سبب
+        Route::post('/{id}/cancel', [CustomOrderController::class, 'driverCancelScheduledOrder']); // إلغاء طلب مجدول (فقط)
     });
 
     /*
     |--------------------------------------------------------------------------
-    | Admin Order Routes (للأدمن/المتجر)
+    | Admin Order Routes (للإدارة) - الطلبات العادية
     |--------------------------------------------------------------------------
     */
     Route::prefix('admin/orders')->group(function () {
-        Route::get('/', [OrderController::class, 'allOrders']);              // كل الطلبات
-        Route::put('/{id}/status', [OrderController::class, 'updateStatus']); // تحديث حالة
-        Route::post('/{id}/assign-driver', [OrderController::class, 'assignDriver']); // تعيين سائق
+        Route::get('/', [OrderController::class, 'allOrders']);                      // كل الطلبات
+        Route::post('/{id}/cancel', [OrderController::class, 'adminCancelOrder']);   // إلغاء طلب (إدارة فقط)
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Custom Order Routes (للإدارة) - الطلبات الخاصة
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('admin/custom-orders')->group(function () {
+        Route::get('/', [CustomOrderController::class, 'allOrders']);                      // كل الطلبات الخاصة
+        Route::post('/{id}/cancel', [CustomOrderController::class, 'adminCancelOrder']);   // إلغاء طلب (إدارة فقط)
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admin User Orders Routes - طلبات المستخدمين
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/admin/users/{id}/orders', [OrderController::class, 'userOrdersForAdmin']);               // طلبات مستخدم معين (عادية)
+    Route::get('/admin/users/{id}/custom-orders', [CustomOrderController::class, 'userOrdersForAdmin']); // طلبات مستخدم معين (خاصة)
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Driver Orders Routes - طلبات السائقين
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/admin/drivers/{id}/orders', [OrderController::class, 'driverOrdersForAdmin']);               // طلبات سائق معين (عادية)
+    Route::get('/admin/drivers/{id}/custom-orders', [CustomOrderController::class, 'driverOrdersForAdmin']); // طلبات سائق معين (خاصة)
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Store Orders Routes - طلبات المتاجر
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/admin/stores/{id}/orders', [OrderController::class, 'storeOrdersForAdmin']); // طلبات متجر معين
 
 });
 

@@ -80,4 +80,83 @@ class DriverController extends Controller
         $driver->save();    
         return $this->success(new DriverResource($driver), 'تم تحديث حالة السائق بنجاح');
     }
+
+    /**
+     * update driver current location
+     * 
+     * The location should be sent approximately every 30 seconds from the app
+     */
+    public function updateLocation(\Illuminate\Http\Request $request)
+    {
+        $validated = $request->validate([
+            'lat' => 'required|numeric|between:-90,90',
+            'lng' => 'required|numeric|between:-180,180',
+        ], [
+            'lat.required' => 'خط العرض مطلوب',
+            'lat.numeric' => 'خط العرض يجب أن يكون رقماً',
+            'lat.between' => 'خط العرض يجب أن يكون بين -90 و 90',
+            'lng.required' => 'خط الطول مطلوب',
+            'lng.numeric' => 'خط الطول يجب أن يكون رقماً',
+            'lng.between' => 'خط الطول يجب أن يكون بين -180 و 180',
+        ]);
+
+        /** @var \App\Models\Driver $driver */
+        $driver = Auth::guard('driver')->user();
+        
+        $driver->update([
+            'current_lat' => $validated['lat'],
+            'current_lng' => $validated['lng'],
+            'last_location_update' => now(),
+            'last_activity_at' => now(),
+        ]);
+
+        return $this->success([
+            'lat' => (float) $driver->current_lat,
+            'lng' => (float) $driver->current_lng,
+            'updated_at' => $driver->last_location_update->toIso8601String(),
+        ], 'تم تحديث الموقع بنجاح');
+    }
+
+    /**
+     * Change connection status (online/offline)
+     */
+    public function toggleOnlineStatus()
+    {
+        /** @var \App\Models\Driver $driver */
+        $driver = Auth::guard('driver')->user();
+        
+        $driver->is_online = !$driver->is_online;
+        
+        if ($driver->is_online) {
+            $driver->last_activity_at = now();
+        }
+        
+        $driver->save();
+
+        return $this->success([
+            'is_online' => $driver->is_online,
+            'message' => $driver->is_online ? 'أنت الآن متصل' : 'أنت الآن غير متصل',
+        ], $driver->is_online ? 'تم تفعيل الاتصال' : 'تم إيقاف الاتصال');
+    }
+
+    /**
+     * Driver activity recording (heartbeat)
+     * 
+     * This request must be sent every minute to maintain the active state
+     */
+    public function heartbeat()
+    {
+        /** @var \App\Models\Driver $driver */
+        $driver = Auth::guard('driver')->user();
+        
+        $driver->update([
+            'last_activity_at' => now(),
+        ]);
+
+        return $this->success([
+            'is_active' => $driver->is_active,
+            'is_online' => $driver->is_online,
+            'last_activity_at' => $driver->last_activity_at->toIso8601String(),
+        ]);
+    }
 }

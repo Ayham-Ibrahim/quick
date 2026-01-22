@@ -18,11 +18,11 @@ class CustomOrderController extends Controller
     }
 
     /* ==========================================
-     * APIs للمستخدم (العميل)
+     * APIs for users (customers)
      * ========================================== */
 
     /**
-     * جلب طلبات المستخدم الخاصة
+     * get specific custom order details
      *
      * GET /custom-orders
      */
@@ -40,7 +40,7 @@ class CustomOrderController extends Controller
     }
 
     /**
-     * جلب تفاصيل طلب معين
+     * Get specific custom order details
      *
      * GET /custom-orders/{id}
      */
@@ -55,7 +55,7 @@ class CustomOrderController extends Controller
     }
 
     /**
-     * إنشاء طلب خاص جديد (مسودة)
+     * Create new custom order (draft)
      *
      * POST /custom-orders
      */
@@ -71,7 +71,7 @@ class CustomOrderController extends Controller
     }
 
     /**
-     * إلغاء طلب
+     * Cancel order
      *
      * POST /custom-orders/{id}/cancel
      */
@@ -90,7 +90,7 @@ class CustomOrderController extends Controller
     }
 
     /**
-     * إعادة محاولة التوصيل بعد الإلغاء (للمستخدم)
+     * Retry delivery after cancellation (for user)
      *
      * POST /custom-orders/{id}/retry-delivery
      */
@@ -105,7 +105,7 @@ class CustomOrderController extends Controller
     }
 
     /**
-     * إعادة إرسال الطلب للسائقين (تجديد فترة الانتظار)
+     * Resend order to drivers (renew waiting period)
      *
      * POST /custom-orders/{id}/resend
      */
@@ -120,7 +120,7 @@ class CustomOrderController extends Controller
     }
 
     /**
-     * حساب سعر التوصيل (معاينة قبل الإنشاء)
+     * Calculate delivery fee (preview before creation)
      *
      * POST /custom-orders/calculate-fee
      */
@@ -139,11 +139,11 @@ class CustomOrderController extends Controller
     }
 
     /* ==========================================
-     * APIs للسائق
+     * APIs for drivers
      * ========================================== */
 
     /**
-     * جلب الطلبات الخاصة المتاحة للتوصيل
+     * Get available custom orders for delivery
      *
      * GET /driver/custom-orders/available
      */
@@ -160,7 +160,7 @@ class CustomOrderController extends Controller
     }
 
     /**
-     * جلب طلبات السائق الخاصة
+     * Get driver's custom orders
      *
      * GET /driver/custom-orders
      */
@@ -178,7 +178,7 @@ class CustomOrderController extends Controller
     }
 
     /**
-     * السائق يقبل طلب خاص ويبدأ التوصيل
+     * Driver accepts a custom order and starts delivery
      *
      * POST /driver/custom-orders/{id}/accept
      */
@@ -193,7 +193,7 @@ class CustomOrderController extends Controller
     }
 
     /**
-     * السائق يؤكد تسليم الطلب
+     * Driver confirms delivery
      *
      * POST /driver/custom-orders/{id}/deliver
      */
@@ -208,21 +208,109 @@ class CustomOrderController extends Controller
     }
 
     /**
-     * السائق يلغي التوصيل مع سبب
-     *
+     * Driver cancels a scheduled order (immediate orders cannot be cancelled)
+     * 
      * POST /driver/custom-orders/{id}/cancel
+     * 
+     * ⚠️ Order, user details and cancellation reason are sent to admin
      */
-    public function cancelDelivery(Request $request, int $id)
+    public function driverCancelScheduledOrder(Request $request, int $id)
     {
         $validated = $request->validate([
             'reason' => 'required|string|max:500',
         ]);
 
-        $order = $this->customOrderService->cancelDeliveryByDriver($id, $validated['reason']);
+        $result = $this->customOrderService->cancelScheduledOrderByDriver($id, $validated['reason']);
+
+        return $this->success([
+            'order' => new CustomOrderResource($result['order']),
+            'notification_sent_to_admin' => true,
+            'message_to_driver' => 'تم إلغاء الطلب وإرسال البيانات للإدارة',
+        ], 'تم إلغاء الطلب المجدول بنجاح');
+    }
+
+    /* ==========================================
+     * Admin APIs
+     * ========================================== */
+
+    /**
+     * Get all custom orders (admin)
+     *
+     * GET /admin/custom-orders
+     */
+    public function allOrders(Request $request)
+    {
+        $orders = $this->customOrderService->getAllOrders([
+            'status' => $request->query('status'),
+            'user_id' => $request->query('user_id'),
+            'driver_id' => $request->query('driver_id'),
+            'per_page' => $request->query('per_page', 15),
+        ]);
+
+        return $this->paginate(
+            $orders->setCollection($orders->getCollection()->map(fn($o) => new CustomOrderResource($o))),
+            'تم جلب الطلبات بنجاح'
+        );
+    }
+
+    /**
+     * Cancel a custom order by admin
+     *
+     * POST /admin/custom-orders/{id}/cancel
+     */
+    public function adminCancelOrder(Request $request, int $id)
+    {
+        $validated = $request->validate([
+            'reason' => 'required|string|max:500',
+        ]);
+
+        $order = $this->customOrderService->cancelOrderByAdmin($id, $validated['reason']);
 
         return $this->success(
             new CustomOrderResource($order),
-            'تم إلغاء التوصيل'
+            'تم إلغاء الطلب بنجاح'
+        );
+    }
+
+    /* ==========================================
+     * Admin APIs - entity-specific orders
+     * ========================================== */
+
+    /**
+     * Get orders of a specific user (admin)
+     *
+     * GET /admin/users/{id}/custom-orders
+     */
+    public function userOrdersForAdmin(Request $request, int $id)
+    {
+        $orders = $this->customOrderService->getAllOrders([
+            'status' => $request->query('status'),
+            'user_id' => $id,
+            'per_page' => $request->query('per_page', 15),
+        ]);
+
+        return $this->paginate(
+            $orders->setCollection($orders->getCollection()->map(fn($o) => new CustomOrderResource($o))),
+            'تم جلب طلبات المستخدم الخاصة بنجاح'
+        );
+    }
+
+    /**
+     * Get orders of a specific driver (admin)
+     *
+     * GET /admin/drivers/{id}/custom-orders
+     */
+    public function driverOrdersForAdmin(Request $request, int $id)
+    {
+        $orders = $this->customOrderService->getAllOrders([
+            'status' => $request->query('status'),
+            'driver_id' => $id,
+            'per_page' => $request->query('per_page', 15),
+        ]);
+
+        return $this->paginate(
+            $orders->setCollection($orders->getCollection()->map(fn($o) => new CustomOrderResource($o))),
+            'تم جلب طلبات السائق الخاصة بنجاح'
         );
     }
 }

@@ -1,28 +1,110 @@
 {
 	"info": {
-		"_postman_id": "orders-simplified-2026",
-		"name": "📦 Orders API - النظام المبسط",
-		"description": "نظام الطلبات المبسط - 4 حالات فقط: pending, shipping, delivered, cancelled\n\n## آلية العمل:\n1. إنشاء الطلب → pending + انتظار 5 دقائق\n2. إذا سائق قبل → shipping\n3. إذا انتهت الصلاحية → can_resend_to_drivers=true\n4. المستخدم يضغط /resend لتجديد الصلاحية",
+		"_postman_id": "orders-simplified-2026-v3",
+		"name": "📦 Orders API - النظام المبسط (v3)",
+		"description": "نظام الطلبات المبسط - 4 حالات فقط: pending, shipping, delivered, cancelled\n\n## التحديثات الجديدة (v3):\n- ✅ نظام النطاق الجغرافي التدريجي (Progressive Geofencing)\n- ✅ تحديث موقع السائق + حالة الاتصال\n- ✅ ترتيب المتاجر التلقائي عند قبول الطلب\n- ✅ قيود المسافة بين المتاجر (≤3 كم)\n- ✅ إعادة الطلب (Reorder) للطلبات المكتملة\n- ✅ APIs منفصلة للإدارة (طلبات المستخدم/السائق/المتجر)\n\n## قواعد الإلغاء:\n### الطلبات الفورية:\n- المستخدم: في حالة pending فقط\n- السائق: ❌ لا يمكنه الإلغاء\n- الإدارة: ✅ في أي وقت\n\n### الطلبات المجدولة:\n- المستخدم: في حالة pending فقط\n- السائق: ✅ مع سبب إلزامي (يُرسل للإدارة)\n- الإدارة: ✅ في أي وقت\n\n## النطاق الجغرافي التدريجي:\n- 0-2 دقيقة: 1 كم\n- 2-4 دقائق: 2 كم\n- 4-6 دقائق: 3 كم\n- 6-8 دقائق: 4 كم\n- 8-10 دقائق: 5 كم (الحد الأقصى)",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
-		{
-			"key": "base_url",
-			"value": "http://localhost:8000/api",
-			"type": "string"
-		},
-		{
-			"key": "user_token",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "driver_token",
-			"value": "",
-			"type": "string"
-		}
+		{"key": "base_url", "value": "http://localhost:8000/api", "type": "string"},
+		{"key": "user_token", "value": "", "type": "string"},
+		{"key": "driver_token", "value": "", "type": "string"},
+		{"key": "admin_token", "value": "", "type": "string"}
 	],
 	"item": [
+		{
+			"name": "🚗 Driver Location & Status",
+			"description": "إدارة موقع السائق وحالة الاتصال - ضرورية لنظام النطاق الجغرافي",
+			"item": [
+				{
+					"name": "Update Location",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{driver_token}}"},
+							{"key": "Accept", "value": "application/json"},
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"lat\": 35.1318,\n    \"lng\": 36.7514\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/driver/location",
+							"host": ["{{base_url}}"],
+							"path": ["driver", "location"]
+						},
+						"description": "تحديث موقع السائق الحالي - يجب إرساله كل 30 ثانية"
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"success\": true,\n    \"message\": \"تم تحديث الموقع بنجاح\",\n    \"data\": {\n        \"lat\": 35.1318,\n        \"lng\": 36.7514,\n        \"updated_at\": \"2026-01-21T10:30:00+00:00\"\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Toggle Online Status",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{driver_token}}"},
+							{"key": "Accept", "value": "application/json"}
+						],
+						"url": {
+							"raw": "{{base_url}}/driver/toggle-online",
+							"host": ["{{base_url}}"],
+							"path": ["driver", "toggle-online"]
+						},
+						"description": "تبديل حالة الاتصال (متصل/غير متصل)"
+					},
+					"response": [
+						{
+							"name": "Success - Now Online",
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"success\": true,\n    \"message\": \"تم تفعيل الاتصال\",\n    \"data\": {\n        \"is_online\": true,\n        \"message\": \"أنت الآن متصل\"\n    }\n}"
+						},
+						{
+							"name": "Success - Now Offline",
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"success\": true,\n    \"message\": \"تم إيقاف الاتصال\",\n    \"data\": {\n        \"is_online\": false,\n        \"message\": \"أنت الآن غير متصل\"\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Heartbeat (Activity)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{driver_token}}"},
+							{"key": "Accept", "value": "application/json"}
+						],
+						"url": {
+							"raw": "{{base_url}}/driver/heartbeat",
+							"host": ["{{base_url}}"],
+							"path": ["driver", "heartbeat"]
+						},
+						"description": "تسجيل نشاط السائق - يجب إرساله كل 60 ثانية للحفاظ على حالة النشاط"
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"is_active\": true,\n        \"is_online\": true,\n        \"last_activity_at\": \"2026-01-21T10:30:00+00:00\"\n    }\n}"
+						}
+					]
+				}
+			]
+		},
 		{
 			"name": "📦 Regular Orders (طلبات المنتجات)",
 			"item": [
@@ -46,7 +128,16 @@
 										{"key": "per_page", "value": "15"}
 									]
 								}
-							}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم جلب الطلبات بنجاح\",\n    \"data\": [\n        {\n            \"id\": 1,\n            \"orderNumber\": \"ORD-000001\",\n            \"status\": \"delivered\",\n            \"statusText\": \"تم التسليم\",\n            \"subtotal\": 100000,\n            \"deliveryFee\": 25000,\n            \"total\": 125000,\n            \"canReorder\": true,\n            \"canUserCancel\": false,\n            \"hasDriver\": true,\n            \"createdAt\": \"2026-01-19 10:35\"\n        }\n    ],\n    \"meta\": {\n        \"current_page\": 1,\n        \"last_page\": 3,\n        \"per_page\": 15,\n        \"total\": 42\n    }\n}"
+								}
+							]
 						},
 						{
 							"name": "Get Order Details",
@@ -61,7 +152,16 @@
 									"host": ["{{base_url}}"],
 									"path": ["orders", "1"]
 								}
-							}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم جلب تفاصيل الطلب بنجاح\",\n    \"data\": {\n        \"id\": 1,\n        \"orderNumber\": \"ORD-000001\",\n        \"status\": \"delivered\",\n        \"statusText\": \"تم التسليم\",\n        \"subtotal\": 150000,\n        \"discountAmount\": 10000,\n        \"deliveryFee\": 25000,\n        \"total\": 165000,\n        \"deliveryAddress\": \"حماة، شارع الوليد، البناية 20\",\n        \"deliveryLat\": 35.1318,\n        \"deliveryLng\": 36.7514,\n        \"canReorder\": true,\n        \"canUserCancel\": false,\n        \"canDriverCancelDelivery\": false,\n        \"items\": [\n            {\n                \"id\": 1,\n                \"productName\": \"آيفون 15 برو\",\n                \"quantity\": 1,\n                \"unitPrice\": 150000,\n                \"lineTotal\": 150000,\n                \"store\": {\n                    \"id\": 1,\n                    \"storeName\": \"متجر التقنية\"\n                }\n            }\n        ],\n        \"driver\": {\n            \"id\": 1,\n            \"name\": \"محمد أحمد\",\n            \"phone\": \"0938204147\"\n        },\n        \"hasDriver\": true,\n        \"createdAt\": \"2026-01-19 10:35\"\n    }\n}"
+								}
+							]
 						},
 						{
 							"name": "Cancel Order",
@@ -74,18 +174,27 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"reason\": \"تغيرت خططي\"\n}"
+									"raw": "{\n    \"reason\": \"غيرت رأيي\"\n}"
 								},
 								"url": {
 									"raw": "{{base_url}}/orders/1/cancel",
 									"host": ["{{base_url}}"],
 									"path": ["orders", "1", "cancel"]
 								},
-								"description": "إلغاء طلب - يعمل فقط في حالة pending"
-							}
+								"description": "إلغاء الطلب - فقط في حالة pending"
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم إلغاء الطلب بنجاح\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"cancelled\",\n        \"statusText\": \"ملغي\",\n        \"cancellationReason\": \"غيرت رأيي\"\n    }\n}"
+								}
+							]
 						},
 						{
-							"name": "⚡ Resend to Drivers",
+							"name": "Resend to Drivers",
 							"request": {
 								"method": "POST",
 								"header": [
@@ -97,14 +206,15 @@
 									"host": ["{{base_url}}"],
 									"path": ["orders", "1", "resend"]
 								},
-								"description": "إعادة إرسال للسائقين - يعمل عندما:\n- الحالة: pending\n- لا يوجد سائق\n- انتهت الصلاحية (can_resend_to_drivers=true)"
+								"description": "إعادة إرسال للسائقين بعد انتهاء صلاحية الانتظار"
 							},
 							"response": [
 								{
 									"name": "Success",
 									"status": "OK",
 									"code": 200,
-									"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم إعادة إرسال الطلب للسائقين\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"pending\",\n        \"confirmationExpiresAt\": \"2026-01-16T10:45:00+00:00\",\n        \"isConfirmationExpired\": false,\n        \"canResendToDrivers\": false,\n        \"isAvailableForDriver\": true\n    }\n}"
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم إعادة إرسال الطلب للسائقين\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"pending\",\n        \"confirmationExpiresAt\": \"2026-01-21T10:45:00+00:00\",\n        \"isConfirmationExpired\": false,\n        \"canResendToDrivers\": false,\n        \"isAvailableForDriver\": true\n    }\n}"
 								}
 							]
 						},
@@ -121,8 +231,68 @@
 									"host": ["{{base_url}}"],
 									"path": ["orders", "1", "retry-delivery"]
 								},
-								"description": "إعادة المحاولة بعد الإلغاء - يعمل عندما:\n- الحالة: cancelled"
-							}
+								"description": "إعادة المحاولة بعد الإلغاء - الطلب الملغي يعود pending"
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم إعادة إرسال الطلب للسائقين\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"pending\",\n        \"statusText\": \"معلق\",\n        \"cancellationReason\": null,\n        \"confirmationExpiresAt\": \"2026-01-21T10:55:00+00:00\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Reorder (from delivered order)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{user_token}}"},
+									{"key": "Accept", "value": "application/json"},
+									{"key": "Content-Type", "value": "application/json"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"delivery_address\": \"حماة، حي الصابونية، بناء رقم 15\",\n    \"delivery_fee\": 15000,\n    \"is_immediate_delivery\": true,\n    \"notes\": \"الرجاء الاتصال قبل الوصول\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/orders/1/reorder",
+									"host": ["{{base_url}}"],
+									"path": ["orders", "1", "reorder"]
+								},
+								"description": "إعادة طلب طلبية مكتملة (تم التوصيل) - يتم إنشاء طلب جديد بالأسعار الحالية"
+							},
+							"response": [
+								{
+									"name": "Success - All items available",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم إنشاء الطلب الجديد بنجاح\",\n    \"data\": {\n        \"new_order\": {\n            \"id\": 15,\n            \"orderNumber\": \"ORD-000015\",\n            \"status\": \"pending\",\n            \"statusText\": \"معلق\",\n            \"subtotal\": 120000,\n            \"deliveryFee\": 15000,\n            \"total\": 135000,\n            \"deliveryAddress\": \"حماة، حي الصابونية، بناء رقم 15\",\n            \"isImmediateDelivery\": true,\n            \"confirmationExpiresAt\": \"2026-01-21T11:00:00+00:00\",\n            \"canReorder\": false\n        },\n        \"reordered_from\": 1\n    }\n}"
+								},
+								{
+									"name": "Success - Some items unavailable",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم إنشاء الطلب الجديد بنجاح\",\n    \"data\": {\n        \"new_order\": {\n            \"id\": 16,\n            \"orderNumber\": \"ORD-000016\",\n            \"status\": \"pending\",\n            \"subtotal\": 80000,\n            \"deliveryFee\": 15000,\n            \"total\": 95000\n        },\n        \"reordered_from\": 1,\n        \"unavailable_items_notice\": [\n            \"iPhone 15 Pro (نفد من المخزون)\",\n            \"Samsung Galaxy S24 (الكمية المتاحة: 1 بدلاً من 3)\"\n        ],\n        \"notice_message\": \"بعض المنتجات لم تكن متاحة أو الكمية المطلوبة غير متوفرة\"\n    }\n}"
+								},
+								{
+									"name": "Error - All items unavailable",
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": false,\n    \"message\": \"لا توجد منتجات متاحة لإعادة الطلب\"\n}"
+								},
+								{
+									"name": "Error - Order not delivered",
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": false,\n    \"message\": \"لا يمكن إعادة الطلب إلا للطلبات المكتملة (تم التسليم)\"\n}"
+								}
+							]
 						}
 					]
 				},
@@ -142,8 +312,17 @@
 									"host": ["{{base_url}}"],
 									"path": ["driver", "orders", "available"]
 								},
-								"description": "الطلبات المتاحة للقبول:\n- الحالة: pending\n- بدون سائق\n- لم تنته الصلاحية"
-							}
+								"description": "الطلبات المتاحة للقبول (pending + لم تنته الصلاحية + ضمن النطاق الجغرافي)"
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم جلب الطلبات المتاحة بنجاح\",\n    \"data\": [\n        {\n            \"id\": 5,\n            \"orderNumber\": \"ORD-000005\",\n            \"status\": \"pending\",\n            \"statusText\": \"معلق\",\n            \"total\": 85000,\n            \"deliveryFee\": 20000,\n            \"deliveryAddress\": \"حماة، شارع الوليد\",\n            \"deliveryLat\": 35.1318,\n            \"deliveryLng\": 36.7514,\n            \"isImmediateDelivery\": true,\n            \"confirmationExpiresAt\": \"2026-01-21T11:00:00+00:00\",\n            \"user\": {\n                \"id\": 5,\n                \"userName\": \"أحمد عبد الرحمن\",\n                \"phone\": \"0938204147\"\n            },\n            \"itemsByStore\": [\n                {\n                    \"store\": {\n                        \"id\": 1,\n                        \"storeName\": \"متجر التقنية\"\n                    },\n                    \"itemsCount\": 2,\n                    \"subtotal\": 65000\n                }\n            ]\n        }\n    ]\n}"
+								}
+							]
 						},
 						{
 							"name": "Get My Orders",
@@ -157,11 +336,19 @@
 									"raw": "{{base_url}}/driver/orders/my?status=",
 									"host": ["{{base_url}}"],
 									"path": ["driver", "orders", "my"],
-									"query": [
-										{"key": "status", "value": "", "description": "shipping, delivered, cancelled"}
-									]
+									"query": [{"key": "status", "value": "", "description": "shipping, delivered, cancelled"}]
+								},
+								"description": "طلبات السائق"
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم جلب طلباتك بنجاح\",\n    \"data\": [\n        {\n            \"id\": 10,\n            \"orderNumber\": \"ORD-000010\",\n            \"status\": \"shipping\",\n            \"statusText\": \"قيد التوصيل\",\n            \"total\": 120000,\n            \"deliveryAddress\": \"حماة، حي الحاضر\",\n            \"canDriverCancelDelivery\": false,\n            \"user\": {\n                \"id\": 3,\n                \"userName\": \"خالد محمود\",\n                \"phone\": \"0933456789\"\n            }\n        }\n    ]\n}"
 								}
-							}
+							]
 						},
 						{
 							"name": "Accept Order",
@@ -176,14 +363,29 @@
 									"host": ["{{base_url}}"],
 									"path": ["driver", "orders", "1", "accept"]
 								},
-								"description": "قبول طلب وبدء التوصيل:\npending → shipping"
+								"description": "قبول الطلب - يتم إرجاع ترتيب المتاجر التلقائي (الأقرب فالأبعد)"
 							},
 							"response": [
 								{
 									"name": "Success",
 									"status": "OK",
 									"code": 200,
-									"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم قبول الطلب\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"shipping\",\n        \"statusText\": \"قيد التوصيل\",\n        \"hasDriver\": true\n    }\n}"
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم قبول الطلب بنجاح\",\n    \"data\": {\n        \"order\": {\n            \"id\": 1,\n            \"orderNumber\": \"ORD-000001\",\n            \"status\": \"shipping\",\n            \"statusText\": \"قيد التوصيل\",\n            \"total\": 165000,\n            \"deliveryAddress\": \"حماة، شارع الوليد\",\n            \"deliveryLat\": 35.1318,\n            \"deliveryLng\": 36.7514,\n            \"user\": {\n                \"id\": 1,\n                \"userName\": \"أحمد علي\",\n                \"phone\": \"0938123456\"\n            },\n            \"items\": []\n        },\n        \"execution_route\": {\n            \"stores_order\": [\n                {\n                    \"id\": 3,\n                    \"name\": \"متجر الإلكترونيات\",\n                    \"lat\": 35.1298,\n                    \"lng\": 36.7489,\n                    \"distance_from_start\": 0.5\n                },\n                {\n                    \"id\": 7,\n                    \"name\": \"متجر الملابس\",\n                    \"lat\": 35.1318,\n                    \"lng\": 36.7514,\n                    \"distance_from_start\": 1.2\n                }\n            ],\n            \"distance_to_delivery\": 2.3,\n            \"total_estimated_distance\": 4.0\n        }\n    }\n}"
+								},
+								{
+									"name": "Error - Already Accepted",
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": false,\n    \"message\": \"تم قبول هذا الطلب من سائق آخر\"\n}"
+								},
+								{
+									"name": "Error - Insufficient Balance",
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": false,\n    \"message\": \"رصيد محفظتك غير كافٍ لقبول هذا الطلب\"\n}"
 								}
 							]
 						},
@@ -200,11 +402,20 @@
 									"host": ["{{base_url}}"],
 									"path": ["driver", "orders", "1", "deliver"]
 								},
-								"description": "تأكيد التسليم:\nshipping → delivered"
-							}
+								"description": "تأكيد تسليم الطلب"
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم تأكيد تسليم الطلب بنجاح\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"delivered\",\n        \"statusText\": \"تم التسليم\"\n    }\n}"
+								}
+							]
 						},
 						{
-							"name": "Cancel Delivery",
+							"name": "Cancel Scheduled Order",
 							"request": {
 								"method": "POST",
 								"header": [
@@ -214,22 +425,189 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"reason\": \"العميل غير متواجد\"\n}"
+									"raw": "{\n    \"reason\": \"لم أجد العنوان المحدد\"\n}"
 								},
 								"url": {
 									"raw": "{{base_url}}/driver/orders/1/cancel",
 									"host": ["{{base_url}}"],
 									"path": ["driver", "orders", "1", "cancel"]
 								},
-								"description": "إلغاء التوصيل مع سبب:\nshipping → cancelled"
-							}
+								"description": "⚠️ إلغاء طلب مجدول فقط - الطلبات الفورية لا يمكن إلغاؤها من السائق"
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم إلغاء الطلب المجدول بنجاح\",\n    \"data\": {\n        \"order\": {\n            \"id\": 1,\n            \"status\": \"cancelled\",\n            \"statusText\": \"ملغي\",\n            \"cancellationReason\": \"لم أجد العنوان المحدد\"\n        },\n        \"notification_sent_to_admin\": true,\n        \"message_to_driver\": \"تم إلغاء الطلب وإرسال البيانات للإدارة\"\n    }\n}"
+								},
+								{
+									"name": "Error - Immediate Order",
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": false,\n    \"message\": \"لا يمكن إلغاء الطلبات الفورية - فقط الإدارة تستطيع ذلك\"\n}"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Admin APIs",
+					"item": [
+						{
+							"name": "Get All Orders",
+							"request": {
+								"method": "GET",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{admin_token}}"},
+									{"key": "Accept", "value": "application/json"}
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/orders?status=&per_page=15",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "orders"],
+									"query": [
+										{"key": "status", "value": ""},
+										{"key": "per_page", "value": "15"}
+									]
+								},
+								"description": "جلب جميع الطلبات العادية"
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم جلب الطلبات بنجاح\",\n    \"data\": [],\n    \"meta\": {\n        \"current_page\": 1,\n        \"last_page\": 10,\n        \"per_page\": 15,\n        \"total\": 150\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Cancel Order (Admin)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{admin_token}}"},
+									{"key": "Accept", "value": "application/json"},
+									{"key": "Content-Type", "value": "application/json"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"reason\": \"إلغاء إداري - تم استرجاع المبلغ\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/admin/orders/1/cancel",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "orders", "1", "cancel"]
+								},
+								"description": "إلغاء طلب من الإدارة - يعمل في أي حالة ما عدا delivered/cancelled"
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم إلغاء الطلب بنجاح\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"cancelled\",\n        \"statusText\": \"ملغي\",\n        \"cancellationReason\": \"إلغاء إداري - تم استرجاع المبلغ\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Get User Orders",
+							"request": {
+								"method": "GET",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{admin_token}}"},
+									{"key": "Accept", "value": "application/json"}
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/users/1/orders?status=&per_page=15",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "users", "1", "orders"],
+									"query": [
+										{"key": "status", "value": ""},
+										{"key": "per_page", "value": "15"}
+									]
+								},
+								"description": "جلب طلبات مستخدم معين (العادية)"
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم جلب طلبات المستخدم بنجاح\",\n    \"data\": [\n        {\n            \"id\": 5,\n            \"orderNumber\": \"ORD-000005\",\n            \"status\": \"delivered\",\n            \"statusText\": \"تم التسليم\",\n            \"total\": 85000,\n            \"createdAt\": \"2026-01-20 14:30\"\n        }\n    ],\n    \"meta\": {\n        \"current_page\": 1,\n        \"last_page\": 2,\n        \"per_page\": 15,\n        \"total\": 25\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Get Driver Orders",
+							"request": {
+								"method": "GET",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{admin_token}}"},
+									{"key": "Accept", "value": "application/json"}
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/drivers/1/orders?status=&per_page=15",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "drivers", "1", "orders"],
+									"query": [
+										{"key": "status", "value": ""},
+										{"key": "per_page", "value": "15"}
+									]
+								},
+								"description": "جلب طلبات سائق معين (العادية)"
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم جلب طلبات السائق بنجاح\",\n    \"data\": [\n        {\n            \"id\": 10,\n            \"orderNumber\": \"ORD-000010\",\n            \"status\": \"delivered\",\n            \"statusText\": \"تم التسليم\",\n            \"total\": 120000,\n            \"user\": {\n                \"id\": 3,\n                \"userName\": \"خالد محمود\"\n            },\n            \"createdAt\": \"2026-01-20 16:00\"\n        }\n    ],\n    \"meta\": {\n        \"current_page\": 1,\n        \"last_page\": 3,\n        \"per_page\": 15,\n        \"total\": 40\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Get Store Orders",
+							"request": {
+								"method": "GET",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{admin_token}}"},
+									{"key": "Accept", "value": "application/json"}
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/stores/1/orders?status=&per_page=15",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "stores", "1", "orders"],
+									"query": [
+										{"key": "status", "value": ""},
+										{"key": "per_page", "value": "15"}
+									]
+								},
+								"description": "جلب طلبات متجر معين"
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم جلب طلبات المتجر بنجاح\",\n    \"data\": [\n        {\n            \"id\": 15,\n            \"orderNumber\": \"ORD-000015\",\n            \"status\": \"shipping\",\n            \"statusText\": \"قيد التوصيل\",\n            \"total\": 200000,\n            \"user\": {\n                \"id\": 8,\n                \"userName\": \"سامر علي\"\n            },\n            \"driver\": {\n                \"id\": 2,\n                \"name\": \"محمد أحمد\"\n            },\n            \"createdAt\": \"2026-01-21 09:00\"\n        }\n    ],\n    \"meta\": {\n        \"current_page\": 1,\n        \"last_page\": 5,\n        \"per_page\": 15,\n        \"total\": 70\n    }\n}"
+								}
+							]
 						}
 					]
 				}
 			]
 		},
 		{
-			"name": "🛵 Custom Orders (اطلب أي شيء)",
+			"name": "🎯 Custom Orders (اطلب أي شيء)",
 			"item": [
 				{
 					"name": "User APIs",
@@ -251,8 +629,18 @@
 									"raw": "{{base_url}}/custom-orders/calculate-fee",
 									"host": ["{{base_url}}"],
 									"path": ["custom-orders", "calculate-fee"]
+								},
+								"description": "حساب سعر التوصيل بناءً على المسافة"
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم حساب سعر التوصيل\",\n    \"data\": {\n        \"distance_km\": 5.5,\n        \"km_price\": 5000,\n        \"delivery_fee\": 27500\n    }\n}"
 								}
-							}
+							]
 						},
 						{
 							"name": "Create Custom Order",
@@ -265,21 +653,22 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"delivery_address\": \"حماة، شارع الوليد، البناية 20\",\n    \"delivery_lat\": 35.1318,\n    \"delivery_lng\": 36.7514,\n    \"distance_km\": 5.5,\n    \"is_immediate\": true,\n    \"notes\": \"الرجاء الاتصال قبل الوصول\",\n    \"items\": [\n        {\n            \"description\": \"بيتزا عائلي من مطعم بيتزا\",\n            \"pickup_address\": \"حماة، شارع القوتلي، مطعم بيتزا هت\",\n            \"pickup_lat\": 35.1298,\n            \"pickup_lng\": 36.7489\n        },\n        {\n            \"description\": \"عصير برتقال طبيعي 2 لتر\",\n            \"pickup_address\": \"حماة، شارع الثورة، سوبرماركت الأمل\",\n            \"pickup_lat\": 35.1305,\n            \"pickup_lng\": 36.7501\n        }\n    ]\n}"
+									"raw": "{\n    \"delivery_address\": \"حماة، شارع الوليد، البناية 20\",\n    \"delivery_lat\": 35.1318,\n    \"delivery_lng\": 36.7514,\n    \"distance_km\": 5.5,\n    \"is_immediate\": true,\n    \"notes\": \"الرجاء الاتصال قبل الوصول\",\n    \"items\": [\n        {\n            \"description\": \"بيتزا عائلي من مطعم بيتزا\",\n            \"pickup_address\": \"حماة، شارع القوتلي، مطعم بيتزا هت\",\n            \"pickup_lat\": 35.1298,\n            \"pickup_lng\": 36.7489\n        },\n        {\n            \"description\": \"عصير برتقال طبيعي 2 لتر\",\n            \"pickup_address\": \"حماة، سوق الخضار، محل العصائر\",\n            \"pickup_lat\": 35.1280,\n            \"pickup_lng\": 36.7500\n        }\n    ]\n}"
 								},
 								"url": {
 									"raw": "{{base_url}}/custom-orders",
 									"host": ["{{base_url}}"],
 									"path": ["custom-orders"]
 								},
-								"description": "إنشاء طلب خاص - يصبح pending مباشرة مع فترة انتظار 5 دقائق"
+								"description": "إنشاء طلب خاص (اطلب أي شيء)"
 							},
 							"response": [
 								{
 									"name": "Success",
 									"status": "Created",
 									"code": 201,
-									"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم إنشاء الطلب بنجاح\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"pending\",\n        \"status_text\": \"معلق\",\n        \"delivery_fee\": 27500,\n        \"confirmation_expires_at\": \"2026-01-16T10:40:00+00:00\",\n        \"is_confirmation_expired\": false,\n        \"can_resend_to_drivers\": false,\n        \"is_available_for_driver\": true\n    }\n}"
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم إنشاء الطلب بنجاح\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"pending\",\n        \"status_text\": \"معلق\",\n        \"delivery_fee\": 27500,\n        \"delivery_address\": \"حماة، شارع الوليد، البناية 20\",\n        \"delivery_lat\": 35.1318,\n        \"delivery_lng\": 36.7514,\n        \"is_immediate\": true,\n        \"confirmation_expires_at\": \"2026-01-21T10:40:00+00:00\",\n        \"is_confirmation_expired\": false,\n        \"can_resend_to_drivers\": false,\n        \"is_available_for_driver\": true,\n        \"can_user_cancel\": true,\n        \"items\": [\n            {\n                \"id\": 1,\n                \"description\": \"بيتزا عائلي من مطعم بيتزا\",\n                \"pickup_address\": \"حماة، شارع القوتلي، مطعم بيتزا هت\",\n                \"pickup_lat\": 35.1298,\n                \"pickup_lng\": 36.7489,\n                \"order_index\": 1\n            },\n            {\n                \"id\": 2,\n                \"description\": \"عصير برتقال طبيعي 2 لتر\",\n                \"pickup_address\": \"حماة، سوق الخضار، محل العصائر\",\n                \"pickup_lat\": 35.1280,\n                \"pickup_lng\": 36.7500,\n                \"order_index\": 2\n            }\n        ],\n        \"created_at\": \"2026-01-21T10:35:00+00:00\"\n    }\n}"
 								}
 							]
 						},
@@ -296,11 +685,20 @@
 									"host": ["{{base_url}}"],
 									"path": ["custom-orders"],
 									"query": [
-										{"key": "status", "value": "", "description": "pending, shipping, delivered, cancelled"},
+										{"key": "status", "value": ""},
 										{"key": "per_page", "value": "15"}
 									]
 								}
-							}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم جلب الطلبات بنجاح\",\n    \"data\": [\n        {\n            \"id\": 1,\n            \"status\": \"pending\",\n            \"status_text\": \"معلق\",\n            \"delivery_fee\": 27500,\n            \"items_count\": 2,\n            \"is_immediate\": true,\n            \"can_user_cancel\": true,\n            \"created_at\": \"2026-01-21T10:35:00+00:00\"\n        }\n    ],\n    \"meta\": {\n        \"current_page\": 1,\n        \"last_page\": 1,\n        \"per_page\": 15,\n        \"total\": 5\n    }\n}"
+								}
+							]
 						},
 						{
 							"name": "Get Custom Order Details",
@@ -315,7 +713,16 @@
 									"host": ["{{base_url}}"],
 									"path": ["custom-orders", "1"]
 								}
-							}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم جلب تفاصيل الطلب بنجاح\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"shipping\",\n        \"status_text\": \"قيد التوصيل\",\n        \"delivery_fee\": 27500,\n        \"delivery_address\": \"حماة، شارع الوليد، البناية 20\",\n        \"notes\": \"الرجاء الاتصال قبل الوصول\",\n        \"items\": [\n            {\n                \"id\": 1,\n                \"description\": \"بيتزا عائلي من مطعم بيتزا\",\n                \"pickup_address\": \"حماة، شارع القوتلي، مطعم بيتزا هت\"\n            }\n        ],\n        \"driver\": {\n            \"id\": 1,\n            \"name\": \"محمد أحمد\",\n            \"phone\": \"0938204147\"\n        },\n        \"has_driver\": true,\n        \"can_user_cancel\": false\n    }\n}"
+								}
+							]
 						},
 						{
 							"name": "Cancel Custom Order",
@@ -328,17 +735,26 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"reason\": \"تغيرت خططي\"\n}"
+									"raw": "{\n    \"reason\": \"غيرت رأيي\"\n}"
 								},
 								"url": {
 									"raw": "{{base_url}}/custom-orders/1/cancel",
 									"host": ["{{base_url}}"],
 									"path": ["custom-orders", "1", "cancel"]
 								}
-							}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم إلغاء الطلب بنجاح\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"cancelled\",\n        \"status_text\": \"ملغي\",\n        \"cancellation_reason\": \"غيرت رأيي\"\n    }\n}"
+								}
+							]
 						},
 						{
-							"name": "⚡ Resend to Drivers",
+							"name": "Resend to Drivers",
 							"request": {
 								"method": "POST",
 								"header": [
@@ -349,12 +765,20 @@
 									"raw": "{{base_url}}/custom-orders/1/resend",
 									"host": ["{{base_url}}"],
 									"path": ["custom-orders", "1", "resend"]
-								},
-								"description": "إعادة إرسال للسائقين بعد انتهاء الصلاحية"
-							}
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم إعادة إرسال الطلب للسائقين\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"pending\",\n        \"confirmation_expires_at\": \"2026-01-21T10:50:00+00:00\"\n    }\n}"
+								}
+							]
 						},
 						{
-							"name": "Retry Delivery (after cancel)",
+							"name": "Retry Delivery",
 							"request": {
 								"method": "POST",
 								"header": [
@@ -366,7 +790,16 @@
 									"host": ["{{base_url}}"],
 									"path": ["custom-orders", "1", "retry-delivery"]
 								}
-							}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم إعادة إرسال الطلب للسائقين\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"pending\",\n        \"status_text\": \"معلق\",\n        \"cancellation_reason\": null\n    }\n}"
+								}
+							]
 						}
 					]
 				},
@@ -374,7 +807,7 @@
 					"name": "Driver APIs",
 					"item": [
 						{
-							"name": "Get Available Orders",
+							"name": "Get Available Custom Orders",
 							"request": {
 								"method": "GET",
 								"header": [
@@ -386,10 +819,19 @@
 									"host": ["{{base_url}}"],
 									"path": ["driver", "custom-orders", "available"]
 								}
-							}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم جلب الطلبات المتاحة بنجاح\",\n    \"data\": [\n        {\n            \"id\": 3,\n            \"status\": \"pending\",\n            \"status_text\": \"معلق\",\n            \"delivery_fee\": 30000,\n            \"delivery_address\": \"حماة، حي الحاضر\",\n            \"is_immediate\": true,\n            \"items_count\": 2,\n            \"user\": {\n                \"id\": 5,\n                \"user_name\": \"أحمد عبد الرحمن\",\n                \"phone\": \"0938204147\"\n            }\n        }\n    ]\n}"
+								}
+							]
 						},
 						{
-							"name": "Get My Orders",
+							"name": "Get My Custom Orders",
 							"request": {
 								"method": "GET",
 								"header": [
@@ -397,14 +839,24 @@
 									{"key": "Accept", "value": "application/json"}
 								],
 								"url": {
-									"raw": "{{base_url}}/driver/custom-orders/my",
+									"raw": "{{base_url}}/driver/custom-orders/my?status=",
 									"host": ["{{base_url}}"],
-									"path": ["driver", "custom-orders", "my"]
+									"path": ["driver", "custom-orders", "my"],
+									"query": [{"key": "status", "value": ""}]
 								}
-							}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم جلب طلباتك بنجاح\",\n    \"data\": [\n        {\n            \"id\": 5,\n            \"status\": \"shipping\",\n            \"status_text\": \"قيد التوصيل\",\n            \"delivery_fee\": 25000,\n            \"delivery_address\": \"حماة، شارع الثورة\",\n            \"user\": {\n                \"id\": 3,\n                \"user_name\": \"خالد محمود\",\n                \"phone\": \"0933456789\"\n            }\n        }\n    ]\n}"
+								}
+							]
 						},
 						{
-							"name": "Accept Order",
+							"name": "Accept Custom Order",
 							"request": {
 								"method": "POST",
 								"header": [
@@ -416,7 +868,16 @@
 									"host": ["{{base_url}}"],
 									"path": ["driver", "custom-orders", "1", "accept"]
 								}
-							}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم قبول الطلب بنجاح\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"shipping\",\n        \"status_text\": \"قيد التوصيل\",\n        \"items\": [\n            {\n                \"id\": 1,\n                \"description\": \"بيتزا عائلي\",\n                \"pickup_address\": \"مطعم بيتزا هت\",\n                \"order_index\": 1\n            }\n        ]\n    }\n}"
+								}
+							]
 						},
 						{
 							"name": "Confirm Delivery",
@@ -431,10 +892,19 @@
 									"host": ["{{base_url}}"],
 									"path": ["driver", "custom-orders", "1", "deliver"]
 								}
-							}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم تأكيد تسليم الطلب بنجاح\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"delivered\",\n        \"status_text\": \"تم التسليم\"\n    }\n}"
+								}
+							]
 						},
 						{
-							"name": "Cancel Delivery",
+							"name": "Cancel Scheduled Custom Order",
 							"request": {
 								"method": "POST",
 								"header": [
@@ -444,14 +914,144 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"reason\": \"العميل غير متواجد\"\n}"
+									"raw": "{\n    \"reason\": \"لم أجد المطلوب في المكان المحدد\"\n}"
 								},
 								"url": {
 									"raw": "{{base_url}}/driver/custom-orders/1/cancel",
 									"host": ["{{base_url}}"],
 									"path": ["driver", "custom-orders", "1", "cancel"]
+								},
+								"description": "⚠️ إلغاء طلب خاص مجدول فقط"
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم إلغاء الطلب المجدول بنجاح\",\n    \"data\": {\n        \"order\": {\n            \"id\": 1,\n            \"status\": \"cancelled\",\n            \"status_text\": \"ملغي\"\n        },\n        \"notification_sent_to_admin\": true\n    }\n}"
 								}
-							}
+							]
+						}
+					]
+				},
+				{
+					"name": "Admin APIs",
+					"item": [
+						{
+							"name": "Get All Custom Orders",
+							"request": {
+								"method": "GET",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{admin_token}}"},
+									{"key": "Accept", "value": "application/json"}
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/custom-orders?status=&per_page=15",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "custom-orders"],
+									"query": [
+										{"key": "status", "value": ""},
+										{"key": "per_page", "value": "15"}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم جلب الطلبات بنجاح\",\n    \"data\": [],\n    \"meta\": {\n        \"current_page\": 1,\n        \"last_page\": 5,\n        \"per_page\": 15,\n        \"total\": 70\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Cancel Custom Order (Admin)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{admin_token}}"},
+									{"key": "Accept", "value": "application/json"},
+									{"key": "Content-Type", "value": "application/json"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"reason\": \"إلغاء إداري\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/admin/custom-orders/1/cancel",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "custom-orders", "1", "cancel"]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم إلغاء الطلب بنجاح\",\n    \"data\": {\n        \"id\": 1,\n        \"status\": \"cancelled\",\n        \"status_text\": \"ملغي\",\n        \"cancellation_reason\": \"إلغاء إداري\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Get User Custom Orders",
+							"request": {
+								"method": "GET",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{admin_token}}"},
+									{"key": "Accept", "value": "application/json"}
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/users/1/custom-orders?status=&per_page=15",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "users", "1", "custom-orders"],
+									"query": [
+										{"key": "status", "value": ""},
+										{"key": "per_page", "value": "15"}
+									]
+								},
+								"description": "جلب طلبات مستخدم معين (الخاصة)"
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم جلب طلبات المستخدم الخاصة بنجاح\",\n    \"data\": [\n        {\n            \"id\": 3,\n            \"status\": \"delivered\",\n            \"status_text\": \"تم التسليم\",\n            \"delivery_fee\": 25000,\n            \"items_count\": 2,\n            \"created_at\": \"2026-01-20 14:30\"\n        }\n    ],\n    \"meta\": {\n        \"current_page\": 1,\n        \"last_page\": 1,\n        \"per_page\": 15,\n        \"total\": 8\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Get Driver Custom Orders",
+							"request": {
+								"method": "GET",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{admin_token}}"},
+									{"key": "Accept", "value": "application/json"}
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/drivers/1/custom-orders?status=&per_page=15",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "drivers", "1", "custom-orders"],
+									"query": [
+										{"key": "status", "value": ""},
+										{"key": "per_page", "value": "15"}
+									]
+								},
+								"description": "جلب طلبات سائق معين (الخاصة)"
+							},
+							"response": [
+								{
+									"name": "Success",
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"body": "{\n    \"success\": true,\n    \"message\": \"تم جلب طلبات السائق الخاصة بنجاح\",\n    \"data\": [\n        {\n            \"id\": 7,\n            \"status\": \"delivered\",\n            \"status_text\": \"تم التسليم\",\n            \"delivery_fee\": 30000,\n            \"user\": {\n                \"id\": 5,\n                \"user_name\": \"أحمد عبد الرحمن\"\n            },\n            \"created_at\": \"2026-01-20 16:00\"\n        }\n    ],\n    \"meta\": {\n        \"current_page\": 1,\n        \"last_page\": 2,\n        \"per_page\": 15,\n        \"total\": 20\n    }\n}"
+								}
+							]
 						}
 					]
 				}

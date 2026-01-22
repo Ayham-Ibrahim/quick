@@ -70,7 +70,8 @@ class CustomOrderResource extends JsonResource
                 $this->status === 'cancelled',
                 $this->cancellation_reason
             ),
-            'can_driver_cancel_delivery' => $this->can_driver_cancel_delivery,
+            'can_user_cancel' => $this->can_user_cancel,
+            'can_admin_cancel' => $this->can_admin_cancel,
 
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),

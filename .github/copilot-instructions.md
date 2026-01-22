@@ -160,6 +160,17 @@ Tags: `order_profit_percentage`, `delivery_profit_per_ride_bike`, `delivery_prof
 ### Observers
 - [DriverObserver](app/Observers/DriverObserver.php): Creates wallet on driver registration
 
+### Geofencing (Progressive Radius)
+See [GeofencingService](app/Services/Geofencing/GeofencingService.php) and [docs](docs/Geofencing_Documentation.md).
+```php
+// النطاق الجغرافي التدريجي (كم)
+0-2 min → 1 km | 2-4 min → 2 km | 4-6 min → 3 km | 6-8 min → 4 km | 8-10 min → 5 km
+
+// قيود المتاجر
+MAX_DISTANCE_BETWEEN_STORES_KM = 3  // الحد الأقصى بين أي متجرين
+DRIVER_ACTIVITY_TIMEOUT_MINUTES = 5 // مدة اعتبار السائق نشطاً
+```
+
 ## Testing
 Uses in-memory SQLite ([phpunit.xml](phpunit.xml)). No DB setup needed.
 ```bash
@@ -174,8 +185,16 @@ composer run test
 | Services | `app/Services/{Domain}/` | All business logic here |
 | Observers | `app/Observers/` | Model event hooks |
 | Helpers | `app/Helpers/` | Utility functions (WalletHelper) |
+| Geofencing | `app/Services/Geofencing/` | Geographic driver matching |
 
 ## API Routes Summary
+
+### Driver Location & Status
+```
+POST   /driver/location                  # تحديث الموقع (كل 30 ثانية)
+POST   /driver/toggle-online             # تبديل حالة الاتصال
+POST   /driver/heartbeat                 # تسجيل النشاط (كل دقيقة)
+```
 
 ### Regular Orders
 ```
@@ -183,11 +202,12 @@ GET    /orders                           # قائمة طلباتي
 GET    /orders/{id}                      # تفاصيل طلب
 POST   /orders/{id}/cancel               # إلغاء الطلب
 POST   /orders/{id}/retry-delivery       # إعادة محاولة التوصيل
+POST   /orders/{id}/reorder              # إعادة طلب طلبية مكتملة (تم التوصيل)
 
 # Driver endpoints
 GET    /driver/orders/available          # الطلبات المتاحة
 GET    /driver/orders/my                 # طلباتي
-POST   /driver/orders/{id}/accept        # قبول طلب
+POST   /driver/orders/{id}/accept        # قبول طلب (مع ترتيب التنفيذ)
 POST   /driver/orders/{id}/deliver       # تأكيد التسليم
 POST   /driver/orders/{id}/cancel        # إلغاء (مع سبب)
 ```
