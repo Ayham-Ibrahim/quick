@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -17,6 +18,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Disable foreign key checks temporarily
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+
         Schema::table('carts', function (Blueprint $table) {
             // Remove the old problematic unique constraint
             $table->dropUnique(['user_id', 'status']);
@@ -24,6 +28,9 @@ return new class extends Migration
             // Add simple index for faster queries
             $table->index(['user_id', 'status']);
         });
+
+        // Re-enable foreign key checks
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
     }
 
     /**
@@ -31,9 +38,13 @@ return new class extends Migration
      */
     public function down(): void
     {
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+
         Schema::table('carts', function (Blueprint $table) {
             $table->dropIndex(['user_id', 'status']);
             $table->unique(['user_id', 'status']);
         });
+
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
     }
 };
