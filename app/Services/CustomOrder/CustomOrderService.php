@@ -6,8 +6,10 @@ use App\Models\CustomOrder;
 use App\Models\CustomOrderItem;
 use App\Models\Driver;
 use App\Models\ProfitRatios;
+use App\Models\AdminProfit;
 use App\Services\Service;
 use App\Services\NotificationService;
+use App\Services\AdminProfitService;
 use App\Services\Geofencing\GeofencingService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -31,11 +33,16 @@ class CustomOrderService extends Service
 {
     protected NotificationService $notificationService;
     protected GeofencingService $geofencingService;
+    protected AdminProfitService $adminProfitService;
 
-    public function __construct(NotificationService $notificationService, GeofencingService $geofencingService)
-    {
+    public function __construct(
+        NotificationService $notificationService,
+        GeofencingService $geofencingService,
+        AdminProfitService $adminProfitService
+    ) {
         $this->notificationService = $notificationService;
         $this->geofencingService = $geofencingService;
+        $this->adminProfitService = $adminProfitService;
     }
     /* ═══════════════════════════════════════════════════════════════════
      * الحسابات - Calculations
@@ -339,23 +346,36 @@ class CustomOrderService extends Service
     /**
      * السائق يؤكد تسليم الطلب
      * (shipping → delivered)
+     * 
+     * - يتم خصم نسبة الربح من محفظة السائق
      */
     public function confirmDeliveryByDriver(int $orderId)
     {
+        $driver = Auth::guard('driver')->user();
         $order = $this->getDriverOrder($orderId);
 
         if ($order->status !== CustomOrder::STATUS_SHIPPING) {
             $this->throwExceptionJson('لا يمكن تأكيد التسليم في هذه الحالة', 400);
         }
 
-        $order->markAsDelivered();
+        return DB::transaction(function () use ($order, $driver) {
+            $order->markAsDelivered();
 
-        $order = $order->fresh(['items', 'user']);
+            // Process driver delivery profit (deduct from wallet)
+            $this->adminProfitService->processDriverDeliveryProfit(
+                $driver,
+                AdminProfit::ORDER_TYPE_CUSTOM,
+                $order->id,
+                (float) $order->delivery_fee
+            );
 
-        // Notify user that order was delivered
-        $this->notificationService->notifyUserCustomOrderDelivered($order);
+            $order = $order->fresh(['items', 'user']);
 
-        return $order;
+            // Notify user that order was delivered
+            $this->notificationService->notifyUserCustomOrderDelivered($order);
+
+            return $order;
+        });
     }
 
     /**

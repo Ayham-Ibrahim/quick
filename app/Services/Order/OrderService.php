@@ -6,8 +6,10 @@ use App\Models\Order;
 use App\Models\Driver;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\AdminProfit;
 use App\Services\Service;
 use App\Services\NotificationService;
+use App\Services\AdminProfitService;
 use App\Services\Geofencing\GeofencingService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -29,11 +31,16 @@ class OrderService extends Service
 {
     protected NotificationService $notificationService;
     protected GeofencingService $geofencingService;
+    protected AdminProfitService $adminProfitService;
 
-    public function __construct(NotificationService $notificationService, GeofencingService $geofencingService)
-    {
+    public function __construct(
+        NotificationService $notificationService,
+        GeofencingService $geofencingService,
+        AdminProfitService $adminProfitService
+    ) {
         $this->notificationService = $notificationService;
         $this->geofencingService = $geofencingService;
+        $this->adminProfitService = $adminProfitService;
     }
     /* ═══════════════════════════════════════════════════════════════════
      * وظائف المستخدم - User Functions
@@ -420,26 +427,53 @@ class OrderService extends Service
     /**
      * السائق يؤكد تسليم الطلب
      * (shipping → delivered)
+     * 
+     * - يتم خصم نسبة الربح من محفظة السائق
+     * - يتم تسجيل أرباح الإدارة من السائق والمتاجر
      */
     public function confirmDeliveryByDriver(int $orderId): Order
     {
+        $driver = Auth::guard('driver')->user();
         $order = $this->getDriverOrder($orderId);
 
         if ($order->status !== Order::STATUS_SHIPPING) {
             $this->throwExceptionJson('لا يمكن تأكيد التسليم في هذه الحالة', 400);
         }
 
-        $order->markAsDelivered();
+        return DB::transaction(function () use ($order, $driver) {
+            $order->markAsDelivered();
 
-        $order = $order->fresh(['items.product', 'user']);
+            // Process driver delivery profit (deduct from wallet)
+            $this->adminProfitService->processDriverDeliveryProfit(
+                $driver,
+                AdminProfit::ORDER_TYPE_REGULAR,
+                $order->id,
+                (float) $order->delivery_fee
+            );
 
-        // Notify user that order was delivered
-        $this->notificationService->notifyUserOrderDelivered($order);
+            // Process store profits (record for each store in the order)
+            $storeSubtotals = $order->items->groupBy('store_id')->map(function ($items) {
+                return $items->sum('line_total');
+            });
 
-        // Notify stores that order was delivered
-        $this->notificationService->notifyStoresOrderDelivered($order);
+            foreach ($storeSubtotals as $storeId => $subtotal) {
+                $this->adminProfitService->processStoreOrderProfit(
+                    $storeId,
+                    $order->id,
+                    (float) $subtotal
+                );
+            }
 
-        return $order;
+            $order = $order->fresh(['items.product', 'user']);
+
+            // Notify user that order was delivered
+            $this->notificationService->notifyUserOrderDelivered($order);
+
+            // Notify stores that order was delivered
+            $this->notificationService->notifyStoresOrderDelivered($order);
+
+            return $order;
+        });
     }
 
     /**

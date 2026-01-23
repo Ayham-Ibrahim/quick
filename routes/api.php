@@ -23,7 +23,8 @@ use App\Http\Controllers\ProfitRatiosController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\UserManagementControllers\ProviderController;
 use App\Http\Controllers\UserManagementControllers\UserManagementController;
-use App\Http\Controllers\Api\Device\DeviceController;
+use App\Http\Controllers\DeviceController;
+use App\Http\Controllers\UserHomePageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -50,6 +51,19 @@ Route::post('resend-otp', [UserManagementController::class, 'resendOTP']);
 
 Route::middleware('auth:sanctum')->post('/logout', [UserManagementController::class, 'logout']);
 Route::middleware('auth:sanctum')->delete('/account/delete', [UserManagementController::class, 'deleteAccount']);
+
+/*
+|--------------------------------------------------------------------------
+| Home Page Routes (Public - No Auth Required)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('home')->group(function () {
+    // عروض الإدارة - المنتجات التي عليها كوبونات نشطة
+    Route::get('/admin-offers', [UserHomePageController::class, 'adminOffers']);
+    
+    // عروض المتاجر - المنتجات المخفضة (السعر السابق > السعر الحالي)
+    Route::get('/store-offers', [UserHomePageController::class, 'storeOffers']);
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -214,6 +228,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     /** Report routes */
     Route::get('/reports/statics', [ReportController::class, 'staticsReport']);
+    Route::get('/reports/financial', [ReportController::class, 'financialReport']);
 
     /*
     |--------------------------------------------------------------------------
