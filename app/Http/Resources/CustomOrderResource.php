@@ -46,9 +46,10 @@ class CustomOrderResource extends JsonResource
             'driver' => $this->whenLoaded('driver', function () {
                 return [
                     'id' => $this->driver->id,
-                    'driver_name' => $this->driver->driver_name,
+                    'name' => $this->driver->driver_name,
                     'phone' => $this->driver->phone,
-                    'driver_image' => $this->driver->driver_image,
+                    'image' => $this->driver->driver_image,
+                    'vehicleType' => $this->driver->vehicleType?->type,
                 ];
             }),
             'has_driver' => $this->has_driver,
