@@ -37,7 +37,7 @@ class OrderItemResource extends JsonResource
             'lineTotal' => (float) $this->line_total,
 
             // معلومات المتجر
-            'store' => $this->when($this->relationLoaded('store'), function () {
+            'store' => isset($this->store_context) ? (int) $this->store_id : $this->when($this->relationLoaded('store'), function () {
                 return [
                     'id' => $this->store->id,
                     'storeName' => $this->store->store_name,

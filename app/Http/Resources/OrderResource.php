@@ -38,6 +38,26 @@ class OrderResource extends JsonResource
             'deliveryLng' => $this->delivery_lng ? (float) $this->delivery_lng : null,
             'requestedDeliveryAt' => $this->requested_delivery_at?->format('Y-m-d H:i'),
 
+            // معلومات خاصة بطلب متجر واحد (لصفحة طلبات المتجر في ال Admin)
+            $this->mergeWhen(isset($this->store_context), function () {
+                $storeId = $this->store_context;
+                $storeItems = $this->items->where('store_id', $storeId);
+
+                $storeSubtotal = $storeItems->reduce(function ($carry, $item) {
+                    return $carry + (($item->unit_price ?? 0) * ($item->quantity ?? 0));
+                }, 0);
+
+                $storeDiscount = $storeItems->sum('discount_amount');
+                $storeTotal = $storeItems->sum('line_total');
+
+                return [
+                    'storeSubtotal' => (float) round($storeSubtotal, 2),
+                    'storeCouponDiscount' => (float) round($storeDiscount, 2),
+                    'storeTotal' => (float) round($storeTotal, 2),
+                    'storeId' => $storeId,
+                ];
+            }),
+
             // ملاحظات
             'notes' => $this->notes,
             'cancellationReason' => $this->when(
