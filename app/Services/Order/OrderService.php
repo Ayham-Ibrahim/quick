@@ -627,11 +627,22 @@ class OrderService extends Service
      */
     public function getStoreOrders(int $storeId, array $filters = []): LengthAwarePaginator
     {
-        return Order::with(['items.product', 'items.store', 'user', 'driver', 'coupon'])
+        $orders = Order::with(['items.product', 'items.store', 'user', 'driver', 'coupon'])
             ->whereHas('items', fn($q) => $q->where('store_id', $storeId))
             ->when($filters['status'] ?? null, fn($q, $status) => $q->byStatus($status))
             ->latest()
             ->paginate($filters['per_page'] ?? 15);
+
+        // Attach store context to each order and its items so resources can render store-specific data
+        $orders->setCollection($orders->getCollection()->each(function ($order) use ($storeId) {
+            $order->store_context = $storeId;
+            // Also mark each item with store_context to allow OrderItemResource to return store id
+            $order->items->each(function ($item) use ($storeId) {
+                $item->store_context = $storeId;
+            });
+        }));
+
+        return $orders;
     }
 
     /* ═══════════════════════════════════════════════════════════════════
