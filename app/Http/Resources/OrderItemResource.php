@@ -51,7 +51,9 @@ class OrderItemResource extends JsonResource
                     'id' => $this->product->id,
                     'name' => $this->product->name,
                     'currentPrice' => (float) $this->product->current_price,
-                    'image' => $this->product->images->first()?->image_url,
+                    'image' => $this->product->relationLoaded('images') 
+                        ? $this->product->images->first()?->image 
+                        : null,
                 ];
             }),
         ];
