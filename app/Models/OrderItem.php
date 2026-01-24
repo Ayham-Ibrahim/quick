@@ -99,11 +99,25 @@ class OrderItem extends Model
             return null;
         }
 
+        // إعادة تحميل العلاقات من قاعدة البيانات لضمان الحصول على Collection
         $variant->load('attributes.attribute', 'attributes.value');
 
-        $details = $variant->attributes->map(function ($attr) {
-            $attrName = $attr->attribute->name ?? '';
-            $valueName = $attr->value->value ?? '';
+        $attributes = $variant->attributes;
+
+        // التأكد من أن attributes هي Collection وليست array
+        if (is_array($attributes)) {
+            $attributes = collect($attributes);
+        }
+
+        $details = $attributes->map(function ($attr) {
+            // التعامل مع الكائن أو المصفوفة
+            if (is_array($attr)) {
+                $attrName = $attr['attribute']['name'] ?? '';
+                $valueName = $attr['value']['value'] ?? '';
+            } else {
+                $attrName = $attr->attribute->name ?? '';
+                $valueName = $attr->value->value ?? '';
+            }
             return "{$attrName}: {$valueName}";
         })->filter()->implode('، ');
 
