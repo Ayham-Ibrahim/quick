@@ -267,6 +267,8 @@ class OrderService extends Service
                 'status' => Order::STATUS_PENDING,
                 'confirmation_expires_at' => now()->addMinutes(Order::DRIVER_CONFIRMATION_TIMEOUT_MINUTES),
                 'delivery_address' => $data['delivery_address'] ?? $originalOrder->delivery_address,
+                'delivery_lat' => $data['delivery_lat'] ?? $originalOrder->delivery_lat,
+                'delivery_lng' => $data['delivery_lng'] ?? $originalOrder->delivery_lng,
                 'requested_delivery_at' => $data['requested_delivery_at'] ?? null,
                 'is_immediate_delivery' => $data['is_immediate_delivery'] ?? true,
                 'notes' => $data['notes'] ?? null,

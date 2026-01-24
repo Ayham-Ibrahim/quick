@@ -23,6 +23,8 @@ class ReorderRequest extends BaseFormRequest
     {
         return [
             'delivery_address' => 'nullable|string|max:500',
+            'delivery_lat' => 'nullable|numeric|between:-90,90',
+            'delivery_lng' => 'nullable|numeric|between:-180,180',
             'delivery_fee' => 'nullable|numeric|min:0',
             'is_immediate_delivery' => 'nullable|boolean',
             'requested_delivery_at' => 'nullable|date|after:now',
@@ -39,6 +41,10 @@ class ReorderRequest extends BaseFormRequest
     {
         return [
             'delivery_address.max' => 'عنوان التوصيل يجب ألا يتجاوز 500 حرف',
+            'delivery_lat.numeric' => 'خط العرض يجب أن يكون رقماً',
+            'delivery_lat.between' => 'خط العرض يجب أن يكون بين -90 و 90',
+            'delivery_lng.numeric' => 'خط الطول يجب أن يكون رقماً',
+            'delivery_lng.between' => 'خط الطول يجب أن يكون بين -180 و 180',
             'delivery_fee.numeric' => 'رسوم التوصيل يجب أن تكون رقماً',
             'delivery_fee.min' => 'رسوم التوصيل يجب أن تكون 0 أو أكثر',
             'is_immediate_delivery.boolean' => 'حقل التوصيل الفوري يجب أن يكون صحيح أو خطأ',
