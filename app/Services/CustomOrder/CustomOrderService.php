@@ -204,6 +204,41 @@ class CustomOrderService extends Service
     }
 
     /**
+     * جلب الاحداثيات الحالية للسائق المسؤول عن طلب خاص محدد (لصاحب الطلب فقط)
+     */
+    public function getDriverLocationForCustomOrder(int $orderId): array
+    {
+        $order = CustomOrder::where('user_id', Auth::id())
+            ->with('driver')
+            ->find($orderId);
+
+        if (!$order) {
+            $this->throwExceptionJson('الطلب غير موجود', 404);
+        }
+
+        if (!$order->driver_id || !$order->driver) {
+            $this->throwExceptionJson('لم يتم تعيين سائق لهذا الطلب بعد', 404);
+        }
+
+        $driver = $order->driver;
+
+        if (!$driver->current_lat || !$driver->current_lng) {
+            $this->throwExceptionJson('لم تتوفر بيانات الموقع للسائق بعد', 404);
+        }
+
+        return [
+            'driverId' => $driver->id,
+            'driverName' => $driver->driver_name,
+            'phone' => $driver->phone,
+            'driverImage' => $driver->driver_image,
+            'lat' => (float) $driver->current_lat,
+            'lng' => (float) $driver->current_lng,
+            'updatedAt' => $driver->last_location_update?->toIso8601String(),
+            'isOnline' => (bool) $driver->is_online,
+        ];
+    }
+
+    /**
      * جلب جميع الطلبات الخاصة (للإدارة) - مع Pagination
      */
     public function getAllOrders(array $filters = []): LengthAwarePaginator

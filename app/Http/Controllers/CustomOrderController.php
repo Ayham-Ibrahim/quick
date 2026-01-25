@@ -55,6 +55,18 @@ class CustomOrderController extends Controller
     }
 
     /**
+     * Get current driver location for a specific custom order (for order owner)
+     *
+     * GET /custom-orders/{id}/driver-location
+     */
+    public function driverLocation(int $id)
+    {
+        $location = $this->customOrderService->getDriverLocationForCustomOrder($id);
+
+        return $this->success($location, 'تم جلب موقع السائق');
+    }
+
+    /**
      * Create new custom order (draft)
      *
      * POST /custom-orders
