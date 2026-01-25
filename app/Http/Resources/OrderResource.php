@@ -98,6 +98,12 @@ class OrderResource extends JsonResource
                 'phone' => $this->driver?->phone,
                 'image' => $this->driver?->driver_image,
                 'vehicleType' => $this->driver?->vehicleType?->type,
+                'location' => $this->driver && $this->driver->current_lat && $this->driver->current_lng ? [
+                    'lat' => (float) $this->driver->current_lat,
+                    'lng' => (float) $this->driver->current_lng,
+                    'updatedAt' => $this->driver->last_location_update?->toIso8601String(),
+                    'isOnline' => (bool) $this->driver->is_online,
+                ] : null,
             ]),
             'hasDriver' => $this->has_driver,
             'driverAssignedAt' => $this->driver_assigned_at?->format('Y-m-d H:i'),

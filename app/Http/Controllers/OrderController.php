@@ -107,6 +107,18 @@ class OrderController extends Controller
     }
 
     /**
+     * Get current driver location for a specific order (for order owner)
+     *
+     * GET /orders/{id}/driver-location
+     */
+    public function driverLocation(int $id)
+    {
+        $location = $this->orderService->getDriverLocationForOrder($id);
+
+        return $this->success($location, 'تم جلب موقع السائق');
+    }
+
+    /**
      * Reorder a previous order
      * 
      * POST /orders/{id}/reorder
