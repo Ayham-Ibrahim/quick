@@ -42,6 +42,9 @@ class OrderItemResource extends JsonResource
                     'id' => $this->store->id,
                     'storeName' => $this->store->store_name,
                     'storeLogo' => $this->store->store_logo,
+                    'storeCity' => $this->store->city,
+                    'v_location' => $this->store->v_location,
+                    'h_location' => $this->store->h_location,
                 ];
             }),
 
