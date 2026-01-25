@@ -50,6 +50,10 @@ class CustomOrderResource extends JsonResource
                     'phone' => $this->driver->phone,
                     'image' => $this->driver->driver_image,
                     'vehicleType' => $this->driver->vehicleType?->type,
+                    'lat' => $this->driver->current_lat ? (float) $this->driver->current_lat : null,
+                    'lng' => $this->driver->current_lng ? (float) $this->driver->current_lng : null,
+                    'lastLocationUpdate' => $this->driver->last_location_update?->toIso8601String(),
+                    'isOnline' => (bool) $this->driver->is_online,
                 ];
             }),
             'has_driver' => $this->has_driver,

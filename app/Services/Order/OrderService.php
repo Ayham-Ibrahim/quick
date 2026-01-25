@@ -94,6 +94,41 @@ class OrderService extends Service
     }
 
     /**
+     * جلب الاحداثيات الحالية للسائق المسؤول عن طلب محدد (لصاحب الطلب فقط)
+     */
+    public function getDriverLocationForOrder(int $orderId): array
+    {
+        $order = Order::where('user_id', Auth::id())
+            ->with('driver')
+            ->find($orderId);
+
+        if (!$order) {
+            $this->throwExceptionJson('الطلب غير موجود', 404);
+        }
+
+        if (!$order->driver_id || !$order->driver) {
+            $this->throwExceptionJson('لم يتم تعيين سائق لهذا الطلب بعد', 404);
+        }
+
+        $driver = $order->driver;
+
+        if (!$driver->current_lat || !$driver->current_lng) {
+            $this->throwExceptionJson('لم تتوفر بيانات الموقع للسائق بعد', 404);
+        }
+
+        return [
+            'driverId' => $driver->id,
+            'driverName' => $driver->driver_name,
+            'phone' => $driver->phone,
+            'driverImage' => $driver->driver_image,
+            'lat' => (float) $driver->current_lat,
+            'lng' => (float) $driver->current_lng,
+            'updatedAt' => $driver->last_location_update?->toIso8601String(),
+            'isOnline' => (bool) $driver->is_online,
+        ];
+    }
+
+    /**
      * إلغاء طلب من المستخدم (فقط في حالة معلق)
      */
     public function cancelOrder(int $orderId, ?string $reason = null): Order

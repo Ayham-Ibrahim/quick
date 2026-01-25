@@ -255,6 +255,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/{id}/resend', [OrderController::class, 'resendToDrivers']); // إعادة إرسال للسائقين
         Route::post('/{id}/retry-delivery', [OrderController::class, 'retryDelivery']); // إعادة محاولة بعد الإلغاء
         Route::post('/{id}/reorder', [OrderController::class, 'reorder']); // إعادة طلب (Reorder)
+        Route::get('/{id}/driver-location', [OrderController::class, 'driverLocation']); // جلب موقع السائق الحالي للطلب
     });
 
     /*
@@ -267,6 +268,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/', [CustomOrderController::class, 'store']);             // إنشاء طلب خاص (معلق مباشرة)
         Route::post('/calculate-fee', [CustomOrderController::class, 'calculateFee']); // حساب سعر التوصيل
         Route::get('/{id}', [CustomOrderController::class, 'show']);           // تفاصيل طلب
+        Route::get('/{id}/driver-location', [CustomOrderController::class, 'driverLocation']); // جلب موقع السائق الحالي للطلب الخاص
         Route::post('/{id}/cancel', [CustomOrderController::class, 'cancel']); // إلغاء طلب
         Route::post('/{id}/resend', [CustomOrderController::class, 'resendToDrivers']); // إعادة إرسال للسائقين
         Route::post('/{id}/retry-delivery', [CustomOrderController::class, 'retryDelivery']); // إعادة محاولة بعد الإلغاء
