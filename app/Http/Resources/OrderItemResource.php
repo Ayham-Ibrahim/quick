@@ -37,7 +37,7 @@ class OrderItemResource extends JsonResource
             'lineTotal' => (float) $this->line_total,
 
             // معلومات المتجر
-            'store' => isset($this->store_context) ? (int) $this->store_id : $this->when($this->relationLoaded('store'), function () {
+            'store' => $this->when($this->relationLoaded('store'), function () {
                 return [
                     'id' => $this->store->id,
                     'storeName' => $this->store->store_name,
@@ -47,7 +47,7 @@ class OrderItemResource extends JsonResource
                     'v_location' => $this->store->v_location,
                     'h_location' => $this->store->h_location,
                 ];
-            }),
+            }, (int) $this->store_id),
 
             // معلومات المنتج (للعرض)
             'product' => $this->when($this->relationLoaded('product'), function () {
