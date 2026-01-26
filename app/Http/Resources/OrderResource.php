@@ -42,6 +42,7 @@ class OrderResource extends JsonResource
             $this->mergeWhen(isset($this->store_context), function () {
                 $storeId = $this->store_context;
                 $storeItems = $this->items->where('store_id', $storeId);
+                $store = $storeItems->first()?->store;
 
                 $storeSubtotal = $storeItems->reduce(function ($carry, $item) {
                     return $carry + (($item->unit_price ?? 0) * ($item->quantity ?? 0));
@@ -51,10 +52,22 @@ class OrderResource extends JsonResource
                 $storeTotal = $storeItems->sum('line_total');
 
                 return [
-                    'storeSubtotal' => (float) round($storeSubtotal, 2),
-                    'storeCouponDiscount' => (float) round($storeDiscount, 2),
-                    'storeTotal' => (float) round($storeTotal, 2),
-                    'storeId' => $storeId,
+                    'store' => $store ? [
+                        'id' => $store->id,
+                        'storeName' => $store->store_name,
+                        'phone' => $store->phone,
+                        'storeLogo' => $store->store_logo,
+                    ] : [ 'id' => $storeId ],
+
+                    // Per-store financials (explicit Price names)
+                    'storeSubtotalPriceBeforeDiscount' => (float) round($storeSubtotal, 2), // sum(unit_price * qty) before discounts (price)
+                    'storeCouponDiscountPrice' => (float) round($storeDiscount, 2), // total coupon/discount applied to this store's items (price)
+                    'storeTotalPriceAfterDiscount' => (float) round($storeTotal, 2), // final total for store items after discounts (price)
+
+                    // Order-level financials (useful for admin store view)
+                    'orderTotalPriceFinal' => (float) round($this->total, 2), // final amount (after coupon + delivery) (price)
+                    'orderCouponDiscountPrice' => (float) round($this->discount_amount, 2), // coupon amount applied on order (price)
+                    'orderPriceBeforeCouponAndDeliveryPrice' => (float) round(($this->subtotal + $this->delivery_fee), 2), // subtotal + delivery before coupon (price)
                 ];
             }),
 
@@ -78,17 +91,31 @@ class OrderResource extends JsonResource
             'itemsByStore' => $this->when($this->relationLoaded('items'), function () {
                 return $this->items->groupBy('store_id')->map(function ($storeItems, $storeId) {
                     $store = $storeItems->first()->store;
-                    return [
+                    $storeSubtotal = $storeItems->reduce(function ($carry, $item) {
+                    return $carry + (($item->unit_price ?? 0) * ($item->quantity ?? 0));
+                }, 0);
+
+                $storeDiscount = $storeItems->sum('discount_amount');
+                $storeTotal = $storeItems->sum('line_total');
+
+                return [
                         'store' => $store ? [
                             'id' => $store->id,
                             'storeName' => $store->store_name,
                             'storeLogo' => $store->store_logo,
+                            'phone' => $store->phone,
                             'storeCity' => $store->city,
                             'v_location' => $store->v_location,
                             'h_location' => $store->h_location,
                         ] : null,
                         'itemsCount' => $storeItems->count(),
-                        'subtotal' => $storeItems->sum('line_total'),
+                        // Backward-compatible subtotal (equals final after discounts)
+                        'subtotal' => $storeTotal,
+                        // Explicit financial breakdown per store (clear Price names for front-end)
+                        'storeSubtotalPriceBeforeDiscount' => (float) round($storeSubtotal, 2), // before discounts (price)
+                        'storeCouponDiscountPrice' => (float) round($storeDiscount, 2),
+                        'storeSubtotalPriceAfterDiscount' => (float) round($storeTotal, 2), // after discounts (price)
+                        'storeTotalPriceAfterDiscount' => (float) round($storeTotal, 2), // alias for clarity (price)
                         'items' => OrderItemResource::collection($storeItems),
                     ];
                 })->values();

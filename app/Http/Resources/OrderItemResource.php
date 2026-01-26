@@ -42,6 +42,7 @@ class OrderItemResource extends JsonResource
                     'id' => $this->store->id,
                     'storeName' => $this->store->store_name,
                     'storeLogo' => $this->store->store_logo,
+                    'storePhone' => $this->store->phone,
                     'storeCity' => $this->store->city,
                     'v_location' => $this->store->v_location,
                     'h_location' => $this->store->h_location,
@@ -57,6 +58,9 @@ class OrderItemResource extends JsonResource
                     'image' => $this->product->relationLoaded('images') 
                         ? $this->product->images->first()?->image 
                         : null,
+                    // تقييم المنتج
+                    'averageRating' => round($this->product->averageRating(), 1),
+                    'ratingsCount' => (int) $this->product->ratings()->count(),
                 ];
             }),
         ];
