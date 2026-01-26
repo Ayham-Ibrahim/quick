@@ -103,6 +103,7 @@ class OrderResource extends JsonResource
                             'id' => $store->id,
                             'storeName' => $store->store_name,
                             'storeLogo' => $store->store_logo,
+                            'phone' => $store->phone,
                             'storeCity' => $store->city,
                             'v_location' => $store->v_location,
                             'h_location' => $store->h_location,
