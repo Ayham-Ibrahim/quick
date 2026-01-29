@@ -25,6 +25,7 @@ use App\Http\Controllers\UserManagementControllers\ProviderController;
 use App\Http\Controllers\UserManagementControllers\UserManagementController;
 use App\Http\Controllers\DeviceController;
 use App\Http\Controllers\UserHomePageController;
+use App\Http\Controllers\Admin;
 
 /*
 |--------------------------------------------------------------------------
@@ -342,6 +343,19 @@ Route::middleware(['auth:sanctum'])->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::get('/admin/stores/{id}/orders', [OrderController::class, 'storeOrdersForAdmin']); // طلبات متجر معين
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Broadcast Notifications Routes - الإشعارات الجماعية
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('admin/notifications')->group(function () {
+        Route::get('/target-types', [Admin\BroadcastNotificationController::class, 'getTargetTypes']); // أنواع المستهدفين
+        Route::get('/', [Admin\BroadcastNotificationController::class, 'index']);                       // قائمة الإشعارات
+        Route::post('/', [Admin\BroadcastNotificationController::class, 'store']);                      // إنشاء إشعار جديد
+        Route::get('/{id}', [Admin\BroadcastNotificationController::class, 'show']);                    // تفاصيل إشعار
+        Route::delete('/{id}', [Admin\BroadcastNotificationController::class, 'destroy']);              // حذف إشعار
+    });
 
 });
 
