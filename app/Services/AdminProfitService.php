@@ -161,7 +161,8 @@ class AdminProfitService extends Service
     {
         // Total orders value (delivered only)
         $totalOrdersValue = Order::where('status', Order::STATUS_DELIVERED)->sum('total');
-        $totalCustomOrdersValue = CustomOrder::where('status', CustomOrder::STATUS_DELIVERED)->sum('total_cost');
+        // Custom orders do not have a `total_cost` column; use `delivery_fee` as the cost metric
+        $totalCustomOrdersValue = CustomOrder::where('status', CustomOrder::STATUS_DELIVERED)->sum('delivery_fee');
         
         $totalOrdersAmount = (float) $totalOrdersValue + (float) $totalCustomOrdersValue;
 
