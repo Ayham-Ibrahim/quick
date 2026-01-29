@@ -207,6 +207,40 @@ class FcmService
     }
 
     /**
+     * Send notification to multiple tokens (for broadcast notifications).
+     *
+     * @param array $tokens Array of FCM tokens
+     * @param string $title Notification title
+     * @param string $body Notification body
+     * @param array $data Additional data payload
+     * @return array ['success' => int, 'failed' => int]
+     */
+    public function sendToMultipleTokens(array $tokens, string $title, string $body, array $data = []): array
+    {
+        $successCount = 0;
+        $failedCount = 0;
+
+        foreach ($tokens as $token) {
+            if ($this->sendToToken($token, $title, $body, $data)) {
+                $successCount++;
+            } else {
+                $failedCount++;
+            }
+        }
+
+        Log::info("FCM batch send completed", [
+            'total' => count($tokens),
+            'success' => $successCount,
+            'failed' => $failedCount,
+        ]);
+
+        return [
+            'success' => $successCount,
+            'failed' => $failedCount,
+        ];
+    }
+
+    /**
      * Legacy method - Send notification using User model.
      * Kept for backward compatibility.
      *

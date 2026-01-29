@@ -1,0 +1,306 @@
+{
+	"info": {
+		"_postman_id": "broadcast-notifications-admin",
+		"name": "Admin Broadcast Notifications",
+		"description": "إدارة الإشعارات الجماعية - إرسال إشعارات Firebase للمستخدمين والمتاجر والمزودين والسائقين",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000/api"
+		},
+		{
+			"key": "token",
+			"value": "your-admin-token-here"
+		}
+	],
+	"item": [
+		{
+			"name": "Get Target Types",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/admin/notifications/target-types",
+					"host": ["{{base_url}}"],
+					"path": ["admin", "notifications", "target-types"]
+				},
+				"description": "جلب أنواع الفئات المستهدفة المتاحة للإشعارات"
+			},
+			"response": [
+				{
+					"name": "Success Response",
+					"originalRequest": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/admin/notifications/target-types"
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم جلب أنواع المستهدفين\",\n    \"data\": {\n        \"users\": \"المستخدمين\",\n        \"providers\": \"المزودين\",\n        \"stores\": \"المتاجر\",\n        \"drivers\": \"السائقين\"\n    }\n}"
+				}
+			]
+		},
+		{
+			"name": "Create Notification",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"title\": \"عرض خاص!\",\n    \"content\": \"احصل على خصم 20% على جميع الطلبات اليوم فقط\",\n    \"target_types\": [\"users\", \"drivers\"]\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/admin/notifications",
+					"host": ["{{base_url}}"],
+					"path": ["admin", "notifications"]
+				},
+				"description": "إنشاء إشعار جماعي جديد وإرساله عبر Firebase\n\nالحقول المطلوبة:\n- title: عنوان الإشعار\n- content: محتوى الإشعار\n- target_types: مصفوفة من الفئات المستهدفة (users, providers, stores, drivers)"
+			},
+			"response": [
+				{
+					"name": "Success Response",
+					"originalRequest": {
+						"method": "POST",
+						"url": {
+							"raw": "{{base_url}}/admin/notifications"
+						}
+					},
+					"status": "Created",
+					"code": 201,
+					"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم إنشاء الإشعار وجاري إرساله\",\n    \"data\": {\n        \"id\": 1,\n        \"title\": \"عرض خاص!\",\n        \"content\": \"احصل على خصم 20% على جميع الطلبات اليوم فقط\",\n        \"target_types\": [\"users\", \"drivers\"],\n        \"target_types_labels\": [\"المستخدمين\", \"السائقين\"],\n        \"status\": \"pending\",\n        \"status_label\": \"قيد الانتظار\",\n        \"sent_count\": 0,\n        \"sent_at\": null,\n        \"created_at\": \"2026-01-29 15:30:00\"\n    }\n}"
+				},
+				{
+					"name": "Validation Error Response",
+					"originalRequest": {
+						"method": "POST",
+						"url": {
+							"raw": "{{base_url}}/admin/notifications"
+						}
+					},
+					"status": "Unprocessable Entity",
+					"code": 422,
+					"body": "{\n    \"status\": \"error\",\n    \"message\": \"Validation failed\",\n    \"errors\": {\n        \"title\": [\"عنوان الإشعار مطلوب\"],\n        \"content\": [\"محتوى الإشعار مطلوب\"],\n        \"target_types\": [\"يجب اختيار فئة مستهدفة واحدة على الأقل\"]\n    }\n}"
+				}
+			]
+		},
+		{
+			"name": "Create Notification - All Targets",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"title\": \"إشعار هام للجميع\",\n    \"content\": \"سيتم إجراء صيانة للنظام يوم الجمعة من الساعة 2 إلى 4 صباحاً\",\n    \"target_types\": [\"users\", \"providers\", \"stores\", \"drivers\"]\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/admin/notifications",
+					"host": ["{{base_url}}"],
+					"path": ["admin", "notifications"]
+				},
+				"description": "إنشاء إشعار جماعي لجميع الفئات"
+			},
+			"response": [
+				{
+					"name": "Success Response",
+					"originalRequest": {
+						"method": "POST",
+						"url": {
+							"raw": "{{base_url}}/admin/notifications"
+						}
+					},
+					"status": "Created",
+					"code": 201,
+					"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم إنشاء الإشعار وجاري إرساله\",\n    \"data\": {\n        \"id\": 2,\n        \"title\": \"إشعار هام للجميع\",\n        \"content\": \"سيتم إجراء صيانة للنظام يوم الجمعة من الساعة 2 إلى 4 صباحاً\",\n        \"target_types\": [\"users\", \"providers\", \"stores\", \"drivers\"],\n        \"target_types_labels\": [\"المستخدمين\", \"المزودين\", \"المتاجر\", \"السائقين\"],\n        \"status\": \"pending\",\n        \"status_label\": \"قيد الانتظار\",\n        \"sent_count\": 0,\n        \"sent_at\": null,\n        \"created_at\": \"2026-01-29 15:35:00\"\n    }\n}"
+				}
+			]
+		},
+		{
+			"name": "List All Notifications",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/admin/notifications?page=1",
+					"host": ["{{base_url}}"],
+					"path": ["admin", "notifications"],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						}
+					]
+				},
+				"description": "جلب قائمة جميع الإشعارات مع التصفح"
+			},
+			"response": [
+				{
+					"name": "Success Response",
+					"originalRequest": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/admin/notifications"
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم جلب الإشعارات بنجاح\",\n    \"data\": [\n        {\n            \"id\": 2,\n            \"title\": \"إشعار هام للجميع\",\n            \"content\": \"سيتم إجراء صيانة للنظام يوم الجمعة من الساعة 2 إلى 4 صباحاً\",\n            \"target_types\": [\"users\", \"providers\", \"stores\", \"drivers\"],\n            \"target_types_labels\": [\"المستخدمين\", \"المزودين\", \"المتاجر\", \"السائقين\"],\n            \"status\": \"completed\",\n            \"status_label\": \"مكتمل\",\n            \"sent_count\": 1250,\n            \"sent_at\": \"2026-01-29 15:36:00\",\n            \"created_at\": \"2026-01-29 15:35:00\"\n        },\n        {\n            \"id\": 1,\n            \"title\": \"عرض خاص!\",\n            \"content\": \"احصل على خصم 20% على جميع الطلبات اليوم فقط\",\n            \"target_types\": [\"users\", \"drivers\"],\n            \"target_types_labels\": [\"المستخدمين\", \"السائقين\"],\n            \"status\": \"completed\",\n            \"status_label\": \"مكتمل\",\n            \"sent_count\": 850,\n            \"sent_at\": \"2026-01-29 15:31:00\",\n            \"created_at\": \"2026-01-29 15:30:00\"\n        }\n    ],\n    \"pagination\": {\n        \"current_page\": 1,\n        \"last_page\": 1,\n        \"per_page\": 15,\n        \"total\": 2\n    }\n}"
+				}
+			]
+		},
+		{
+			"name": "Get Notification Details",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/admin/notifications/1",
+					"host": ["{{base_url}}"],
+					"path": ["admin", "notifications", "1"]
+				},
+				"description": "جلب تفاصيل إشعار محدد"
+			},
+			"response": [
+				{
+					"name": "Success Response",
+					"originalRequest": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/admin/notifications/1"
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم جلب تفاصيل الإشعار\",\n    \"data\": {\n        \"id\": 1,\n        \"title\": \"عرض خاص!\",\n        \"content\": \"احصل على خصم 20% على جميع الطلبات اليوم فقط\",\n        \"target_types\": [\"users\", \"drivers\"],\n        \"target_types_labels\": [\"المستخدمين\", \"السائقين\"],\n        \"status\": \"completed\",\n        \"status_label\": \"مكتمل\",\n        \"sent_count\": 850,\n        \"sent_at\": \"2026-01-29 15:31:00\",\n        \"created_at\": \"2026-01-29 15:30:00\"\n    }\n}"
+				},
+				{
+					"name": "Not Found Response",
+					"originalRequest": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/admin/notifications/999"
+						}
+					},
+					"status": "Not Found",
+					"code": 404,
+					"body": "{\n    \"status\": \"error\",\n    \"message\": \"الإشعار غير موجود\"\n}"
+				}
+			]
+		},
+		{
+			"name": "Delete Notification",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/admin/notifications/1",
+					"host": ["{{base_url}}"],
+					"path": ["admin", "notifications", "1"]
+				},
+				"description": "حذف إشعار (فقط الإشعارات المكتملة أو الفاشلة)"
+			},
+			"response": [
+				{
+					"name": "Success Response",
+					"originalRequest": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{base_url}}/admin/notifications/1"
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"body": "{\n    \"status\": \"success\",\n    \"message\": \"تم حذف الإشعار بنجاح\",\n    \"data\": null\n}"
+				},
+				{
+					"name": "Cannot Delete - Still Sending",
+					"originalRequest": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{base_url}}/admin/notifications/1"
+						}
+					},
+					"status": "Bad Request",
+					"code": 400,
+					"body": "{\n    \"status\": \"error\",\n    \"message\": \"لا يمكن حذف الإشعار أثناء الإرسال\"\n}"
+				},
+				{
+					"name": "Not Found Response",
+					"originalRequest": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{base_url}}/admin/notifications/999"
+						}
+					},
+					"status": "Not Found",
+					"code": 404,
+					"body": "{\n    \"status\": \"error\",\n    \"message\": \"الإشعار غير موجود\"\n}"
+				}
+			]
+		}
+	]
+}
