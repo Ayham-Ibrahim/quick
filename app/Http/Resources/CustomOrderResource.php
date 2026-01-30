@@ -65,6 +65,7 @@ class CustomOrderResource extends JsonResource
                     'id' => $this->user->id,
                     'user_name' => $this->user->name,
                     'phone' => $this->user->phone,
+                    'image' => $this->user->avatar,
                 ];
             }),
 
