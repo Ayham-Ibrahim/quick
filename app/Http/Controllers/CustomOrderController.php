@@ -190,12 +190,37 @@ class CustomOrderController extends Controller
     }
 
     /**
+     * Get driver's custom orders grouped by status
+     * Includes: shipping, delivered, cancelled, and available orders in driver's area
+     *
+     * GET /driver/custom-orders/grouped
+     */
+    public function driverOrdersGrouped()
+    {
+        $grouped = $this->customOrderService->getDriverOrdersGrouped();
+
+        return $this->success([
+            'shipping' => CustomOrderResource::collection($grouped['shipping']),
+            'delivered' => CustomOrderResource::collection($grouped['delivered']),
+            'cancelled' => CustomOrderResource::collection($grouped['cancelled']),
+            'available' => CustomOrderResource::collection($grouped['available']),
+            'counts' => [
+                'shipping' => $grouped['shipping']->count(),
+                'delivered' => $grouped['delivered']->count(),
+                'cancelled' => $grouped['cancelled']->count(),
+                'available' => $grouped['available']->count(),
+            ],
+        ], 'طلباتك مجمّعة حسب الحالة');
+    }
+
+    /**
      * Get specific custom order details for driver
      *
      * GET /driver/custom-orders/{id}
      */
-    public function showDriverOrderDetails(int $orderId) { 
-        $order = $this->customOrderService->getDriverOrderDetails($orderId);
+    public function showDriverOrderDetails(int $id)
+    {
+        $order = $this->customOrderService->getDriverOrderDetails($id);
         return $this->success(new CustomOrderResource($order), 'تفاصيل الطلب');
     }
 

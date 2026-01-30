@@ -283,6 +283,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('driver/orders')->group(function () {
         Route::get('/available', [OrderController::class, 'availableOrders']); // الطلبات المتاحة للتوصيل
         Route::get('/my', [OrderController::class, 'driverOrders']);           // طلبات السائق
+        Route::get('/grouped', [OrderController::class, 'driverOrdersGrouped']); // طلبات السائق مجمّعة حسب الحالة
         Route::post('/{id}/accept', [OrderController::class, 'acceptOrder']);  // قبول طلب وبدء التوصيل
         Route::post('/{id}/deliver', [OrderController::class, 'deliverOrder']); // تأكيد التوصيل
         Route::post('/{id}/cancel', [OrderController::class, 'driverCancelScheduledOrder']); // إلغاء طلب مجدول (فقط)
@@ -297,6 +298,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('driver/custom-orders')->group(function () {
         Route::get('/available', [CustomOrderController::class, 'availableOrders']); // الطلبات الخاصة المتاحة
         Route::get('/my', [CustomOrderController::class, 'driverOrders']);           // طلبات السائق الخاصة
+        Route::get('/grouped', [CustomOrderController::class, 'driverOrdersGrouped']); // طلبات السائق مجمّعة حسب الحالة
         Route::post('/{id}/accept', [CustomOrderController::class, 'acceptOrder']);  // قبول طلب وبدء التوصيل
         Route::post('/{id}/deliver', [CustomOrderController::class, 'deliverOrder']); // تأكيد التوصيل
         Route::post('/{id}/cancel', [CustomOrderController::class, 'driverCancelScheduledOrder']); // إلغاء طلب مجدول (فقط)

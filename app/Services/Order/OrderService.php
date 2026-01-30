@@ -375,16 +375,35 @@ class OrderService extends Service
 
     /**
      * جلب طلبات السائق الحالي (مع Pagination)
+     * status يمكن أن يكون: shipping, delivered, cancelled, pending/available
+     * pending/available = الطلبات المتاحة في منطقة السائق الجغرافية (نفس الشيء)
      */
     public function getDriverOrders(array $filters = []): LengthAwarePaginator
     {
         $driver = Auth::guard('driver')->user();
+        $status = $filters['status'] ?? null;
+        $perPage = $filters['per_page'] ?? 15;
+
+        // pending و available نفس الشيء = الطلبات المتاحة في المنطقة الجغرافية
+        if ($status === 'available' || $status === 'pending') {
+            $availableOrders = $this->geofencingService->getAvailableOrdersForDriver($driver);
+            // تحويل Collection لـ Paginator يدوياً
+            $page = request()->get('page', 1);
+            $items = $availableOrders->forPage($page, $perPage);
+            return new LengthAwarePaginator(
+                $items->values(),
+                $availableOrders->count(),
+                $perPage,
+                $page,
+                ['path' => request()->url()]
+            );
+        }
 
         return Order::forDriver($driver->id)
             ->with(['items.product', 'items.store', 'user'])
-            ->when($filters['status'] ?? null, fn($q, $status) => $q->byStatus($status))
+            ->when($status, fn($q, $s) => $q->byStatus($s))
             ->latest()
-            ->paginate($filters['per_page'] ?? 15);
+            ->paginate($perPage);
     }
 
     /**
@@ -399,6 +418,39 @@ class OrderService extends Service
             ->when($filters['status'] ?? null, fn($q, $status) => $q->byStatus($status))
             ->latest()
             ->get();
+    }
+
+    /**
+     * جلب طلبات السائق مجمّعة حسب الحالة
+     * تشمل: الطلبات المسندة للسائق + الطلبات المتاحة في منطقته
+     */
+    public function getDriverOrdersGrouped(): array
+    {
+        $driver = Auth::guard('driver')->user();
+
+        // الطلبات المسندة للسائق (حسب الحالة)
+        $myOrders = Order::forDriver($driver->id)
+            ->with(['items.product', 'items.store', 'user'])
+            ->latest()
+            ->get();
+
+        // الطلبات المتاحة في منطقة السائق الجغرافية
+        $availableOrders = $this->geofencingService->getAvailableOrdersForDriver($driver);
+
+        return [
+            'shipping' => $myOrders->where('status', Order::STATUS_SHIPPING)->values(),
+            'delivered' => $myOrders->where('status', Order::STATUS_DELIVERED)->values(),
+            'cancelled' => $myOrders->where('status', Order::STATUS_CANCELLED)->values(),
+            'available' => $availableOrders->values(),
+        ];
+    }
+
+    /**
+     * جلب تفاصيل طلب للسائق الحالي (عام)
+     */
+    public function getOrderDetailsForDriver(int $orderId): Order
+    {
+        return $this->getDriverOrder($orderId);
     }
 
     /**
@@ -599,28 +651,6 @@ class OrderService extends Service
         return $order;
     }
 
-
-     /**
-     * جلب تفاصيل طلب معين للمستخدم
-     */
-    public function getOrderDetailsForDriver(int $orderId): Order
-    {
-        $order = Order::with([
-                'items.product.images',
-                'items.variant.attributes.attribute',
-                'items.variant.attributes.value',
-                'items.store',
-                'user',
-                'coupon',
-            ])
-            ->find($orderId);
-
-        if (!$order) {
-            $this->throwExceptionJson('الطلب غير موجود', 404);
-        }
-
-        return $order;
-    }
 
     /* ═══════════════════════════════════════════════════════════════════
      * وظائف الإدارة - Admin Functions

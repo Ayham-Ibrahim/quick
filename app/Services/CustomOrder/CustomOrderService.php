@@ -292,16 +292,35 @@ class CustomOrderService extends Service
 
     /**
      * جلب طلبات السائق الحالي (مع Pagination)
+     * status يمكن أن يكون: shipping, delivered, cancelled, pending/available
+     * pending/available = الطلبات المتاحة في منطقة السائق الجغرافية (نفس الشيء)
      */
     public function getDriverOrders(array $filters = []): LengthAwarePaginator
     {
         $driver = Auth::guard('driver')->user();
+        $status = $filters['status'] ?? null;
+        $perPage = $filters['per_page'] ?? 15;
+
+        // pending و available نفس الشيء = الطلبات المتاحة في المنطقة الجغرافية
+        if ($status === 'available' || $status === 'pending') {
+            $availableOrders = $this->geofencingService->getAvailableCustomOrdersForDriver($driver);
+            // تحويل Collection لـ Paginator يدوياً
+            $page = request()->get('page', 1);
+            $items = $availableOrders->forPage($page, $perPage);
+            return new LengthAwarePaginator(
+                $items->values(),
+                $availableOrders->count(),
+                $perPage,
+                $page,
+                ['path' => request()->url()]
+            );
+        }
 
         return CustomOrder::forDriver($driver->id)
             ->with(['items', 'user'])
-            ->when($filters['status'] ?? null, fn($q, $status) => $q->byStatus($status))
+            ->when($status, fn($q, $s) => $q->byStatus($s))
             ->latest()
-            ->paginate($filters['per_page'] ?? 15);
+            ->paginate($perPage);
     }
 
     /**
@@ -316,6 +335,39 @@ class CustomOrderService extends Service
             ->when($filters['status'] ?? null, fn($q, $status) => $q->byStatus($status))
             ->latest()
             ->get();
+    }
+
+    /**
+     * جلب طلبات السائق مجمّعة حسب الحالة
+     * تشمل: الطلبات المسندة للسائق + الطلبات المتاحة في منطقته
+     */
+    public function getDriverOrdersGrouped(): array
+    {
+        $driver = Auth::guard('driver')->user();
+
+        // الطلبات المسندة للسائق (حسب الحالة)
+        $myOrders = CustomOrder::forDriver($driver->id)
+            ->with(['items', 'user'])
+            ->latest()
+            ->get();
+
+        // الطلبات المتاحة في منطقة السائق الجغرافية
+        $availableOrders = $this->geofencingService->getAvailableCustomOrdersForDriver($driver);
+
+        return [
+            'shipping' => $myOrders->where('status', CustomOrder::STATUS_SHIPPING)->values(),
+            'delivered' => $myOrders->where('status', CustomOrder::STATUS_DELIVERED)->values(),
+            'cancelled' => $myOrders->where('status', CustomOrder::STATUS_CANCELLED)->values(),
+            'available' => $availableOrders->values(),
+        ];
+    }
+
+    /**
+     * جلب تفاصيل طلب للسائق الحالي (عام)
+     */
+    public function getOrderDetailsForDriver(int $orderId): CustomOrder
+    {
+        return $this->getDriverOrder($orderId);
     }
 
     /**
