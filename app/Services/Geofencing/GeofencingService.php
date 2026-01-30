@@ -529,6 +529,62 @@ class GeofencingService
     }
 
     /**
+     * جلب الطلبات العادية المتاحة ضمن نطاق السائق الجغرافي
+     * 
+     * @param Driver $driver السائق
+     * @return Collection<Order>
+     */
+    public function getAvailableOrdersForDriver(Driver $driver): Collection
+    {
+        if (!$driver->current_lat || !$driver->current_lng) {
+            return collect();
+        }
+
+        // جلب الطلبات المعلقة بدون سائق
+        $pendingOrders = Order::where('status', Order::STATUS_PENDING)
+            ->whereNull('driver_id')
+            // ->where('confirmation_expires_at', '>', now())
+            ->with(['items.product', 'items.store', 'user'])
+            ->get();
+
+        // فلترة حسب النطاق الجغرافي
+        return $pendingOrders->filter(function (Order $order) use ($driver) {
+            $centroid = $this->calculateOrderCentroid($order);
+            $radius = $this->getCurrentRadius($order->created_at);
+            
+            return $this->isDriverInRadius($driver, $centroid['lat'], $centroid['lng'], $radius);
+        });
+    }
+
+    /**
+     * جلب الطلبات الخاصة المتاحة ضمن نطاق السائق الجغرافي
+     * 
+     * @param Driver $driver السائق
+     * @return Collection<CustomOrder>
+     */
+    public function getAvailableCustomOrdersForDriver(Driver $driver): Collection
+    {
+        if (!$driver->current_lat || !$driver->current_lng) {
+            return collect();
+        }
+
+        // جلب الطلبات المعلقة بدون سائق
+        $pendingOrders = CustomOrder::where('status', CustomOrder::STATUS_PENDING)
+            ->whereNull('driver_id')
+            // ->where('confirmation_expires_at', '>', now())
+            ->with(['items', 'user'])
+            ->get();
+
+        // فلترة حسب النطاق الجغرافي
+        return $pendingOrders->filter(function (CustomOrder $order) use ($driver) {
+            $centroid = $this->calculateCustomOrderCentroid($order);
+            $radius = $this->getCurrentRadius($order->created_at);
+            
+            return $this->isDriverInRadius($driver, $centroid['lat'], $centroid['lng'], $radius);
+        });
+    }
+
+    /**
      * معلومات النطاق الجغرافي الحالي للطلب
      * 
      * @param Carbon $orderCreatedAt وقت إنشاء الطلب

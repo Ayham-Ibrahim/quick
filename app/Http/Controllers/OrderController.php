@@ -179,7 +179,7 @@ class OrderController extends Controller
     }
 
     /**
-     * Get driver's orders
+     * Get driver's orders (paginated, optionally filtered by status)
      *
      * GET /driver/orders
      */
@@ -194,6 +194,30 @@ class OrderController extends Controller
             $orders->setCollection($orders->getCollection()->map(fn($o) => new OrderResource($o))),
             'طلباتك'
         );
+    }
+
+    /**
+     * Get driver's orders grouped by status
+     * Includes: shipping, delivered, cancelled, and available orders in driver's area
+     *
+     * GET /driver/orders/grouped
+     */
+    public function driverOrdersGrouped()
+    {
+        $grouped = $this->orderService->getDriverOrdersGrouped();
+
+        return $this->success([
+            'shipping' => OrderResource::collection($grouped['shipping']),
+            'delivered' => OrderResource::collection($grouped['delivered']),
+            'cancelled' => OrderResource::collection($grouped['cancelled']),
+            'available' => OrderResource::collection($grouped['available']),
+            'counts' => [
+                'shipping' => $grouped['shipping']->count(),
+                'delivered' => $grouped['delivered']->count(),
+                'cancelled' => $grouped['cancelled']->count(),
+                'available' => $grouped['available']->count(),
+            ],
+        ], 'طلباتك مجمّعة حسب الحالة');
     }
 
     /**
