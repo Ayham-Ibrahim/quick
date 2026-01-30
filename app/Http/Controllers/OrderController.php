@@ -168,6 +168,17 @@ class OrderController extends Controller
     }
 
     /**
+     * show Order Detail For Driver
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function showOrderDetailForDriver(int $id)
+    {
+        $order = $this->orderService->getOrderDetailsForDriver($id);
+        return $this->success(new OrderResource($order), 'تفاصيل الطلب');
+    }
+
+    /**
      * Get driver's orders
      *
      * GET /driver/orders
