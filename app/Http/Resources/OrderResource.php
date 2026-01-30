@@ -153,6 +153,7 @@ class OrderResource extends JsonResource
                     'id' => $this->user->id,
                     'userName' => $this->user->name,
                     'phone' => $this->user->phone,
+                    'image' => $this->user->avatar,
                 ];
             }),
 
