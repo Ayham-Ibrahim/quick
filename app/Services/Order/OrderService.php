@@ -599,6 +599,29 @@ class OrderService extends Service
         return $order;
     }
 
+
+     /**
+     * جلب تفاصيل طلب معين للمستخدم
+     */
+    public function getOrderDetailsForDriver(int $orderId): Order
+    {
+        $order = Order::with([
+                'items.product.images',
+                'items.variant.attributes.attribute',
+                'items.variant.attributes.value',
+                'items.store',
+                'user',
+                'coupon',
+            ])
+            ->find($orderId);
+
+        if (!$order) {
+            $this->throwExceptionJson('الطلب غير موجود', 404);
+        }
+
+        return $order;
+    }
+
     /* ═══════════════════════════════════════════════════════════════════
      * وظائف الإدارة - Admin Functions
      * ═══════════════════════════════════════════════════════════════════ */
