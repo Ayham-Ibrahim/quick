@@ -551,6 +551,24 @@ class CustomOrderService extends Service
         return $order;
     }
 
+        /**
+     * جلب طلب للسائق الحالي
+     */
+    public function getDriverOrderDetails(int $orderId)
+    {
+        $driver = Auth::guard('driver')->user();
+
+        $order = CustomOrder::forDriver($driver->id)
+            ->with(['items', 'user'])
+            ->find($orderId);
+
+        if (!$order) {
+            $this->throwExceptionJson('الطلب غير موجود أو غير مسند إليك', 404);
+        }
+
+        return $order;
+    }
+
     /**
      * إنشاء عناصر الطلب
      */

@@ -190,6 +190,16 @@ class CustomOrderController extends Controller
     }
 
     /**
+     * Get specific custom order details for driver
+     *
+     * GET /driver/custom-orders/{id}
+     */
+    public function showDriverOrderDetails(int $orderId) { 
+        $order = $this->customOrderService->getDriverOrderDetails($orderId);
+        return $this->success(new CustomOrderResource($order), 'تفاصيل الطلب');
+    }
+
+    /**
      * Driver accepts a custom order and starts delivery
      *
      * POST /driver/custom-orders/{id}/accept

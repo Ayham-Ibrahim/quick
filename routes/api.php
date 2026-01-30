@@ -300,6 +300,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/{id}/accept', [CustomOrderController::class, 'acceptOrder']);  // قبول طلب وبدء التوصيل
         Route::post('/{id}/deliver', [CustomOrderController::class, 'deliverOrder']); // تأكيد التوصيل
         Route::post('/{id}/cancel', [CustomOrderController::class, 'driverCancelScheduledOrder']); // إلغاء طلب مجدول (فقط)
+        Route::get('/{id}', [CustomOrderController::class, 'showDriverOrderDetails']); // تفاصيل طلب خاص للسائق
     });
 
     /*
