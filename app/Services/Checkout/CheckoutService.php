@@ -68,6 +68,8 @@ class CheckoutService extends Service
                 // إنشاء الطلب مع فترة انتظار السائق
                 $order = Order::create([
                     'user_id' => $user->id,
+                    //TODO: remove the driver id
+                    'driver_id' => 15,
                     'coupon_id' => $couponData['coupon']->id ?? null,
                     'coupon_code' => $couponData['coupon']->code ?? null,
                     'subtotal' => $totals['subtotal'],
