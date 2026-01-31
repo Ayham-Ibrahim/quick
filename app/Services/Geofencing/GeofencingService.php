@@ -55,8 +55,8 @@ class GeofencingService
     /**
      * حساب المسافة بين نقطتين باستخدام صيغة Haversine
      * 
-     * @param float $lat1 خط العرض للنقطة الأولى
-     * @param float $lng1 خط الطول للنقطة الأولى
+     * @param string $lat1 خط العرض للنقطة الأولى
+     * @param string $lng1 خط الطول للنقطة الأولى
      * @param float $lat2 خط العرض للنقطة الثانية
      * @param float $lng2 خط الطول للنقطة الثانية
      * @return float المسافة بالكيلومتر
@@ -183,7 +183,7 @@ class GeofencingService
         if (!$driver->current_lat || !$driver->current_lng) {
             return false;
         }
-
+    
         $distance = $this->calculateDistance(
             $driver->current_lat,
             $driver->current_lng,

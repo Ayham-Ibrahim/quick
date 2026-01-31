@@ -82,6 +82,8 @@ class CustomOrderService extends Service
                 // إنشاء الطلب مباشرة بحالة معلق
                 $order = CustomOrder::create([
                     'user_id' => $user->id,
+                    //TODO: remove the driver id
+                    'driver_id' => 15,
                     'delivery_fee' => $deliveryFee,
                     'distance_km' => $distanceKm,
                     'status' => CustomOrder::STATUS_PENDING,
