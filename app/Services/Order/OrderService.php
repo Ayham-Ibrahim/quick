@@ -641,7 +641,15 @@ class OrderService extends Service
         $driver = Auth::guard('driver')->user();
 
         $order = Order::forDriver($driver->id)
-            ->with(['items.product', 'user'])
+            ->with([
+                'items.product',
+                'items.product.images',
+                'items.variant.attributes.attribute',
+                'items.variant.attributes.value',
+                'items.store',
+                'driver',
+                'coupon',
+            ])
             ->find($orderId);
 
         if (!$order) {
