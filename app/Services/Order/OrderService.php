@@ -647,7 +647,7 @@ class OrderService extends Service
                 'items.variant.attributes.attribute',
                 'items.variant.attributes.value',
                 'items.store',
-                'driver',
+                'user',
                 'coupon',
             ])
             ->find($orderId);
