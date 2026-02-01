@@ -34,8 +34,8 @@ class OrderResource extends JsonResource
 
             // عنوان التوصيل
             'deliveryAddress' => $this->delivery_address,
-            'deliveryLat' => $this->delivery_lat ? (float) $this->delivery_lat : null,
-            'deliveryLng' => $this->delivery_lng ? (float) $this->delivery_lng : null,
+            'deliveryLat' => $this->delivery_lat,
+            'deliveryLng' => $this->delivery_lng,
             'requestedDeliveryAt' => $this->requested_delivery_at?->format('Y-m-d H:i'),
 
             // معلومات خاصة بطلب متجر واحد (لصفحة طلبات المتجر في ال Admin)
