@@ -56,7 +56,7 @@ class OrderItemResource extends JsonResource
                     'name' => $this->product->name,
                     'currentPrice' => (float) $this->product->current_price,
                     'image' => $this->product->relationLoaded('images') 
-                        ? $this->product->images->first()?->image 
+                        ? $this->product->images() 
                         : null,
                     // تقييم المنتج
                     'averageRating' => round($this->product->averageRating(), 1),
