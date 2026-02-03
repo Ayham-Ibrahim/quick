@@ -64,6 +64,7 @@ class CustomOrderResource extends JsonResource
                 return [
                     'id' => $this->user->id,
                     'user_name' => $this->user->name,
+                    'userName' => $this->user->name,
                     'phone' => $this->user->phone,
                     'image' => $this->user->avatar,
                 ];
@@ -80,6 +81,7 @@ class CustomOrderResource extends JsonResource
             'can_admin_cancel' => $this->can_admin_cancel,
 
             'created_at' => $this->created_at?->toIso8601String(),
+            'createdAt' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];
     }
