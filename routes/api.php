@@ -141,6 +141,18 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/store/subcategories/{store_id}/{subcategory_id}/products', [StoreController::class, 'getStoreProductsBySubcategory']);
     Route::get('/store/{store_id}/products', [StoreController::class, 'showAllProducts']);
 
+    /*
+    |--------------------------------------------------------------------------
+    | Store Owner Order Routes - طلبات صاحب المتجر
+    |--------------------------------------------------------------------------
+    | هذه الـ routes خاصة بتطبيق المتاجر لعرض الطلبات الواردة
+    | يعرض فقط المنتجات التابعة للمتجر في كل طلب مع حسابات مالية دقيقة
+    */
+    Route::prefix('store/orders')->middleware('auth:store')->group(function () {
+        Route::get('/', [OrderController::class, 'storeOrders']);           // الطلبات الجارية (pending, shipping)
+        Route::get('/history', [OrderController::class, 'storeOrdersHistory']); // سجل الطلبات + إحصائيات مالية
+        Route::get('/{id}', [OrderController::class, 'storeOrderDetails']);  // تفاصيل طلب معين
+    });
 
     Route::apiResource('/ratings', RatingController::class);
 
