@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Order\ReorderRequest;
 use App\Http\Resources\OrderResource;
+use App\Http\Resources\StoreOrderResource;
 use App\Services\Order\OrderService;
 use App\Services\Geofencing\GeofencingService;
 use Illuminate\Http\Request;
@@ -376,6 +377,93 @@ class OrderController extends Controller
         return $this->paginate(
             $orders->setCollection($orders->getCollection()->map(fn($o) => new OrderResource($o))),
             'تم جلب طلبات المتجر بنجاح'
+        );
+    }
+
+    /* ==========================================
+     * APIs for Store Owners (تطبيق المتاجر)
+     * ========================================== */
+
+    /**
+     * Get store's active orders (pending + shipping)
+     * 
+     * GET /store/orders
+     * 
+     * يعرض فقط المنتجات التابعة للمتجر في كل طلب
+     */
+    public function storeOrders(Request $request)
+    {
+        $store = Auth::guard('store')->user();
+
+        $orders = $this->orderService->getStoreOwnerActiveOrders($store->id, [
+            'status' => $request->query('status'),
+            'per_page' => $request->query('per_page', 15),
+        ]);
+
+        return $this->paginate(
+            $orders->setCollection($orders->getCollection()->map(fn($o) => new StoreOrderResource($o))),
+            'تم جلب الطلبات بنجاح'
+        );
+    }
+
+    /**
+     * Get store's orders history (delivered + cancelled) with financial stats
+     * 
+     * GET /store/orders/history
+     * 
+     * يعرض سجل الطلبات المكتملة والملغية مع إحصائيات مالية:
+     * - إجمالي رصيد الطلبات
+     * - نسبة الإدارة
+     * - رصيد طلبات المتجر
+     */
+    public function storeOrdersHistory(Request $request)
+    {
+        $store = Auth::guard('store')->user();
+
+        $result = $this->orderService->getStoreOwnerOrdersHistory($store->id, [
+            'status' => $request->query('status'),
+            'per_page' => $request->query('per_page', 15),
+        ]);
+
+        $orders = $result['orders'];
+        $financialStats = $result['financial_stats'];
+
+        return $this->paginateWithData(
+            $orders->setCollection($orders->getCollection()->map(fn($o) => new StoreOrderResource($o))),
+            [
+                'financialStats' => [
+                    'totalOrdersCount' => $financialStats['total_orders_count'],
+                    'totalStoreRevenue' => $financialStats['total_store_revenue'],
+                    'totalCouponDiscount' => $financialStats['total_coupon_discount'],
+                    'adminProfitPercentage' => $financialStats['admin_profit_percentage'],
+                    'adminProfitAmount' => $financialStats['admin_profit_amount'],
+                    'netStoreBalance' => $financialStats['net_store_balance'],
+                ],
+            ],
+            'تم جلب سجل الطلبات بنجاح'
+        );
+    }
+
+    /**
+     * Get specific order details for store owner
+     * 
+     * GET /store/orders/{id}
+     * 
+     * يعرض فقط المنتجات التابعة للمتجر مع:
+     * - تفاصيل الأسعار والخصومات
+     * - معلومات العميل
+     * - معلومات السائق
+     * - عنوان التوصيل
+     */
+    public function storeOrderDetails(int $id)
+    {
+        $store = Auth::guard('store')->user();
+
+        $order = $this->orderService->getStoreOwnerOrderDetails($store->id, $id);
+
+        return $this->success(
+            new StoreOrderResource($order),
+            'تم جلب تفاصيل الطلب بنجاح'
         );
     }
 }

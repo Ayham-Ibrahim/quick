@@ -742,6 +742,154 @@ class OrderService extends Service
     }
 
     /* ═══════════════════════════════════════════════════════════════════
+     * وظائف صاحب المتجر - Store Owner Functions
+     * ═══════════════════════════════════════════════════════════════════ */
+
+    /**
+     * جلب كل طلبات المتجر (لصاحب المتجر)
+     * 
+     * يعرض جميع الطلبات مع إمكانية الفلترة حسب الحالة
+     */
+    public function getStoreOwnerActiveOrders(int $storeId, array $filters = []): LengthAwarePaginator
+    {
+        $orders = Order::with([
+                'items.product.images',
+                'items.variant.attributes.attribute',
+                'items.variant.attributes.value',
+                'items.store',
+                'user',
+                'driver',
+                'coupon',
+            ])
+            ->whereHas('items', fn($q) => $q->where('store_id', $storeId))
+            ->when($filters['status'] ?? null, fn($q, $status) => $q->byStatus($status))
+            ->latest()
+            ->paginate($filters['per_page'] ?? 15);
+
+        // Attach store context for filtering items in resource
+        $this->attachStoreContext($orders, $storeId);
+
+        return $orders;
+    }
+
+    /**
+     * جلب سجل طلبات المتجر (المكتملة فقط) مع الإحصائيات المالية
+     * 
+     * يعرض فقط الطلبات التي تم تسليمها (delivered)
+     */
+    public function getStoreOwnerOrdersHistory(int $storeId, array $filters = []): array
+    {
+        $orders = Order::with([
+                'items.product.images',
+                'items.variant.attributes.attribute',
+                'items.variant.attributes.value',
+                'items.store',
+                'user',
+                'driver',
+                'coupon',
+            ])
+            ->whereHas('items', fn($q) => $q->where('store_id', $storeId))
+            ->where('status', Order::STATUS_DELIVERED)
+            ->latest()
+            ->paginate($filters['per_page'] ?? 15);
+
+        // Attach store context for filtering items in resource
+        $this->attachStoreContext($orders, $storeId);
+
+        // حساب الإحصائيات المالية للطلبات المكتملة فقط
+        $financialStats = $this->calculateStoreFinancialStats($storeId);
+
+        return [
+            'orders' => $orders,
+            'financial_stats' => $financialStats,
+        ];
+    }
+
+    /**
+     * جلب تفاصيل طلب معين لصاحب المتجر
+     * 
+     * يعرض فقط المنتجات التابعة للمتجر مع حسابات مالية دقيقة
+     */
+    public function getStoreOwnerOrderDetails(int $storeId, int $orderId): Order
+    {
+        $order = Order::with([
+                'items.product.images',
+                'items.variant.attributes.attribute',
+                'items.variant.attributes.value',
+                'items.store',
+                'user',
+                'driver',
+                'coupon',
+            ])
+            ->whereHas('items', fn($q) => $q->where('store_id', $storeId))
+            ->find($orderId);
+
+        if (!$order) {
+            $this->throwExceptionJson('الطلب غير موجود أو لا يحتوي على منتجات من متجرك', 404);
+        }
+
+        // Attach store context
+        $order->store_context = $storeId;
+        $order->items->each(fn($item) => $item->store_context = $storeId);
+
+        return $order;
+    }
+
+    /**
+     * حساب الإحصائيات المالية للمتجر
+     * 
+     * - إجمالي رصيد الطلبات (المبلغ قبل خصم نسبة الإدارة)
+     * - نسبة الإدارة
+     * - صافي رصيد المتجر
+     */
+    public function calculateStoreFinancialStats(int $storeId): array
+    {
+        // جلب الطلبات المكتملة التي تحتوي على منتجات من هذا المتجر
+        $deliveredOrders = Order::with('items')
+            ->whereHas('items', fn($q) => $q->where('store_id', $storeId))
+            ->where('status', Order::STATUS_DELIVERED)
+            ->get();
+
+        $totalStoreRevenue = 0; // إجمالي المبيعات بعد خصم الكوبون
+        $totalStoreCouponDiscount = 0; // إجمالي الخصومات
+
+        foreach ($deliveredOrders as $order) {
+            // فقط العناصر التابعة لهذا المتجر
+            $storeItems = $order->items->where('store_id', $storeId);
+
+            foreach ($storeItems as $item) {
+                $totalStoreRevenue += (float) $item->line_total; // السعر بعد الخصم
+                $totalStoreCouponDiscount += (float) $item->discount_amount;
+            }
+        }
+
+        // جلب نسبة أرباح الإدارة من الطلبات
+        $adminProfitPercentage = \App\Models\ProfitRatios::getValueByTag('order_profit_percentage') ?? 10;
+        $adminProfitAmount = round($totalStoreRevenue * ($adminProfitPercentage / 100), 2);
+        $netStoreBalance = round($totalStoreRevenue - $adminProfitAmount, 2);
+
+        return [
+            'total_orders_count' => $deliveredOrders->count(),
+            'total_store_revenue' => round($totalStoreRevenue, 2), // إجمالي رصيد الطلبات
+            'total_coupon_discount' => round($totalStoreCouponDiscount, 2), // إجمالي الخصومات
+            'admin_profit_percentage' => $adminProfitPercentage,
+            'admin_profit_amount' => $adminProfitAmount, // نسبة الإدارة
+            'net_store_balance' => $netStoreBalance, // رصيد طلبات المتجر (صافي)
+        ];
+    }
+
+    /**
+     * Attach store context to orders collection
+     */
+    private function attachStoreContext(LengthAwarePaginator $orders, int $storeId): void
+    {
+        $orders->setCollection($orders->getCollection()->each(function ($order) use ($storeId) {
+            $order->store_context = $storeId;
+            $order->items->each(fn($item) => $item->store_context = $storeId);
+        }));
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
      * وظائف النظام - System Functions
      * ═══════════════════════════════════════════════════════════════════ */
 
