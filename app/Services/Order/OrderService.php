@@ -493,7 +493,7 @@ class OrderService extends Service
 
         // محاولة القبول مع التعامل مع Race Condition
         $updated = Order::where('id', $orderId)
-            ->whereNull('driver_id')
+            // ->whereNull('driver_id')
             ->where('status', Order::STATUS_PENDING)
             ->update([
                 'driver_id' => $driver->id,
