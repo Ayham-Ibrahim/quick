@@ -57,6 +57,8 @@ class OrderResource extends JsonResource
                         'storeName' => $store->store_name,
                         'phone' => $store->phone,
                         'storeLogo' => $store->store_logo,
+                        'averageRating' => round($store->averageRating(), 1),
+                        'ratingsCount' => (int) $store->ratings()->count(),
                     ] : [ 'id' => $storeId ],
 
                     // Per-store financials (explicit Price names)
@@ -107,6 +109,8 @@ class OrderResource extends JsonResource
                             'storeCity' => $store->city,
                             'v_location' => $store->v_location,
                             'h_location' => $store->h_location,
+                            'averageRating' => round($store->averageRating(), 1),
+                            'ratingsCount' => (int) $store->ratings()->count(),
                         ] : null,
                         'itemsCount' => $storeItems->count(),
                         // Backward-compatible subtotal (equals final after discounts)

@@ -46,6 +46,8 @@ class OrderItemResource extends JsonResource
                     'storeCity' => $this->store->city,
                     'v_location' => $this->store->v_location,
                     'h_location' => $this->store->h_location,
+                    'averageRating' => round($this->store->averageRating(), 1),
+                    'ratingsCount' => (int) $this->store->ratings()->count(),
                 ];
             }, (int) $this->store_id),
 
