@@ -25,6 +25,7 @@ class BroadcastNotificationService extends Service
             'title' => $data['title'],
             'content' => $data['content'],
             'target_types' => $data['target_types'],
+            'status' => Notification::STATUS_PENDING,
         ]);
 
         // Dispatch to queue for async processing

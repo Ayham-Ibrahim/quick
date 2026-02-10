@@ -123,6 +123,10 @@ class Notification extends Model
      */
     public function getStatusLabelAttribute(): string
     {
+        if (is_null($this->status)) {
+            return 'غير محدد';
+        }
+
         return self::getStatuses()[$this->status] ?? $this->status;
     }
 
