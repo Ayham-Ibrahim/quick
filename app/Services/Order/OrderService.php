@@ -146,9 +146,9 @@ class OrderService extends Service
         $order->cancel($reason);
 
         // Notify driver if order was assigned
-        if ($order->driver_id) {
-            $this->notificationService->notifyDriverOrderCancelledByUser($order->driver, $order);
-        }
+        // if ($order->driver_id) {
+        //     $this->notificationService->notifyDriverOrderCancelledByUser($order->driver, $order);
+        // }
 
         return $order->fresh(['items.product', 'driver']);
     }
