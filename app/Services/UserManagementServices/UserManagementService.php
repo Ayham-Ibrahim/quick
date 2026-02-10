@@ -559,7 +559,7 @@ class UserManagementService extends Service
      */
     public function listUsers(array $params = [])
     {
-        $query = User::where('is_admin', 0);
+        $query = User::where('is_admin', 0)->withCount(['orders', 'customOrders']);
 
         if (!empty($params['search'])) {
             $s = $params['search'];

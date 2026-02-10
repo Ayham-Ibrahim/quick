@@ -6,6 +6,8 @@ namespace App\Models\UserManagement;
 
 use App\Models\Device;
 use App\Models\Wallet;
+use App\Models\Order;
+use App\Models\CustomOrder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -107,4 +109,37 @@ class User extends Authenticatable
     {
         return Device::getTokens($this);
     }
+
+    /**
+     * Relation: regular orders
+     */
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    /**
+     * Relation: custom orders
+     */
+    public function customOrders()
+    {
+        return $this->hasMany(CustomOrder::class);
+    }
+
+    /**
+     * Total orders count accessor (orders + custom orders)
+     *
+     * @return int
+     */
+    public function getTotalOrdersCountAttribute(): int
+    {
+        $ordersCount = $this->orders_count ?? $this->orders()->count();
+        $customCount = $this->custom_orders_count ?? $this->customOrders()->count();
+        return (int) ($ordersCount + $customCount);
+    }
+
+    /**
+     * Ensure total is appended to JSON output
+     */
+    protected $appends = ['total_orders_count'];
 }
