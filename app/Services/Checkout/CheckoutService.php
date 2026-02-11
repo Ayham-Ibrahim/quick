@@ -158,6 +158,18 @@ class CheckoutService extends Service
             ],
             'total' => $totals['total'],
             'items_with_discount' => $couponData['items_breakdown'] ?? [],
+            'stores' => $cart->items
+                ->pluck('product.store')
+                ->filter()
+                ->unique('id')
+                ->values()
+                ->map(fn($store) => [
+                    'id' => $store->id,
+                    'store_name' => $store->store_name,
+                    'store_phone' => $store->phone,
+                    'v_location' => $store->v_location,
+                    'h_location' => $store->h_location,
+                ]),
         ];
     }
 
