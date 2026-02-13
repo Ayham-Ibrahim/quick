@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Order\ReorderRequest;
 use App\Http\Resources\OrderResource;
 use App\Http\Resources\StoreOrderResource;
-use App\Services\Order\OrderService;
 use App\Services\Geofencing\GeofencingService;
+use App\Services\Order\OrderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 

@@ -471,9 +471,9 @@ class OrderService extends Service
             $this->throwExceptionJson('الطلب غير موجود', 404);
         }
 
-        // if (!$order->is_available_for_driver) {
-        //     $this->throwExceptionJson('هذا الطلب غير متاح للقبول', 400);
-        // }
+        if (!$order->is_available_for_driver) {
+            $this->throwExceptionJson('هذا الطلب غير متاح للقبول', 400);
+        }
 
         // التحقق من رصيد المحفظة
         if (!$driver->hasEnoughBalanceForDelivery()) {

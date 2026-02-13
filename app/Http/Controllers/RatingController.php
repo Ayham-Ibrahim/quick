@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\RatingRequests\StoreRatingRequest;
 use App\Http\Requests\RatingRequests\UpdateRatingRequest;
 use App\Services\RatingService;

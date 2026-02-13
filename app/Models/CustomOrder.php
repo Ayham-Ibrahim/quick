@@ -2,11 +2,12 @@
 
 namespace App\Models;
 
+use App\Models\CustomOrderItem;
 use App\Models\Driver;
 use App\Models\UserManagement\User;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Custom Order model ("Request Anything")
@@ -156,8 +157,7 @@ class CustomOrder extends Model
     public function getIsAvailableForDriverAttribute(): bool
     {
         return $this->status === self::STATUS_PENDING
-            && !$this->has_driver
-            && !$this->is_confirmation_expired;
+            && !$this->has_driver;
     }
 
     /**

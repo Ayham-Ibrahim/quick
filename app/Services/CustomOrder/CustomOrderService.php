@@ -83,7 +83,7 @@ class CustomOrderService extends Service
                 $order = CustomOrder::create([
                     'user_id' => $user->id,
                     //TODO: remove the driver id
-                    'driver_id' => 15,
+                    // 'driver_id' => 15,
                     'delivery_fee' => $deliveryFee,
                     'distance_km' => $distanceKm,
                     'status' => CustomOrder::STATUS_PENDING,
@@ -390,9 +390,9 @@ class CustomOrderService extends Service
             $this->throwExceptionJson('الطلب غير موجود', 404);
         }
 
-        // if (!$order->is_available_for_driver) {
-        //     $this->throwExceptionJson('هذا الطلب غير متاح للقبول', 400);
-        // }
+        if (!$order->is_available_for_driver) {
+            $this->throwExceptionJson('هذا الطلب غير متاح للقبول', 400);
+        }
 
         // التحقق من رصيد المحفظة
         if (!$driver->hasEnoughBalanceForDelivery()) {
