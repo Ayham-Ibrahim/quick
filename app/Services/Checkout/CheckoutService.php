@@ -34,7 +34,7 @@ class CheckoutService extends Service
     public function checkout(array $data): Order
     {
         try {
-            return DB::transaction(function () use ($data) {
+            $order = DB::transaction(function () use ($data) {
                 $user = Auth::user();
                 $cart = $this->getActiveCart();
 
@@ -68,8 +68,6 @@ class CheckoutService extends Service
                 // إنشاء الطلب مع فترة انتظار السائق
                 $order = Order::create([
                     'user_id' => $user->id,
-                    //TODO: remove the driver id
-                    // 'driver_id' => 15,
                     'coupon_id' => $couponData['coupon']->id ?? null,
                     'coupon_code' => $couponData['coupon']->code ?? null,
                     'subtotal' => $totals['subtotal'],
@@ -100,20 +98,32 @@ class CheckoutService extends Service
                 // تحديث حالة السلة
                 $cart->markAsCompleted();
 
-                $order = $order->load(['items.product', 'items.store', 'coupon', 'user']);
-
-                // Notify user that order was created
-                $this->notificationService->notifyUserOrderCreated($order);
-
-                // Notify stores about new order
-                $this->notificationService->notifyStoresNewOrder($order);
-
-                // Notify eligible drivers in the area
-                $eligibleDrivers = $this->geofencingService->getEligibleDriversForOrder($order);
-                $this->notificationService->notifyDriversNewOrder($eligibleDrivers, $order);
-
-                return $order;
+                return $order->load(['items.product', 'items.store', 'coupon', 'user']);
             });
+
+            // === Notifications AFTER transaction commits ===
+
+            // Notify user that order was created
+            $this->notificationService->notifyUserOrderCreated($order);
+
+            // Notify stores about new order
+            $this->notificationService->notifyStoresNewOrder($order);
+
+            // Notify eligible drivers in the area
+            $eligibleDrivers = $this->geofencingService->getEligibleDriversForOrder($order);
+            Log::info("Checkout: eligible drivers for order #{$order->id}", [
+                'eligible_count' => $eligibleDrivers->count(),
+                'driver_ids' => $eligibleDrivers->pluck('id')->toArray(),
+            ]);
+
+            if ($eligibleDrivers->isNotEmpty()) {
+                $sent = $this->notificationService->notifyDriversNewOrder($eligibleDrivers, $order);
+                Log::info("Checkout: notified {$sent} drivers for order #{$order->id}");
+            } else {
+                Log::warning("Checkout: no eligible drivers found for order #{$order->id}");
+            }
+
+            return $order;
         } catch (\Throwable $th) {
             Log::error('Checkout error: ' . $th->getMessage(), [
                 'trace' => $th->getTraceAsString()
