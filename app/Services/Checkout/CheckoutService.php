@@ -108,6 +108,10 @@ class CheckoutService extends Service
                 // Notify stores about new order
                 $this->notificationService->notifyStoresNewOrder($order);
 
+                // Notify eligible drivers in the area
+                $eligibleDrivers = $this->geofencingService->getEligibleDriversForOrder($order);
+                $this->notificationService->notifyDriversNewOrder($eligibleDrivers, $order);
+
                 return $order;
             });
         } catch (\Throwable $th) {
