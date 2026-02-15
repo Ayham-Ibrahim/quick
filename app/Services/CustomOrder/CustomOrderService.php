@@ -612,8 +612,7 @@ class CustomOrderService extends Service
     {
         $driver = Auth::guard('driver')->user();
 
-        $order = CustomOrder::forDriver($driver->id)
-            ->with(['items', 'user'])
+        $order = CustomOrder::with(['items', 'user'])
             ->find($orderId);
 
         if (!$order) {
