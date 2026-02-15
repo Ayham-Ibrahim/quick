@@ -669,8 +669,7 @@ class OrderService extends Service
     {
         $driver = Auth::guard('driver')->user();
 
-        $order = Order::forDriver($driver->id)
-            ->with([
+        $order = Order::with([
                 'items.product',
                 'items.product.images',
                 'items.variant.attributes.attribute',
