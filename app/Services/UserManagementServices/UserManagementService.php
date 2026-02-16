@@ -324,6 +324,9 @@ class UserManagementService extends Service
 
     public function logout($user)
     {
+        // حذف أجهزة FCM لإيقاف الإشعارات بعد تسجيل الخروج
+        \App\Models\Device::removeAllDevices($user);
+
         $user->currentAccessToken()->delete();
         return ['message' => 'Logged out'];
     }
