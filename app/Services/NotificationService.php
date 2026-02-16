@@ -246,6 +246,7 @@ class NotificationService
     public function notifyDriversNewOrder($drivers, Order $order): int
     {
         $successCount = 0;
+        $total = count($drivers);
 
         foreach ($drivers as $driver) {
             try {
@@ -255,6 +256,12 @@ class NotificationService
                 Log::warning("Failed to notify driver #{$driver->id}: " . $e->getMessage());
             }
         }
+
+        Log::info("notifyDriversNewOrder: attempted to notify drivers", [
+            'order_id' => $order->id,
+            'eligible_drivers' => $total,
+            'successful_sends' => $successCount,
+        ]);
 
         return $successCount;
     }
@@ -314,6 +321,23 @@ class NotificationService
                 'type' => 'new_order',
                 'order_id' => (string) $order->id,
                 'items_count' => (string) $itemsCount,
+            ]
+        );
+    }
+
+    /**
+     * Notify store when a product submitted by the store is approved by admin.
+     */
+    public function notifyStoreProductApproved(Store $store, \App\Models\Product $product): void
+    {
+        $this->fcmService->sendToStore(
+            $store,
+            'تم قبول منتجك ✅',
+            'تمت الموافقة على منتجك "' . $product->name . '" وهو الآن متاح للعرض والبيع.',
+            [
+                'type' => 'product_approved',
+                'product_id' => (string) $product->id,
+                'product_name' => (string) $product->name,
             ]
         );
     }

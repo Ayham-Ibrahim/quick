@@ -34,7 +34,7 @@ class FileStorage
 
             switch ($suffix) {
                 case 'img':
-                    $allowedMimeTypes = ['image/jpeg', 'image/png'];
+                    $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg'];
                     $allowedExtensions = ['jpeg', 'png', 'jpg'];
                     break;
 

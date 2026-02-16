@@ -36,7 +36,7 @@ class OrderResource extends JsonResource
             'deliveryAddress' => $this->delivery_address,
             'deliveryLat' => $this->delivery_lat,
             'deliveryLng' => $this->delivery_lng,
-            'requestedDeliveryAt' => $this->requested_delivery_at?->format('Y-m-d H:i'),
+            'requestedDeliveryAt' => $this->requested_delivery_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i'),
 
             // معلومات خاصة بطلب متجر واحد (لصفحة طلبات المتجر في ال Admin)
             $this->mergeWhen(isset($this->store_context), function () {
@@ -135,15 +135,15 @@ class OrderResource extends JsonResource
                 'location' => $this->driver && $this->driver->current_lat && $this->driver->current_lng ? [
                     'lat' => (float) $this->driver->current_lat,
                     'lng' => (float) $this->driver->current_lng,
-                    'updatedAt' => $this->driver->last_location_update?->toIso8601String(),
+                    'updatedAt' => $this->driver->last_location_update?->setTimezone('Asia/Damascus')->toIso8601String(),
                     'isOnline' => (bool) $this->driver->is_online,
                 ] : null,
             ]),
             'hasDriver' => $this->has_driver,
-            'driverAssignedAt' => $this->driver_assigned_at?->format('Y-m-d H:i'),
+            'driverAssignedAt' => $this->driver_assigned_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i'),
 
             // حالة انتظار السائق
-            'confirmationExpiresAt' => $this->confirmation_expires_at?->toIso8601String(),
+            'confirmationExpiresAt' => $this->confirmation_expires_at?->setTimezone('Asia/Damascus')->toIso8601String(),
             'isConfirmationExpired' => $this->is_confirmation_expired,
             'canResendToDrivers' => $this->can_resend_to_drivers,
             'isAvailableForDriver' => $this->is_available_for_driver,
@@ -161,8 +161,8 @@ class OrderResource extends JsonResource
                 ];
             }),
 
-            'createdAt' => $this->created_at->format('Y-m-d H:i'),
-            'updatedAt' => $this->updated_at->format('Y-m-d H:i'),
+            'createdAt' => $this->created_at->setTimezone('Asia/Damascus')->format('Y-m-d H:i'),
+            'updatedAt' => $this->updated_at->setTimezone('Asia/Damascus')->format('Y-m-d H:i'),
         ];
     }
 }
