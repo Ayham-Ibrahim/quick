@@ -45,8 +45,8 @@ class StoreOrderResource extends JsonResource
             'statusText' => $this->status_text,
 
             // تاريخ ووقت الطلب
-            'createdAt' => $this->created_at->format('Y-m-d H:i'),
-            'createdAtFormatted' => $this->created_at->format('H:i d/m/Y'),
+            'createdAt' => $this->created_at->setTimezone('Asia/Damascus')->format('Y-m-d H:i'),
+            'createdAtFormatted' => $this->created_at->setTimezone('Asia/Damascus')->format('H:i d/m/Y'),
 
             // العناصر التابعة للمتجر فقط
             'items' => StoreOrderItemResource::collection($storeItems),
@@ -79,7 +79,7 @@ class StoreOrderResource extends JsonResource
                 'address' => $this->delivery_address,
                 'lat' => $this->delivery_lat,
                 'lng' => $this->delivery_lng,
-                'requestedAt' => $this->requested_delivery_at?->format('Y-m-d H:i'),
+                'requestedAt' => $this->requested_delivery_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i'),
                 'isImmediate' => (bool) $this->is_immediate_delivery,
             ],
 
@@ -110,10 +110,10 @@ class StoreOrderResource extends JsonResource
             'hasDriver' => $this->has_driver,
 
             // حالات مفيدة
-            'confirmationExpiresAt' => $this->confirmation_expires_at?->toIso8601String(),
+            'confirmationExpiresAt' => $this->confirmation_expires_at?->setTimezone('Asia/Damascus')->toIso8601String(),
             'isConfirmationExpired' => $this->is_confirmation_expired,
 
-            'updatedAt' => $this->updated_at->format('Y-m-d H:i'),
+            'updatedAt' => $this->updated_at->setTimezone('Asia/Damascus')->format('Y-m-d H:i'),
         ];
     }
 }

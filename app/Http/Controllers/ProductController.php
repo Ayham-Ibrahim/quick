@@ -9,6 +9,7 @@ use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Services\Products\ProductService;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -21,15 +22,18 @@ class ProductController extends Controller
      * @var ProductService
      */
     protected $productService;
+    protected NotificationService $notificationService;
 
     /**
      * Create a new ProductController instance and inject the ProductService.
      *
      * @param ProductService $productService The service responsible for Product operations.
+     * @param NotificationService $notificationService The notification service to send push messages.
      */
-    public function __construct(ProductService $productService)
+    public function __construct(ProductService $productService, NotificationService $notificationService)
     {
         $this->productService = $productService;
+        $this->notificationService = $notificationService;
     }
     /**
      * Display a listing of the resource.
@@ -180,6 +184,12 @@ class ProductController extends Controller
     {
         $product->is_accepted = true;
         $product->save();
+
+        // Notify the store that their product was approved
+        if ($product->store) {
+            $this->notificationService->notifyStoreProductApproved($product->store, $product);
+        }
+
         return $this->success(null, 'تم قبول المنتج بنجاح', 200);
     }
 

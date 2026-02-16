@@ -237,19 +237,19 @@ class GeofencingService
         // نوع الطلب (فوري/مجدول)
         $isImmediate = $order->is_immediate_delivery;
 
-        return Driver::query()
+        $drivers = Driver::query()
             ->where('is_active', true)
             ->where('is_online', true)
             ->whereNotNull('current_lat')
             ->whereNotNull('current_lng')
             ->get()
             ->filter(function (Driver $driver) use ($centroid, $radius, $isImmediate) {
-                // التحقق من النشاط
+                // التحقق من النشاط (يتحقق من last_activity_at ضمن isDriverActive)
                 if (!$this->isDriverActive($driver)) {
                     return false;
                 }
 
-                // التحقق من النطاق الجغرافي
+                // التحقق من النطاق الجغرافي (progressive radius)
                 if (!$this->isDriverInRadius($driver, $centroid['lat'], $centroid['lng'], $radius)) {
                     return false;
                 }
@@ -261,7 +261,34 @@ class GeofencingService
                     return $driver->isEligibleForScheduledOrder();
                 }
             });
+
+        // If no drivers found using the progressive/geofencing rules, fall back to a
+        // simpler proximity-based search using the delivery coordinates (or centroid)
+        // — this helps when drivers update location but do not send heartbeat or
+        // when last_activity_at is stale. The fallback is intentionally more lenient
+        // (only requires is_online & is_active + proximity).
+        if ($drivers->isEmpty()) {
+            // choose delivery point if available, otherwise use centroid
+            $centerLat = $order->delivery_lat ?: $centroid['lat'];
+            $centerLng = $order->delivery_lng ?: $centroid['lng'];
+
+            $fallbackRadius = config('geofencing.fallback_radius_km', 20); // default 20 km
+            $fallback = $this->getEligibleDriversByProximity($centerLat, $centerLng, $fallbackRadius);
+
+            // Log for diagnostics
+            \Illuminate\Support\Facades\Log::warning("Geofencing fallback used for order {$order->id}", [
+                'progressive_results' => 0,
+                'fallback_radius_km' => $fallbackRadius,
+                'fallback_count' => $fallback->count(),
+                'center' => ['lat' => $centerLat, 'lng' => $centerLng],
+            ]);
+
+            return $fallback;
+        }
+
+        return $drivers;
     }
+    
 
     /**
      * الحصول على السائقين المؤهلين ضمن النطاق الجغرافي للطلب الخاص
@@ -582,6 +609,28 @@ class GeofencingService
             
             return $this->isDriverInRadius($driver, $centroid['lat'], $centroid['lng'], $radius);
         });
+    }
+
+    /**
+     * Simple proximity lookup for drivers around a given point (lenient checks).
+     * Uses only `is_active`, `is_online` and proximity to (lat,lng).
+     * Useful as a fallback when progressive geofencing yields no results.
+     *
+     * @param float $lat
+     * @param float $lng
+     * @param float $radiusKm
+     * @return \Illuminate\Support\Collection<Driver>
+     */
+    public function getEligibleDriversByProximity(float $lat, float $lng, float $radiusKm = 10.0)
+    {
+        return Driver::query()
+            ->where('is_active', true)
+            ->where('is_online', true)
+            ->whereNotNull('current_lat')
+            ->whereNotNull('current_lng')
+            ->get()
+            ->filter(fn(Driver $driver) => $this->isDriverInRadius($driver, $lat, $lng, $radiusKm))
+            ->values();
     }
 
     /**
