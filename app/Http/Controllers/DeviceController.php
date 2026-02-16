@@ -40,14 +40,16 @@ class DeviceController extends Controller
 
     /**
      * Remove FCM token for authenticated user (logout from device).
-     * Note: FCM token is intentionally kept to preserve push notifications.
      *
      * @param RegisterDeviceRequest $request
      * @return JsonResponse
      */
     public function removeUserDevice(RegisterDeviceRequest $request): JsonResponse
     {
-        // لا نحذف الـ FCM token حتى يستمر المستخدم بتلقي الإشعارات بعد تسجيل الخروج
+        $user = Auth::guard('api')->user();
+
+        \App\Models\Device::removeByToken($user, $request->fcm_token);
+
         return $this->success(null, 'تم إلغاء تسجيل الجهاز');
     }
 
@@ -77,13 +79,15 @@ class DeviceController extends Controller
 
     /**
      * Remove FCM token for authenticated driver.
-     * Note: FCM token is intentionally kept to preserve push notifications.
      *
      * @return JsonResponse
      */
     public function removeDriverDevice(): JsonResponse
     {
-        // لا نحذف الـ FCM token حتى يستمر السائق بتلقي الإشعارات بعد تسجيل الخروج
+        $driver = Auth::guard('driver')->user();
+
+        \App\Models\Device::removeAllDevices($driver);
+
         return $this->success(null, 'تم إلغاء تسجيل الجهاز');
     }
 
@@ -113,13 +117,15 @@ class DeviceController extends Controller
 
     /**
      * Remove FCM token for authenticated provider.
-     * Note: FCM token is intentionally kept to preserve push notifications.
      *
      * @return JsonResponse
      */
     public function removeProviderDevice(): JsonResponse
     {
-        // لا نحذف الـ FCM token حتى يستمر المزود بتلقي الإشعارات بعد تسجيل الخروج
+        $provider = Auth::guard('provider')->user();
+
+        \App\Models\Device::removeAllDevices($provider);
+
         return $this->success(null, 'تم إلغاء تسجيل الجهاز');
     }
 
@@ -149,13 +155,15 @@ class DeviceController extends Controller
 
     /**
      * Remove FCM token for authenticated store.
-     * Note: FCM token is intentionally kept to preserve push notifications.
      *
      * @return JsonResponse
      */
     public function removeStoreDevice(): JsonResponse
     {
-        // لا نحذف الـ FCM token حتى يستمر المتجر بتلقي الإشعارات بعد تسجيل الخروج
+        $store = Auth::guard('store')->user();
+
+        \App\Models\Device::removeAllDevices($store);
+
         return $this->success(null, 'تم إلغاء تسجيل الجهاز');
     }
 }
