@@ -18,15 +18,15 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        // User::create([
-        //     'name' => 'Admin',
-        //     'phone' => '+963258741',
-        //     'avatar' => null,
-        //     'v_location' => '123587430',
-        //     'h_location' => '487214545',
-        //     'password' =>  bcrypt('password@123'),
-        //     'is_admin' => 1,
-        // ]);
+        $new_admin= User::create([
+            'name' => 'Admin',
+            'phone' => '+963258741',
+            'avatar' => null,
+            'v_location' => '123587430',
+            'h_location' => '487214545',
+            'password' =>  bcrypt('password@123'),
+            'is_admin' => 1,
+        ]);
         $admin = User::create([
             'name' => 'new Admin',
             'phone' => '+963939811355',
@@ -36,7 +36,21 @@ class DatabaseSeeder extends Seeder
             'password' =>  bcrypt('password@123'),
             'is_admin' => 1,
         ]);
+        User::create([
+            'name' => 'new user',
+            'phone' => '+963939001111',
+            'avatar' => null,
+            'phone_verified_at' => now(),
+            'v_location' => '123587430',
+            'h_location' => '487214545',
+            'password' =>  bcrypt('password@123'),
+            'is_admin' => 0,
+        ]);
         $admin->wallet()->create([
+            'wallet_code' => WalletHelper::generateUniqueWalletCode(),
+            'balance'     => 0,
+        ]);
+        $new_admin->wallet()->create([
             'wallet_code' => WalletHelper::generateUniqueWalletCode(),
             'balance'     => 0,
         ]);
