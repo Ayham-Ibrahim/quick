@@ -6,7 +6,6 @@ use App\Models\Driver;
 use App\Models\Order;
 use App\Models\CustomOrder;
 use App\Models\Store;
-use App\Models\ProfitRatios;
 use Illuminate\Support\Collection;
 use Carbon\Carbon;
 
@@ -222,35 +221,40 @@ class GeofencingService
 
     /**
      * الحصول على السائقين المؤهلين ضمن النطاق الجغرافي للطلب العادي
+     * يستخدم موقع التوصيل (مكان العميل) كنقطة مرجعية
+     * نطاق ثابت 20 كم (قابل للتعديل من config)
      * 
      * @param Order $order الطلب
      * @return Collection<Driver>
      */
     public function getEligibleDriversForOrder(Order $order): Collection
     {
-        // حساب مركز الثقل
-        $centroid = $this->calculateOrderCentroid($order);
+        // نستخدم موقع التوصيل (مكان العميل) كنقطة مرجعية
+        $deliveryLat = (float) $order->delivery_lat;
+        $deliveryLng = (float) $order->delivery_lng;
         
-        // الحصول على نصف القطر الحالي
-        $radius = $this->getCurrentRadius($order->created_at);
+        // إذا ما في موقع توصيل، نستخدم مركز المتاجر كـ fallback
+        if (!$deliveryLat || !$deliveryLng) {
+            $centroid = $this->calculateOrderCentroid($order);
+            $deliveryLat = $centroid['lat'];
+            $deliveryLng = $centroid['lng'];
+        }
+        
+        // استخدام نطاق ثابت 20 كم
+        $radius = config('geofencing.fallback_radius_km', 20);
 
         // نوع الطلب (فوري/مجدول)
         $isImmediate = $order->is_immediate_delivery;
 
-        $drivers = Driver::query()
+        return Driver::query()
             ->where('is_active', true)
             ->where('is_online', true)
             ->whereNotNull('current_lat')
             ->whereNotNull('current_lng')
             ->get()
-            ->filter(function (Driver $driver) use ($centroid, $radius, $isImmediate) {
-                // التحقق من النشاط (يتحقق من last_activity_at ضمن isDriverActive)
-                if (!$this->isDriverActive($driver)) {
-                    return false;
-                }
-
-                // التحقق من النطاق الجغرافي (progressive radius)
-                if (!$this->isDriverInRadius($driver, $centroid['lat'], $centroid['lng'], $radius)) {
+            ->filter(function (Driver $driver) use ($deliveryLat, $deliveryLng, $radius, $isImmediate) {
+                // التحقق من النطاق الجغرافي (20 كم من موقع التوصيل)
+                if (!$this->isDriverInRadius($driver, $deliveryLat, $deliveryLng, $radius)) {
                     return false;
                 }
 
@@ -261,48 +265,32 @@ class GeofencingService
                     return $driver->isEligibleForScheduledOrder();
                 }
             });
-
-        // If no drivers found using the progressive/geofencing rules, fall back to a
-        // simpler proximity-based search using the delivery coordinates (or centroid)
-        // — this helps when drivers update location but do not send heartbeat or
-        // when last_activity_at is stale. The fallback is intentionally more lenient
-        // (only requires is_online & is_active + proximity).
-        if ($drivers->isEmpty()) {
-            // choose delivery point if available, otherwise use centroid
-            $centerLat = $order->delivery_lat ?: $centroid['lat'];
-            $centerLng = $order->delivery_lng ?: $centroid['lng'];
-
-            $fallbackRadius = config('geofencing.fallback_radius_km', 20); // default 20 km
-            $fallback = $this->getEligibleDriversByProximity($centerLat, $centerLng, $fallbackRadius);
-
-            // Log for diagnostics
-            \Illuminate\Support\Facades\Log::warning("Geofencing fallback used for order {$order->id}", [
-                'progressive_results' => 0,
-                'fallback_radius_km' => $fallbackRadius,
-                'fallback_count' => $fallback->count(),
-                'center' => ['lat' => $centerLat, 'lng' => $centerLng],
-            ]);
-
-            return $fallback;
-        }
-
-        return $drivers;
     }
     
 
     /**
      * الحصول على السائقين المؤهلين ضمن النطاق الجغرافي للطلب الخاص
+     * يستخدم موقع التوصيل (مكان العميل) كنقطة مرجعية
+     * نطاق ثابت 20 كم (قابل للتعديل من config)
      * 
      * @param CustomOrder $order الطلب الخاص
      * @return Collection<Driver>
      */
     public function getEligibleDriversForCustomOrder(CustomOrder $order): Collection
     {
-        // حساب مركز الثقل
-        $centroid = $this->calculateCustomOrderCentroid($order);
+        // نستخدم موقع التوصيل (مكان العميل) كنقطة مرجعية
+        $deliveryLat = (float) $order->delivery_lat;
+        $deliveryLng = (float) $order->delivery_lng;
         
-        // الحصول على نصف القطر الحالي
-        $radius = $this->getCurrentRadius($order->created_at);
+        // إذا ما في موقع توصيل، نستخدم مركز نقاط الاستلام كـ fallback
+        if (!$deliveryLat || !$deliveryLng) {
+            $centroid = $this->calculateCustomOrderCentroid($order);
+            $deliveryLat = $centroid['lat'];
+            $deliveryLng = $centroid['lng'];
+        }
+        
+        // استخدام نطاق ثابت 20 كم
+        $radius = config('geofencing.fallback_radius_km', 20);
 
         // نوع الطلب (فوري/مجدول)
         $isImmediate = $order->is_immediate;
@@ -313,14 +301,9 @@ class GeofencingService
             ->whereNotNull('current_lat')
             ->whereNotNull('current_lng')
             ->get()
-            ->filter(function (Driver $driver) use ($centroid, $radius, $isImmediate) {
-                // التحقق من النشاط
-                if (!$this->isDriverActive($driver)) {
-                    return false;
-                }
-
-                // التحقق من النطاق الجغرافي
-                if (!$this->isDriverInRadius($driver, $centroid['lat'], $centroid['lng'], $radius)) {
+            ->filter(function (Driver $driver) use ($deliveryLat, $deliveryLng, $radius, $isImmediate) {
+                // التحقق من النطاق الجغرافي (20 كم من موقع التوصيل)
+                if (!$this->isDriverInRadius($driver, $deliveryLat, $deliveryLng, $radius)) {
                     return false;
                 }
 
@@ -557,17 +540,14 @@ class GeofencingService
 
     /**
      * جلب الطلبات العادية المتاحة ضمن نطاق السائق الجغرافي
-     * يستخدم نفس الـ fallback radius المستخدم في إرسال الإشعارات (20 كم)
+     * يستخدم موقع التوصيل (مكان العميل) كنقطة مرجعية
+     * إذا السائق ما عنده موقع، يتم إرجاع كل الطلبات المعلقة
      * 
      * @param Driver $driver السائق
      * @return Collection<Order>
      */
     public function getAvailableOrdersForDriver(Driver $driver): Collection
     {
-        if (!$driver->current_lat || !$driver->current_lng) {
-            return collect();
-        }
-
         // جلب الطلبات المعلقة بدون سائق
         $pendingOrders = Order::where('status', Order::STATUS_PENDING)
             ->whereNull('driver_id')
@@ -575,30 +555,39 @@ class GeofencingService
             ->with(['items.product', 'items.store', 'user'])
             ->get();
 
+        // إذا السائق ما عنده موقع، نرجع كل الطلبات بدون فلترة جغرافية
+        if (!$driver->current_lat || !$driver->current_lng) {
+            return $pendingOrders;
+        }
+
         // استخدام fallback radius (نفس المستخدم في إرسال الإشعارات)
         $fallbackRadius = config('geofencing.fallback_radius_km', 20);
 
-        // فلترة حسب النطاق الجغرافي
+        // فلترة حسب النطاق الجغرافي - نستخدم موقع التوصيل (مكان العميل)
         return $pendingOrders->filter(function (Order $order) use ($driver, $fallbackRadius) {
-            $centroid = $this->calculateOrderCentroid($order);
+            // نستخدم موقع التوصيل لأنه مكان العميل والوجهة النهائية للسائق
+            $deliveryLat = (float) $order->delivery_lat;
+            $deliveryLng = (float) $order->delivery_lng;
             
-            return $this->isDriverInRadius($driver, $centroid['lat'], $centroid['lng'], $fallbackRadius);
+            // إذا ما في إحداثيات صالحة للطلب، نضمّنه بالقائمة
+            if (!$deliveryLat || !$deliveryLng) {
+                return true;
+            }
+            
+            return $this->isDriverInRadius($driver, $deliveryLat, $deliveryLng, $fallbackRadius);
         });
     }
 
     /**
      * جلب الطلبات الخاصة المتاحة ضمن نطاق السائق الجغرافي
-     * يستخدم نفس الـ fallback radius المستخدم في إرسال الإشعارات (20 كم)
+     * يستخدم موقع التوصيل (مكان العميل) كنقطة مرجعية
+     * إذا السائق ما عنده موقع، يتم إرجاع كل الطلبات المعلقة
      * 
      * @param Driver $driver السائق
      * @return Collection<CustomOrder>
      */
     public function getAvailableCustomOrdersForDriver(Driver $driver): Collection
     {
-        if (!$driver->current_lat || !$driver->current_lng) {
-            return collect();
-        }
-
         // جلب الطلبات المعلقة بدون سائق
         $pendingOrders = CustomOrder::where('status', CustomOrder::STATUS_PENDING)
             ->whereNull('driver_id')
@@ -606,14 +595,26 @@ class GeofencingService
             ->with(['items', 'user'])
             ->get();
 
+        // إذا السائق ما عنده موقع، نرجع كل الطلبات بدون فلترة جغرافية
+        if (!$driver->current_lat || !$driver->current_lng) {
+            return $pendingOrders;
+        }
+
         // استخدام fallback radius (نفس المستخدم في إرسال الإشعارات)
         $fallbackRadius = config('geofencing.fallback_radius_km', 20);
 
-        // فلترة حسب النطاق الجغرافي
+        // فلترة حسب النطاق الجغرافي - نستخدم موقع التوصيل (مكان العميل)
         return $pendingOrders->filter(function (CustomOrder $order) use ($driver, $fallbackRadius) {
-            $centroid = $this->calculateCustomOrderCentroid($order);
+            // نستخدم موقع التوصيل لأنه مكان العميل والوجهة النهائية للسائق
+            $deliveryLat = (float) $order->delivery_lat;
+            $deliveryLng = (float) $order->delivery_lng;
             
-            return $this->isDriverInRadius($driver, $centroid['lat'], $centroid['lng'], $fallbackRadius);
+            // إذا ما في إحداثيات صالحة للطلب، نضمّنه بالقائمة
+            if (!$deliveryLat || !$deliveryLng) {
+                return true;
+            }
+            
+            return $this->isDriverInRadius($driver, $deliveryLat, $deliveryLng, $fallbackRadius);
         });
     }
 
