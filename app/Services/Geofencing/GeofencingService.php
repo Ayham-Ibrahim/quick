@@ -557,6 +557,7 @@ class GeofencingService
 
     /**
      * جلب الطلبات العادية المتاحة ضمن نطاق السائق الجغرافي
+     * يستخدم نفس الـ fallback radius المستخدم في إرسال الإشعارات (20 كم)
      * 
      * @param Driver $driver السائق
      * @return Collection<Order>
@@ -574,17 +575,20 @@ class GeofencingService
             ->with(['items.product', 'items.store', 'user'])
             ->get();
 
+        // استخدام fallback radius (نفس المستخدم في إرسال الإشعارات)
+        $fallbackRadius = config('geofencing.fallback_radius_km', 20);
+
         // فلترة حسب النطاق الجغرافي
-        return $pendingOrders->filter(function (Order $order) use ($driver) {
+        return $pendingOrders->filter(function (Order $order) use ($driver, $fallbackRadius) {
             $centroid = $this->calculateOrderCentroid($order);
-            $radius = $this->getCurrentRadius($order->created_at);
             
-            return $this->isDriverInRadius($driver, $centroid['lat'], $centroid['lng'], $radius);
+            return $this->isDriverInRadius($driver, $centroid['lat'], $centroid['lng'], $fallbackRadius);
         });
     }
 
     /**
      * جلب الطلبات الخاصة المتاحة ضمن نطاق السائق الجغرافي
+     * يستخدم نفس الـ fallback radius المستخدم في إرسال الإشعارات (20 كم)
      * 
      * @param Driver $driver السائق
      * @return Collection<CustomOrder>
@@ -602,12 +606,14 @@ class GeofencingService
             ->with(['items', 'user'])
             ->get();
 
+        // استخدام fallback radius (نفس المستخدم في إرسال الإشعارات)
+        $fallbackRadius = config('geofencing.fallback_radius_km', 20);
+
         // فلترة حسب النطاق الجغرافي
-        return $pendingOrders->filter(function (CustomOrder $order) use ($driver) {
+        return $pendingOrders->filter(function (CustomOrder $order) use ($driver, $fallbackRadius) {
             $centroid = $this->calculateCustomOrderCentroid($order);
-            $radius = $this->getCurrentRadius($order->created_at);
             
-            return $this->isDriverInRadius($driver, $centroid['lat'], $centroid['lng'], $radius);
+            return $this->isDriverInRadius($driver, $centroid['lat'], $centroid['lng'], $fallbackRadius);
         });
     }
 
