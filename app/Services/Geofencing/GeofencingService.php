@@ -557,25 +557,43 @@ class GeofencingService
 
         // إذا السائق ما عنده موقع، نرجع كل الطلبات بدون فلترة جغرافية
         if (!$driver->current_lat || !$driver->current_lng) {
+            \Illuminate\Support\Facades\Log::info("getAvailableOrdersForDriver: Driver {$driver->id} has no location, returning all {$pendingOrders->count()} pending orders");
             return $pendingOrders;
         }
 
         // استخدام fallback radius (نفس المستخدم في إرسال الإشعارات)
         $fallbackRadius = config('geofencing.fallback_radius_km', 20);
 
+        \Illuminate\Support\Facades\Log::info("getAvailableOrdersForDriver: Driver {$driver->id} at ({$driver->current_lat}, {$driver->current_lng}), radius={$fallbackRadius}km, pending={$pendingOrders->count()}");
+
         // فلترة حسب النطاق الجغرافي - نستخدم موقع التوصيل (مكان العميل)
-        return $pendingOrders->filter(function (Order $order) use ($driver, $fallbackRadius) {
+        $filtered = $pendingOrders->filter(function (Order $order) use ($driver, $fallbackRadius) {
             // نستخدم موقع التوصيل لأنه مكان العميل والوجهة النهائية للسائق
             $deliveryLat = (float) $order->delivery_lat;
             $deliveryLng = (float) $order->delivery_lng;
             
-            // إذا ما في إحداثيات صالحة للطلب، نضمّنه بالقائمة
+            // إذا ما في إحداثيات صالحة للطلب، لا نضمّنه
             if (!$deliveryLat || !$deliveryLng) {
-                return true;
+                \Illuminate\Support\Facades\Log::info("Order {$order->id}: no delivery coordinates, EXCLUDED");
+                return false;
             }
             
-            return $this->isDriverInRadius($driver, $deliveryLat, $deliveryLng, $fallbackRadius);
+            $distance = $this->calculateDistance(
+                $driver->current_lat,
+                $driver->current_lng,
+                $deliveryLat,
+                $deliveryLng
+            );
+            
+            $inRadius = $distance <= $fallbackRadius;
+            \Illuminate\Support\Facades\Log::info("Order {$order->id}: distance={$distance}km, inRadius={$inRadius}");
+            
+            return $inRadius;
         });
+
+        \Illuminate\Support\Facades\Log::info("getAvailableOrdersForDriver: After filter, {$filtered->count()} orders match");
+
+        return $filtered;
     }
 
     /**
@@ -597,25 +615,43 @@ class GeofencingService
 
         // إذا السائق ما عنده موقع، نرجع كل الطلبات بدون فلترة جغرافية
         if (!$driver->current_lat || !$driver->current_lng) {
+            \Illuminate\Support\Facades\Log::info("getAvailableCustomOrdersForDriver: Driver {$driver->id} has no location, returning all {$pendingOrders->count()} pending orders");
             return $pendingOrders;
         }
 
         // استخدام fallback radius (نفس المستخدم في إرسال الإشعارات)
         $fallbackRadius = config('geofencing.fallback_radius_km', 20);
 
+        \Illuminate\Support\Facades\Log::info("getAvailableCustomOrdersForDriver: Driver {$driver->id} at ({$driver->current_lat}, {$driver->current_lng}), radius={$fallbackRadius}km, pending={$pendingOrders->count()}");
+
         // فلترة حسب النطاق الجغرافي - نستخدم موقع التوصيل (مكان العميل)
-        return $pendingOrders->filter(function (CustomOrder $order) use ($driver, $fallbackRadius) {
+        $filtered = $pendingOrders->filter(function (CustomOrder $order) use ($driver, $fallbackRadius) {
             // نستخدم موقع التوصيل لأنه مكان العميل والوجهة النهائية للسائق
             $deliveryLat = (float) $order->delivery_lat;
             $deliveryLng = (float) $order->delivery_lng;
             
-            // إذا ما في إحداثيات صالحة للطلب، نضمّنه بالقائمة
+            // إذا ما في إحداثيات صالحة للطلب، لا نضمّنه
             if (!$deliveryLat || !$deliveryLng) {
-                return true;
+                \Illuminate\Support\Facades\Log::info("CustomOrder {$order->id}: no delivery coordinates, EXCLUDED");
+                return false;
             }
             
-            return $this->isDriverInRadius($driver, $deliveryLat, $deliveryLng, $fallbackRadius);
+            $distance = $this->calculateDistance(
+                $driver->current_lat,
+                $driver->current_lng,
+                $deliveryLat,
+                $deliveryLng
+            );
+            
+            $inRadius = $distance <= $fallbackRadius;
+            \Illuminate\Support\Facades\Log::info("CustomOrder {$order->id}: distance={$distance}km, inRadius={$inRadius}");
+            
+            return $inRadius;
         });
+
+        \Illuminate\Support\Facades\Log::info("getAvailableCustomOrdersForDriver: After filter, {$filtered->count()} orders match");
+
+        return $filtered;
     }
 
     /**
