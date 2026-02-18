@@ -296,6 +296,7 @@ class CustomOrderService extends Service
      * جلب طلبات السائق الحالي (مع Pagination)
      * status يمكن أن يكون: shipping, delivered, cancelled, pending/available
      * pending/available = الطلبات المتاحة في منطقة السائق الجغرافية (نفس الشيء)
+     * بدون فلتر = طلبات السائق المسندة + الطلبات المتاحة جغرافياً
      */
     public function getDriverOrders(array $filters = []): LengthAwarePaginator
     {
@@ -318,11 +319,39 @@ class CustomOrderService extends Service
             );
         }
 
-        return CustomOrder::forDriver($driver->id)
+        // فلتر حالة محددة (shipping, delivered, cancelled) = طلبات السائق فقط
+        if ($status) {
+            return CustomOrder::forDriver($driver->id)
+                ->with(['items', 'user'])
+                ->byStatus($status)
+                ->latest()
+                ->paginate($perPage);
+        }
+
+        // بدون فلتر = طلبات السائق المسندة + الطلبات المتاحة في منطقته الجغرافية
+        $myOrders = CustomOrder::forDriver($driver->id)
             ->with(['items', 'user'])
-            ->when($status, fn($q, $s) => $q->byStatus($s))
             ->latest()
-            ->paginate($perPage);
+            ->get();
+
+        $availableOrders = $this->geofencingService->getAvailableCustomOrdersForDriver($driver);
+
+        // دمج الطلبات مع منع التكرار وترتيب بالأحدث
+        $allOrders = $myOrders->merge($availableOrders)
+            ->unique('id')
+            ->sortByDesc('created_at')
+            ->values();
+
+        $page = request()->get('page', 1);
+        $items = $allOrders->forPage($page, $perPage);
+
+        return new LengthAwarePaginator(
+            $items->values(),
+            $allOrders->count(),
+            $perPage,
+            $page,
+            ['path' => request()->url()]
+        );
     }
 
     /**
