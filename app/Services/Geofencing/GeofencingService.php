@@ -194,7 +194,7 @@ class GeofencingService
     }
 
     /**
-     * التحقق من أن السائق نشط (متصل ومتفاعل)
+     * التحقق من أن السائق نشط ومتفاعل
      * 
      * @param Driver $driver السائق
      * @return bool
@@ -203,10 +203,9 @@ class GeofencingService
     {
         // يجب أن يكون السائق:
         // 1. نشط (is_active = true)
-        // 2. متصل (is_online = true)
-        // 3. آخر نشاط خلال الـ 5 دقائق الأخيرة
+        // 2. آخر نشاط خلال الـ 5 دقائق الأخيرة
         
-        if (!$driver->is_active || !$driver->is_online) {
+        if (!$driver->is_active) {
             return false;
         }
 
@@ -248,7 +247,6 @@ class GeofencingService
 
         return Driver::query()
             ->where('is_active', true)
-            ->where('is_online', true)
             ->whereNotNull('current_lat')
             ->whereNotNull('current_lng')
             ->get()
@@ -297,7 +295,6 @@ class GeofencingService
 
         return Driver::query()
             ->where('is_active', true)
-            ->where('is_online', true)
             ->whereNotNull('current_lat')
             ->whereNotNull('current_lng')
             ->get()
@@ -668,7 +665,6 @@ class GeofencingService
     {
         return Driver::query()
             ->where('is_active', true)
-            ->where('is_online', true)
             ->whereNotNull('current_lat')
             ->whereNotNull('current_lng')
             ->get()
