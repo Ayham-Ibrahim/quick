@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\DB;
 
 class WalletService
 {
+    public function __construct(protected NotificationService $notificationService)
+    {
+    }
+
     // add balance to wallet by provider to driver
 
     public function addBalanceToWallet(array $data)
@@ -26,7 +30,17 @@ class WalletService
                 ];
             }
 
+            $driver = $wallet->owner;
+
             $wallet->increment('balance', $data['amount']);
+
+            $chargedBy = Auth::guard('provider')->check() ? 'provider' : 'admin';
+
+            $this->notificationService->notifyDriverWalletCharged(
+                $driver,
+                (float) $data['amount'],
+                $chargedBy
+            );
 
             if(Auth::guard('provider')->check()){
                 Transaction::create([

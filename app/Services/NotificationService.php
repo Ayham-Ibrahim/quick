@@ -304,6 +304,25 @@ class NotificationService
         );
     }
 
+    /**
+     * Notify driver when wallet balance is topped up.
+     */
+    public function notifyDriverWalletCharged(Driver $driver, float $amount, string $chargedBy = 'admin'): void
+    {
+        $sourceLabel = $chargedBy === 'provider' ? 'مزود الخدمة' : 'الإدارة';
+
+        $this->fcmService->sendToDriver(
+            $driver,
+            'تم شحن رصيدك 💰',
+            'تم إضافة ' . number_format($amount, 2) . ' إلى محفظتك من ' . $sourceLabel,
+            [
+                'type' => 'driver_wallet_charged',
+                'amount' => (string) $amount,
+                'charged_by' => $chargedBy,
+            ]
+        );
+    }
+
     /* ═══════════════════════════════════════════════════════════════════
      * Store Notifications
      * ═══════════════════════════════════════════════════════════════════ */
