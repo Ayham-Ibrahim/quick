@@ -25,7 +25,7 @@ class CheckoutRequest extends BaseFormRequest
             'delivery_lat' => 'required|numeric|between:-90,90',
             'delivery_lng' => 'required|numeric|between:-180,180',
             'is_immediate_delivery' => 'nullable|boolean',
-            'requested_delivery_at' => 'nullable|date|after:now|required_if:is_immediate_delivery,false',
+            'requested_delivery_at' => 'nullable|date|after_or_equal:now|exclude_if:is_immediate_delivery,true|required_if:is_immediate_delivery,false',
             'delivery_fee' => 'nullable|numeric|min:0', // جاهز للاستخدام المستقبلي
             'notes' => 'nullable|string|max:500',
         ];
@@ -34,6 +34,14 @@ class CheckoutRequest extends BaseFormRequest
     /**
      * Get custom messages for validator errors.
      */
+    protected function prepareForValidation()
+    {
+        // convert empty delivery time to null so "after" rule doesn't trigger
+        if ($this->has('requested_delivery_at') && $this->requested_delivery_at === '') {
+            $this->merge(['requested_delivery_at' => null]);
+        }
+    }
+
     public function messages(): array
     {
         return [
@@ -46,7 +54,7 @@ class CheckoutRequest extends BaseFormRequest
             'delivery_lng.numeric' => 'خط الطول يجب أن يكون رقماً',
             'delivery_lng.between' => 'خط الطول يجب أن يكون بين -180 و 180',
             'is_immediate_delivery.boolean' => 'حقل التوصيل الفوري يجب أن يكون صحيح أو خطأ',
-            'requested_delivery_at.after' => 'موعد التوصيل يجب أن يكون في المستقبل',
+            'requested_delivery_at.after_or_equal' => 'موعد التوصيل يجب أن يكون الآن أو في المستقبل',
             'requested_delivery_at.required_if' => 'يجب إدخال موعد التوصيل عند اختيار طلب مجدول',
             'delivery_fee.numeric' => 'رسوم التوصيل يجب أن تكون رقماً',
             'delivery_fee.min' => 'رسوم التوصيل لا يمكن أن تكون سالبة',
