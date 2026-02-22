@@ -194,6 +194,25 @@ class ProductController extends Controller
     }
 
     /**
+     * FOR ADMIN USE ONLY
+     * reject a product request (keep is_accepted=false)
+     * @param Product $product
+     */
+    public function rejectProduct(Product $product)
+    {
+        // ensure it remains unaccepted
+        $product->is_accepted = false;
+        $product->save();
+
+        // Notify the store that their product was rejected
+        if ($product->store) {
+            $this->notificationService->notifyStoreProductRejected($product->store, $product);
+        }
+
+        return $this->success(null, 'تم رفض المنتج بنجاح', 200);
+    }
+
+    /**
      * Get products of a specific store, optionally filtered by subcategory.
      *
      * @param Request $request The HTTP request containing filter parameters
