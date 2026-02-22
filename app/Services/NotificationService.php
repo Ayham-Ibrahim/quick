@@ -366,6 +366,23 @@ class NotificationService
     }
 
     /**
+     * Notify store when a submitted product is rejected by admin.
+     */
+    public function notifyStoreProductRejected(Store $store, \App\Models\Product $product): void
+    {
+        $this->fcmService->sendToStore(
+            $store,
+            'تم رفض منتجك ❌',
+            'عذراً، تم رفض منتجك "' . $product->name . '" من قبل الإدارة.',
+            [
+                'type' => 'product_rejected',
+                'product_id' => (string) $product->id,
+                'product_name' => (string) $product->name,
+            ]
+        );
+    }
+
+    /**
      * Notify stores about a new order (for all stores in the order).
      */
     public function notifyStoresNewOrder(Order $order): void

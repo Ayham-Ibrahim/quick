@@ -188,6 +188,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/pending-products', [ProductController::class, 'pendingProducts']);
     // Accept a pending product
     Route::post('/accept-product/{product}', [ProductController::class, 'acceptProduct']);
+    // Reject a pending product
+    Route::post('/reject-product/{product}', [ProductController::class, 'rejectProduct']);
     // });
 
 
