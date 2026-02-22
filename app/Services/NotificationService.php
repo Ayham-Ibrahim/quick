@@ -124,10 +124,11 @@ class NotificationService
         $this->fcmService->sendToUser(
             $order->user,
             'تم إنشاء طلبك الخاص ✅',
-            'طلبك رقم #' . $order->id . ' بانتظار قبول سائق.',
+            'طلبك رقم #' . $order->order_number . ' بانتظار قبول سائق.',
             [
                 'type' => 'custom_order_created',
                 'order_id' => (string) $order->id,
+                'order_number' => (string) $order->order_number,
                 'order_type' => 'custom',
                 'status' => $order->status,
             ]
@@ -144,10 +145,11 @@ class NotificationService
         $this->fcmService->sendToUser(
             $order->user,
             'تم قبول طلبك الخاص 🚗',
-            $driverName . ' في طريقه لتنفيذ طلبك!',
+            $driverName . ' في طريقه لتنفيذ طلبك #' . $order->order_number . '!',
             [
                 'type' => 'custom_order_accepted',
                 'order_id' => (string) $order->id,
+                'order_number' => (string) $order->order_number,
                 'order_type' => 'custom',
                 'driver_id' => (string) $order->driver_id,
                 'status' => $order->status,
@@ -163,10 +165,11 @@ class NotificationService
         $this->fcmService->sendToUser(
             $order->user,
             'تم تسليم طلبك الخاص 🎉',
-            'تم تنفيذ طلبك بنجاح! شكراً لثقتك بنا.',
+            'تم تنفيذ طلبك #' . $order->order_number . ' بنجاح! شكراً لثقتك بنا.',
             [
                 'type' => 'custom_order_delivered',
                 'order_id' => (string) $order->id,
+                'order_number' => (string) $order->order_number,
                 'order_type' => 'custom',
                 'status' => $order->status,
             ]
@@ -192,6 +195,7 @@ class NotificationService
             [
                 'type' => 'custom_order_cancelled',
                 'order_id' => (string) $order->id,
+                'order_number' => (string) $order->order_number,
                 'order_type' => 'custom',
                 'cancelled_by' => $cancelledBy,
                 'status' => $order->status,

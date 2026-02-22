@@ -4,7 +4,6 @@ namespace App\Services\CustomOrder;
 
 use App\Models\CustomOrder;
 use App\Models\CustomOrderItem;
-use App\Models\Driver;
 use App\Models\ProfitRatios;
 use App\Models\AdminProfit;
 use App\Services\Service;
@@ -95,6 +94,12 @@ class CustomOrderService extends Service
                     'notes' => $data['notes'] ?? null,
                     'confirmation_expires_at' => now()->addMinutes(CustomOrder::DRIVER_CONFIRMATION_TIMEOUT_MINUTES),
                 ]);
+
+                // assign order number if not already set (for convenience)
+                if (!$order->order_number) {
+                    $order->order_number = 'CUST-' . str_pad($order->id, 6, '0', STR_PAD_LEFT);
+                    $order->save();
+                }
 
                 // إضافة العناصر
                 $this->createOrderItems($order, $data['items']);
@@ -526,6 +531,7 @@ class CustomOrderService extends Service
         $adminNotificationData = [
             'order' => [
                 'id' => $order->id,
+                'order_number' => $order->order_number,
                 'type' => 'custom_order',
                 'status' => $order->status,
                 'delivery_fee' => $order->delivery_fee,
