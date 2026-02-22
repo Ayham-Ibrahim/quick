@@ -16,6 +16,7 @@ class CustomOrderResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'order_number' => $this->order_number,
             'status' => $this->status,
             'status_text' => $this->status_text,
 

@@ -57,6 +57,7 @@ class CustomOrder extends Model
     protected $fillable = [
         'user_id',
         'driver_id',
+        'order_number',
         'delivery_fee',
         'distance_km',
         'status',
@@ -104,6 +105,15 @@ class CustomOrder extends Model
     /* ═══════════════════════════════════════════════════════════════════
      * Accessors
      * ═══════════════════════════════════════════════════════════════════ */
+
+    /**
+     * Order number (human-readable identifier)
+     */
+    public function getOrderNumberAttribute(): string
+    {
+        // fall back to generated code if field is null
+        return $this->order_number ?? ('CUST-' . $this->id);
+    }
 
     /**
      * Number of items in the order
