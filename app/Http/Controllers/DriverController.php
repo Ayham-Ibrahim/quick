@@ -67,7 +67,7 @@ class DriverController extends Controller
     }
 
     /**
-     * Get current driver `is_active` status.
+     * Get current driver `is_online` status.
      *
      * GET /driver/status
      */
@@ -75,7 +75,7 @@ class DriverController extends Controller
     {
         /** @var \App\Models\Driver $driver */
         $driver = Auth::guard('driver')->user();
-        return $this->success(['is_active' => (bool) $driver->is_active], 'حالة الحساب');
+        return $this->success(['is_online' => (bool) $driver->is_online], 'حالة الحساب');
     }
 
     public function destroy(Driver $driver)

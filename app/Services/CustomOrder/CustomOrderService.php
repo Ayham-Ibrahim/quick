@@ -418,6 +418,11 @@ class CustomOrderService extends Service
             $this->throwExceptionJson('حسابك غير نشط حالياً', 400);
         }
 
+        // يجب أن يكون السائق متصلاً (online) لكي يقبل الطلب
+        if (!$driver->is_online) {
+            $this->throwExceptionJson('يجب أن تكون متصلاً لتقبل الطلب', 400);
+        }
+
         $order = CustomOrder::find($orderId);
 
         if (!$order) {

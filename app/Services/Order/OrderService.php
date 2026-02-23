@@ -493,6 +493,11 @@ class OrderService extends Service
             $this->throwExceptionJson('حسابك غير نشط حالياً', 400);
         }
 
+        // يجب أن يكون السائق متصلاً (online) ليتمكن من قبول الطلب
+        if (!$driver->is_online) {
+            $this->throwExceptionJson('يجب أن تكون متصلاً لتقبل الطلب', 400);
+        }
+
         $order = Order::find($orderId);
 
         if (!$order) {
@@ -715,6 +720,76 @@ class OrderService extends Service
             ->when($filters['driver_id'] ?? null, fn($q, $driverId) => $q->where('driver_id', $driverId))
             ->latest()
             ->get();
+    }
+
+    /**
+     * تصدير الطلبات كملف Excel (CSV)
+     */
+    public function exportOrdersForExcel(array $filters = []): string
+    {
+        $orders = $this->getAllOrdersCollection($filters);
+
+        // BOM for UTF-8 Excel compatibility
+        $csv = "\xEF\xBB\xBF";
+
+        // Headers
+        $headers = [
+            'رقم الطلب',
+            'الحالة',
+            'اسم العميل',
+            'هاتف العميل',
+            'اسم السائق',
+            'هاتف السائق',
+            'المجموع الفرعي',
+            'قيمة الخصم',
+            'رسوم التوصيل',
+            'الإجمالي',
+            'عنوان التوصيل',
+            'كود الكوبون',
+            'نوع التوصيل',
+            'تاريخ الإنشاء',
+            'سبب الإلغاء',
+        ];
+        $csv .= implode(',', $headers) . "\n";
+
+        // Rows
+        foreach ($orders as $order) {
+            $row = [
+                $order->id,
+                $order->status_text,
+                $this->escapeCsvField($order->user?->name ?? ''),
+                $order->user?->phone ?? '',
+                $this->escapeCsvField($order->driver?->driver_name ?? ''),
+                $order->driver?->phone ?? '',
+                $order->subtotal,
+                $order->discount_amount,
+                $order->delivery_fee,
+                $order->total,
+                $this->escapeCsvField($order->delivery_address ?? ''),
+                $order->coupon_code ?? '',
+                $order->is_immediate_delivery ? 'فوري' : 'مجدول',
+                $order->created_at?->format('Y-m-d H:i'),
+                $this->escapeCsvField($order->cancellation_reason ?? ''),
+            ];
+            $csv .= implode(',', $row) . "\n";
+        }
+
+        return $csv;
+    }
+
+    /**
+     * تهيئة الحقل لصيغة CSV
+     */
+    private function escapeCsvField(?string $field): string
+    {
+        if ($field === null) {
+            return '';
+        }
+        // Escape quotes and wrap in quotes if contains comma, quote or newline
+        if (preg_match('/[,"\n\r]/', $field)) {
+            return '"' . str_replace('"', '""', $field) . '"';
+        }
+        return $field;
     }
 
     /**
