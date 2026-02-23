@@ -723,6 +723,76 @@ class OrderService extends Service
     }
 
     /**
+     * تصدير الطلبات كملف Excel (CSV)
+     */
+    public function exportOrdersForExcel(array $filters = []): string
+    {
+        $orders = $this->getAllOrdersCollection($filters);
+
+        // BOM for UTF-8 Excel compatibility
+        $csv = "\xEF\xBB\xBF";
+
+        // Headers
+        $headers = [
+            'رقم الطلب',
+            'الحالة',
+            'اسم العميل',
+            'هاتف العميل',
+            'اسم السائق',
+            'هاتف السائق',
+            'المجموع الفرعي',
+            'قيمة الخصم',
+            'رسوم التوصيل',
+            'الإجمالي',
+            'عنوان التوصيل',
+            'كود الكوبون',
+            'نوع التوصيل',
+            'تاريخ الإنشاء',
+            'سبب الإلغاء',
+        ];
+        $csv .= implode(',', $headers) . "\n";
+
+        // Rows
+        foreach ($orders as $order) {
+            $row = [
+                $order->id,
+                $order->status_text,
+                $this->escapeCsvField($order->user?->name ?? ''),
+                $order->user?->phone ?? '',
+                $this->escapeCsvField($order->driver?->driver_name ?? ''),
+                $order->driver?->phone ?? '',
+                $order->subtotal,
+                $order->discount_amount,
+                $order->delivery_fee,
+                $order->total,
+                $this->escapeCsvField($order->delivery_address ?? ''),
+                $order->coupon_code ?? '',
+                $order->is_immediate_delivery ? 'فوري' : 'مجدول',
+                $order->created_at?->format('Y-m-d H:i'),
+                $this->escapeCsvField($order->cancellation_reason ?? ''),
+            ];
+            $csv .= implode(',', $row) . "\n";
+        }
+
+        return $csv;
+    }
+
+    /**
+     * تهيئة الحقل لصيغة CSV
+     */
+    private function escapeCsvField(?string $field): string
+    {
+        if ($field === null) {
+            return '';
+        }
+        // Escape quotes and wrap in quotes if contains comma, quote or newline
+        if (preg_match('/[,"\n\r]/', $field)) {
+            return '"' . str_replace('"', '""', $field) . '"';
+        }
+        return $field;
+    }
+
+    /**
      * إلغاء طلب من الإدارة (يعمل في أي حالة ما عدا delivered/cancelled)
      */
     public function cancelOrderByAdmin(int $orderId, string $reason): Order

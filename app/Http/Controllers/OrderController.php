@@ -303,6 +303,30 @@ class OrderController extends Controller
     }
 
     /**
+     * Export all orders as Excel (CSV)
+     *
+     * GET /admin/orders/export
+     */
+    public function exportOrders(Request $request)
+    {
+        $filters = [
+            'status' => $request->query('status'),
+            'user_id' => $request->query('user_id'),
+            'driver_id' => $request->query('driver_id'),
+        ];
+
+        $csvData = $this->orderService->exportOrdersForExcel($filters);
+
+        $filename = 'orders_' . now()->format('Y-m-d_H-i-s') . '.csv';
+
+        return response($csvData, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Content-Transfer-Encoding' => 'binary',
+        ]);
+    }
+
+    /**
      * Cancel order by admin (works in any state except delivered/cancelled)
      *
      * POST /admin/orders/{id}/cancel

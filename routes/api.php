@@ -328,6 +328,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     */
     Route::prefix('admin/orders')->group(function () {
         Route::get('/', [OrderController::class, 'allOrders']);                      // كل الطلبات
+        Route::get('/export', [OrderController::class, 'exportOrders']);             // تصدير كملف Excel
         Route::post('/{id}/cancel', [OrderController::class, 'adminCancelOrder']);   // إلغاء طلب (إدارة فقط)
     });
 
