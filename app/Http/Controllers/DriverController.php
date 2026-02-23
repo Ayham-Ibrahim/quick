@@ -66,6 +66,18 @@ class DriverController extends Controller
         );
     }
 
+    /**
+     * Get current driver `is_active` status.
+     *
+     * GET /driver/status
+     */
+    public function status()
+    {
+        /** @var \App\Models\Driver $driver */
+        $driver = Auth::guard('driver')->user();
+        return $this->success(['is_active' => (bool) $driver->is_active], 'حالة الحساب');
+    }
+
     public function destroy(Driver $driver)
     {
         $this->driverService->deleteDriver($driver);
