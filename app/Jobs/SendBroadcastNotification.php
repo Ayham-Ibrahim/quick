@@ -138,9 +138,19 @@ class SendBroadcastNotification implements ShouldQueue
      */
     private function sendToDrivers(FcmService $fcmService): int
     {
-        $tokens = Device::where('owner_type', Driver::class)
+        // Debug: Log query details
+        $devices = Device::where('owner_type', Driver::class)
             ->whereNotNull('fcm_token')
-            ->pluck('fcm_token')
+            ->get(['owner_id', 'owner_type', 'fcm_token']);
+        
+        Log::info("sendToDrivers: Found driver devices", [
+            'owner_type_query' => Driver::class,
+            'count' => $devices->count(),
+            'driver_ids' => $devices->pluck('owner_id')->toArray(),
+            'tokens_preview' => $devices->pluck('fcm_token')->map(fn($t) => substr($t, 0, 20) . '...')->toArray(),
+        ]);
+
+        $tokens = $devices->pluck('fcm_token')
             ->filter()
             ->unique()
             ->values()
