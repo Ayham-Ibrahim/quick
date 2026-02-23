@@ -185,6 +185,14 @@ class UserManagementService extends Service
             ];
         }
 
+        // if driver is logging in, enforce single-device: delete old tokens and devices
+        if ($credentials['type'] === 'driver') {
+            // revoke all existing sanctum tokens
+            $account->tokens()->delete();
+            // clear stored FCM token(s)
+            \App\Models\Device::removeAllDevices($account);
+        }
+
         if ($credentials['type'] === 'user' && $account->is_admin) {
             if (! $account->is_admin) {
                 return [

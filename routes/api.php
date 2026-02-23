@@ -167,6 +167,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/driver/location', [DriverController::class, 'updateLocation']);      // تحديث الموقع
     Route::post('/driver/toggle-online', [DriverController::class, 'toggleOnlineStatus']); // تبديل حالة الاتصال
     Route::post('/driver/heartbeat', [DriverController::class, 'heartbeat']);           // تسجيل النشاط
+    // driver status check
+    Route::get('/driver/status', [DriverController::class, 'status']);
 
     // Public (logged-in) user: list accepted products
     Route::get('/products', [ProductController::class, 'index']);
