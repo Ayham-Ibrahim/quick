@@ -373,7 +373,7 @@ class NotificationService
         $this->fcmService->sendToStore(
             $store,
             'تم رفض منتجك ❌',
-            'عذراً، تم رفض منتجك "' . $product->name . '" من قبل الإدارة.',
+            'عذراً، تم رفض منتجك "' . $product->name . '" من قبل الإدارة يرجى التواصل مع الادارة من خلال التواصل مع الدعم او حذف المنتج واعادة اضافته وفقا للمعايير المسموحة',
             [
                 'type' => 'product_rejected',
                 'product_id' => (string) $product->id,
