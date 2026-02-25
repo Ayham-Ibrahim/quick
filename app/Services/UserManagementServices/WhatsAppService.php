@@ -10,6 +10,7 @@ class WhatsAppService
     protected $baseUrl;
     protected $sendTextPath;
     protected $sessionId;
+    protected $accessToken;
 
     /**
      * Constructor to initialize API credentials.
@@ -19,6 +20,7 @@ class WhatsAppService
         $this->baseUrl = config('hypermsg.base_url');
         $this->sendTextPath = config('hypermsg.send_text_path', 'message/text/send');
         $this->sessionId = config('hypermsg.session_id');
+        $this->accessToken = config('hypermsg.access_token');
     }
 
     /**
@@ -53,10 +55,14 @@ class WhatsAppService
                 'payload' => $payload,
             ]);
 
-            // Send exactly like Postman - raw JSON body
+            // Send with Bearer token authentication (like Postman)
+            // withoutVerifying() bypasses SSL cert check (for local dev without CA certs)
             $response = Http::timeout(30)
-                ->withBody(json_encode($payload), 'application/json')
-                ->post($endpoint);
+                ->withoutVerifying()
+                ->withToken($this->accessToken)
+                ->acceptJson()
+                ->asJson()
+                ->post($endpoint, $payload);
 
             if ($response->successful()) {
                 Log::info('WhatsApp OTP sent successfully', [
@@ -102,28 +108,32 @@ class WhatsAppService
 
     private function normalizeReceiver(string $phone): ?string
     {
+        // Remove everything except digits and +
         $clean = preg_replace('/[^0-9+]/', '', trim($phone));
 
         if ($clean === null || $clean === '') {
             return null;
         }
 
-        if (str_starts_with($clean, '+')) {
-            return $clean;
+        // Remove + if present for processing
+        $digits = ltrim($clean, '+');
+
+        // If starts with 00, remove it (e.g., 00963 -> 963)
+        if (str_starts_with($digits, '00')) {
+            $digits = substr($digits, 2);
         }
 
-        if (str_starts_with($clean, '00')) {
-            return '+' . substr($clean, 2);
+        // If starts with Syrian local format 09, convert to 963
+        if (str_starts_with($digits, '09')) {
+            $digits = '963' . substr($digits, 1);
         }
 
-        if (str_starts_with($clean, '963')) {
-            return '+' . $clean;
+        // If doesn't start with country code, assume Syrian
+        if (!str_starts_with($digits, '963')) {
+            $digits = '963' . $digits;
         }
 
-        if (str_starts_with($clean, '09')) {
-            return '+963' . substr($clean, 1);
-        }
-
-        return '+' . $clean;
+        // Return WITH + prefix (Technoplus format from Postman)
+        return '+' . $digits;
     }
 }
