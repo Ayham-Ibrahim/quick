@@ -324,8 +324,9 @@ class OrderController extends Controller
 
         if ($format === 'xlsx') {
             // build spreadsheet
-            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $spreadsheet = new Spreadsheet();
             $sheet = $spreadsheet->getActiveSheet();
+            $sheet->setRightToLeft(true); // RTL for Arabic
 
             $headers = [
                 'رقم الطلب', 'الحالة', 'اسم العميل', 'هاتف العميل',
@@ -358,16 +359,15 @@ class OrderController extends Controller
                 $row++;
             }
 
-            $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
-            ob_start();
-            $writer->save('php://output');
-            $xlsxData = ob_get_clean();
-
             $filename = 'orders_' . now()->format('Y-m-d_H-i-s') . '.xlsx';
-            return response($xlsxData, 200, [
+            $tempFile = storage_path('app/' . $filename);
+
+            $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+            $writer->save($tempFile);
+
+            return response()->download($tempFile, $filename, [
                 'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-            ]);
+            ])->deleteFileAfterSend(true);
         }
 
         // default csv
