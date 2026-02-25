@@ -3,25 +3,23 @@
 namespace App\Services\UserManagementServices;
 
 
-use App\Models\OTPCode;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Cache;
 
 class WhatsAppService
 {
-    protected $apiKey;
     protected $baseUrl;
-    protected $whatsappNumberId;
+    protected $sendTextPath;
+    protected $sessionId;
 
     /**
      * Constructor to initialize API credentials.
      */
     public function __construct()
     {
-        $this->apiKey = config('hypermsg.api_key');
         $this->baseUrl = config('hypermsg.base_url');
-        $this->whatsappNumberId = config('hypermsg.whatsapp_number_id');
+        $this->sendTextPath = config('hypermsg.send_text_path', 'message/text/send');
+        $this->sessionId = config('hypermsg.session_id');
     }
 
     /**
@@ -30,15 +28,20 @@ class WhatsAppService
     public function sendOTP($phoneNumber, $otpCode, $type = 'register')
     {
         $message = $this->getMessageByType($type, $otpCode);
+        $endpoint = rtrim((string) $this->baseUrl, '/') . '/' . ltrim((string) $this->sendTextPath, '/');
+
+        if (empty($this->sessionId)) {
+            Log::error('WhatsApp OTP config missing session_id');
+            return false;
+        }
 
         try {
             $response = Http::timeout(30)->withHeaders([
                 'Content-Type' => 'application/json',
-                'x-api-key' => $this->apiKey,
-            ])->post($this->baseUrl . '/whatsapp/messages/send', [
-                'phone_number' => $phoneNumber,
-                'message' => $message,
-                'whatsapp_number_id' => $this->whatsappNumberId,
+            ])->post($endpoint, [
+                'session_id' => $this->sessionId,
+                'receiver' => $phoneNumber,
+                'text' => $message,
             ]);
 
             if ($response->successful()) {
