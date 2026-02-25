@@ -29,41 +29,87 @@ class WhatsAppService
     {
         $message = $this->getMessageByType($type, $otpCode);
         $endpoint = rtrim((string) $this->baseUrl, '/') . '/' . ltrim((string) $this->sendTextPath, '/');
+        $sessionId = trim((string) $this->sessionId, " \t\n\r\0\x0B\"'");
+        $receiver = $this->normalizeReceiver((string) $phoneNumber);
 
-        if (empty($this->sessionId)) {
+        if (empty($sessionId)) {
             Log::error('WhatsApp OTP config missing session_id');
             return false;
         }
 
-        try {
-            $response = Http::timeout(30)->withHeaders([
-                'Content-Type' => 'application/json',
-            ])->post($endpoint, [
-                'session_id' => $this->sessionId,
-                'receiver' => $phoneNumber,
-                'text' => $message,
-            ]);
+        if (empty($receiver)) {
+            Log::error('WhatsApp OTP receiver is empty', ['phone' => $phoneNumber]);
+            return false;
+        }
 
-            if ($response->successful()) {
+        try {
+            $payload = [
+                'session_id' => $sessionId,
+                'receiver' => $receiver,
+                'text' => $message,
+            ];
+
+            $jsonResponse = Http::timeout(30)
+                ->acceptJson()
+                ->asJson()
+                ->post($endpoint, $payload);
+
+            if ($jsonResponse->successful()) {
                 Log::info('WhatsApp OTP sent successfully', [
                     'phone' => $phoneNumber,
                     'type' => $type,
-                    'response' => $response->json()
+                    'endpoint' => $endpoint,
+                    'receiver' => $receiver,
+                    'mode' => 'json',
+                    'status' => $jsonResponse->status(),
+                    'response' => $jsonResponse->json() ?? $jsonResponse->body(),
                 ]);
                 return true;
-            } else {
-                Log::error('Failed to send WhatsApp OTP', [
+            }
+
+            $formResponse = Http::timeout(30)
+                ->acceptJson()
+                ->asForm()
+                ->post($endpoint, $payload);
+
+            if ($formResponse->successful()) {
+                Log::info('WhatsApp OTP sent successfully', [
                     'phone' => $phoneNumber,
                     'type' => $type,
-                    'status' => $response->status(),
-                    'response' => $response->body()
+                    'endpoint' => $endpoint,
+                    'receiver' => $receiver,
+                    'mode' => 'form',
+                    'status' => $formResponse->status(),
+                    'response' => $formResponse->json() ?? $formResponse->body(),
                 ]);
-                return false;
+                return true;
             }
+
+            Log::error('Failed to send WhatsApp OTP', [
+                'phone' => $phoneNumber,
+                'type' => $type,
+                'endpoint' => $endpoint,
+                'receiver' => $receiver,
+                'attempts' => [
+                    [
+                        'mode' => 'json',
+                        'status' => $jsonResponse->status(),
+                        'response' => mb_substr($jsonResponse->body(), 0, 500),
+                    ],
+                    [
+                        'mode' => 'form',
+                        'status' => $formResponse->status(),
+                        'response' => mb_substr($formResponse->body(), 0, 500),
+                    ],
+                ],
+            ]);
+
+            return false;
         } catch (\Exception $e) {
             Log::error('Exception while sending WhatsApp OTP', [
                 'phone' => $phoneNumber,
                 'type' => $type,
+                'endpoint' => $endpoint,
                 'error' => $e->getMessage()
             ]);
             return false;
@@ -78,5 +124,32 @@ class WhatsAppService
         ];
 
         return $messages[$type] ?? "كود التحقق الخاص بك هو: {$otpCode}\n\nهذا الكود صالح لمدة 4 دقائق";
+    }
+
+    private function normalizeReceiver(string $phone): ?string
+    {
+        $clean = preg_replace('/[^0-9+]/', '', trim($phone));
+
+        if ($clean === null || $clean === '') {
+            return null;
+        }
+
+        if (str_starts_with($clean, '+')) {
+            return $clean;
+        }
+
+        if (str_starts_with($clean, '00')) {
+            return '+' . substr($clean, 2);
+        }
+
+        if (str_starts_with($clean, '963')) {
+            return '+' . $clean;
+        }
+
+        if (str_starts_with($clean, '09')) {
+            return '+963' . substr($clean, 1);
+        }
+
+        return '+' . $clean;
     }
 }
