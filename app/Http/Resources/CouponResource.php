@@ -18,8 +18,8 @@ class CouponResource extends JsonResource
             'usage_limit_total'    => $this->usage_limit_total,
             'usage_limit_per_user' => $this->usage_limit_per_user,
 
-            'start_at' => $this->start_at,
-            'end_at'   => $this->end_at,
+            'start_at' => $this->start_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
+            'end_at'   => $this->end_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
 
             'is_active'    => $this->is_active,
             'total_usage' => $this->total_usage,

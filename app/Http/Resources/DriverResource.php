@@ -40,8 +40,8 @@ class DriverResource extends JsonResource
             'ratings_count' => $this->ratings()->count(),
             'ratings' => RatingResource::collection($this->whenLoaded('ratings')),
 
-            'created_at'         => $this->created_at,
-            'updated_at'         => $this->updated_at,
+            'created_at'         => $this->created_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
+            'updated_at'         => $this->updated_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
         ];
     }
 }

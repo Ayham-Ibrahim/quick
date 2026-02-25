@@ -548,7 +548,7 @@ class CustomOrderService extends Service
                 'status' => $order->status,
                 'delivery_fee' => $order->delivery_fee,
                 'delivery_address' => $order->delivery_address,
-                'scheduled_at' => $order->scheduled_at?->toDateTimeString(),
+                'scheduled_at' => $order->scheduled_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
                 'items' => $order->items->map(fn($item) => [
                     'description' => $item->description,
                     'pickup_address' => $item->pickup_address,
@@ -565,7 +565,7 @@ class CustomOrderService extends Service
                 'phone' => $driver->phone,
             ],
             'cancellation_reason' => $reason,
-            'cancelled_at' => now()->toDateTimeString(),
+            'cancelled_at' => now()->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
         ];
 
         // Notification already sent above via notifyAdminsDriverCancelledOrder()

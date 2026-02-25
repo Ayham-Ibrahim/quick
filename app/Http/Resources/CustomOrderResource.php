@@ -31,10 +31,10 @@ class CustomOrderResource extends JsonResource
 
             // موعد التوصيل
             'is_immediate' => $this->is_immediate,
-            'scheduled_at' => $this->scheduled_at?->setTimezone('Asia/Damascus')->toIso8601String(),
+            'scheduled_at' => $this->scheduled_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
 
             // حالة التأكيد
-            'confirmation_expires_at' => $this->confirmation_expires_at?->setTimezone('Asia/Damascus')->toIso8601String(),
+            'confirmation_expires_at' => $this->confirmation_expires_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
             'is_confirmation_expired' => $this->is_confirmation_expired,
             'can_resend_to_drivers' => $this->can_resend_to_drivers,
             'is_available_for_driver' => $this->is_available_for_driver,
@@ -53,12 +53,12 @@ class CustomOrderResource extends JsonResource
                     'vehicleType' => $this->driver->vehicleType?->type,
                     'lat' => $this->driver->current_lat ? (float) $this->driver->current_lat : null,
                     'lng' => $this->driver->current_lng ? (float) $this->driver->current_lng : null,
-                    'lastLocationUpdate' => $this->driver->last_location_update?->setTimezone('Asia/Damascus')->toIso8601String(),
+                    'lastLocationUpdate' => $this->driver->last_location_update?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
                     'isOnline' => (bool) $this->driver->is_online,
                 ];
             }),
             'has_driver' => $this->has_driver,
-            'driver_assigned_at' => $this->driver_assigned_at?->setTimezone('Asia/Damascus')->toIso8601String(),
+            'driver_assigned_at' => $this->driver_assigned_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
 
             // المستخدم (للسائق فقط)
             'user' => $this->whenLoaded('user', function () {
@@ -81,9 +81,9 @@ class CustomOrderResource extends JsonResource
             'can_user_cancel' => $this->can_user_cancel,
             'can_admin_cancel' => $this->can_admin_cancel,
 
-            'created_at' => $this->created_at?->setTimezone('Asia/Damascus')->toIso8601String(),
-            'createdAt' => $this->created_at?->setTimezone('Asia/Damascus')->toIso8601String(),
-            'updated_at' => $this->updated_at?->setTimezone('Asia/Damascus')->toIso8601String(),
+            'created_at' => $this->created_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
+            'createdAt' => $this->created_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
+            'updated_at' => $this->updated_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
         ];
     }
 }

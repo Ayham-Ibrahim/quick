@@ -85,7 +85,7 @@ class HomeService extends Service
                         'code' => $coupon->code,
                         'type' => $coupon->type,
                         'amount' => (float) $coupon->amount,
-                        'ends_at' => $coupon->end_at?->toDateTimeString(),
+                        'ends_at' => $coupon->end_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
                     ] : null,
                 ];
             });

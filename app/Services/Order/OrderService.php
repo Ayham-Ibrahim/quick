@@ -633,7 +633,7 @@ class OrderService extends Service
                 'total' => $order->total,
                 'delivery_fee' => $order->delivery_fee,
                 'delivery_address' => $order->delivery_address,
-                'requested_delivery_at' => $order->requested_delivery_at?->toDateTimeString(),
+                'requested_delivery_at' => $order->requested_delivery_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
                 'items' => $order->items->map(fn($item) => [
                     'product_name' => $item->product?->name ?? $item->product_name,
                     'quantity' => $item->quantity,
@@ -652,7 +652,7 @@ class OrderService extends Service
                 'phone' => $driver->phone,
             ],
             'cancellation_reason' => $reason,
-            'cancelled_at' => now()->toDateTimeString(),
+            'cancelled_at' => now()->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
         ];
 
         // Notification already sent above via notifyAdminsDriverCancelledOrder()
