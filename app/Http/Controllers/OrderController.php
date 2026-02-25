@@ -10,6 +10,8 @@ use App\Services\Geofencing\GeofencingService;
 use App\Services\Order\OrderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class OrderController extends Controller
 {
@@ -315,6 +317,60 @@ class OrderController extends Controller
             'driver_id' => $request->query('driver_id'),
         ];
 
+        // allow specifying format=xlsx (default csv)
+        $format = $request->query('format', 'csv');
+
+        $orders = $this->orderService->getAllOrdersCollection($filters);
+
+        if ($format === 'xlsx') {
+            // build spreadsheet
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+
+            $headers = [
+                'رقم الطلب', 'الحالة', 'اسم العميل', 'هاتف العميل',
+                'اسم السائق', 'هاتف السائق', 'المجموع الفرعي',
+                'قيمة الخصم', 'رسوم التوصيل', 'الإجمالي',
+                'عنوان التوصيل', 'كود الكوبون', 'نوع التوصيل',
+                'تاريخ الإنشاء', 'سبب الإلغاء',
+            ];
+            $sheet->fromArray($headers, null, 'A1');
+
+            $row = 2;
+            foreach ($orders as $order) {
+                $sheet->fromArray([
+                    $order->id,
+                    $order->status_text,
+                    $order->user?->name ?? '',
+                    $order->user?->phone ?? '',
+                    $order->driver?->driver_name ?? '',
+                    $order->driver?->phone ?? '',
+                    $order->subtotal,
+                    $order->discount_amount,
+                    $order->delivery_fee,
+                    $order->total,
+                    $order->delivery_address ?? '',
+                    $order->coupon_code ?? '',
+                    $order->is_immediate_delivery ? 'فوري' : 'مجدول',
+                    $order->created_at?->format('Y-m-d H:i'),
+                    $order->cancellation_reason ?? '',
+                ], null, "A{$row}");
+                $row++;
+            }
+
+            $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
+            ob_start();
+            $writer->save('php://output');
+            $xlsxData = ob_get_clean();
+
+            $filename = 'orders_' . now()->format('Y-m-d_H-i-s') . '.xlsx';
+            return response($xlsxData, 200, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            ]);
+        }
+
+        // default csv
         $csvData = $this->orderService->exportOrdersForExcel($filters);
 
         $filename = 'orders_' . now()->format('Y-m-d_H-i-s') . '.csv';
