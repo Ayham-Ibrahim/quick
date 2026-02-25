@@ -34,12 +34,44 @@ class StoreCouponRequest extends BaseFormRequest
             return null;
         }
 
+        // strip any parenthesized timezone or locale info (e.g. "(غرينيتش+03:00)")
+        $value = preg_replace('/\s*\([^)]*\)$/u', '', $value);
+
+        // try a few common formats (including mobile date picker variants)
+        $formats = [
+            'Y-m-d H:i:s',
+            'Y-m-d H:i',
+            'Y-m-d',
+            'd/m/Y H:i:s',
+            'd/m/Y H:i',
+            'd/m/Y',
+            'd-m-Y H:i:s',
+            'd-m-Y H:i',
+            'd-m-Y',
+            'm/d/Y H:i:s',
+            'm/d/Y H:i',
+            'm/d/Y',
+            Carbon::RFC3339,
+            Carbon::RFC2822,
+        ];
+
+        foreach ($formats as $fmt) {
+            try {
+                return Carbon::createFromFormat($fmt, $value)
+                    ->timezone(config('app.timezone'))
+                    ->format('Y-m-d H:i:s');
+            } catch (\Throwable $e) {
+                // try next format
+            }
+        }
+
+        // final fallback to generic parser
         try {
             return Carbon::parse($value)
                 ->timezone(config('app.timezone'))
                 ->format('Y-m-d H:i:s');
         } catch (\Throwable $e) {
-            return $value;
+            return $value; // let validation catch invalid format
         }
     }
 

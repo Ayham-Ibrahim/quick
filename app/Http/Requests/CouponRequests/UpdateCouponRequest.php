@@ -32,6 +32,36 @@ class UpdateCouponRequest extends BaseFormRequest
             return null;
         }
 
+        // remove trailing parentheses containing non-ASCII (timezone,Arabic text etc.)
+        $value = preg_replace('/\s*\([^)]*\)$/u', '', $value);
+
+        $formats = [
+            'Y-m-d H:i:s',
+            'Y-m-d H:i',
+            'Y-m-d',
+            'd/m/Y H:i:s',
+            'd/m/Y H:i',
+            'd/m/Y',
+            'd-m-Y H:i:s',
+            'd-m-Y H:i',
+            'd-m-Y',
+            'm/d/Y H:i:s',
+            'm/d/Y H:i',
+            'm/d/Y',
+            Carbon::RFC3339,
+            Carbon::RFC2822,
+        ];
+
+        foreach ($formats as $fmt) {
+            try {
+                return Carbon::createFromFormat($fmt, $value)
+                    ->timezone(config('app.timezone'))
+                    ->format('Y-m-d H:i:s');
+            } catch (\Throwable $e) {
+                // continue
+            }
+        }
+
         try {
             return Carbon::parse($value)
                 ->timezone(config('app.timezone'))
