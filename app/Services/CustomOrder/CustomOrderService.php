@@ -49,11 +49,18 @@ class CustomOrderService extends Service
 
     /**
      * حساب سعر التوصيل بناءً على المسافة
+     *
+     * يتم استخدام أرقام بعشرية دقيقة ولا يتم تقريب القيم أثناء الحساب.
      */
     public function calculateDeliveryFee(float $distanceKm): float
     {
         $kmPrice = ProfitRatios::getValueByTag('km_price') ?? 0;
-        return $distanceKm * $kmPrice;
+
+        // استخدم bc math لحساب القيمة بدقة عشرية
+        $feeString = bcmul((string) $distanceKm, (string) $kmPrice, 2);
+
+        // نتيجة الخوارزمية ستكون مثلاً "44000.00" فنحوّلها إلى float
+        return (float) $feeString;
     }
 
     /* ═══════════════════════════════════════════════════════════════════
