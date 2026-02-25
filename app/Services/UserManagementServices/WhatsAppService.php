@@ -2,7 +2,6 @@
 
 namespace App\Services\UserManagementServices;
 
-
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 
@@ -49,38 +48,22 @@ class WhatsAppService
                 'text' => $message,
             ];
 
-            $jsonResponse = Http::timeout(30)
+            Log::debug('WhatsApp OTP request', [
+                'endpoint' => $endpoint,
+                'payload' => $payload,
+            ]);
+
+            $response = Http::timeout(30)
                 ->acceptJson()
                 ->asJson()
                 ->post($endpoint, $payload);
 
-            if ($jsonResponse->successful()) {
+            if ($response->successful()) {
                 Log::info('WhatsApp OTP sent successfully', [
                     'phone' => $phoneNumber,
                     'type' => $type,
-                    'endpoint' => $endpoint,
-                    'receiver' => $receiver,
-                    'mode' => 'json',
-                    'status' => $jsonResponse->status(),
-                    'response' => $jsonResponse->json() ?? $jsonResponse->body(),
-                ]);
-                return true;
-            }
-
-            $formResponse = Http::timeout(30)
-                ->acceptJson()
-                ->asForm()
-                ->post($endpoint, $payload);
-
-            if ($formResponse->successful()) {
-                Log::info('WhatsApp OTP sent successfully', [
-                    'phone' => $phoneNumber,
-                    'type' => $type,
-                    'endpoint' => $endpoint,
-                    'receiver' => $receiver,
-                    'mode' => 'form',
-                    'status' => $formResponse->status(),
-                    'response' => $formResponse->json() ?? $formResponse->body(),
+                    'status' => $response->status(),
+                    'response' => $response->json() ?? $response->body(),
                 ]);
                 return true;
             }
@@ -90,18 +73,9 @@ class WhatsAppService
                 'type' => $type,
                 'endpoint' => $endpoint,
                 'receiver' => $receiver,
-                'attempts' => [
-                    [
-                        'mode' => 'json',
-                        'status' => $jsonResponse->status(),
-                        'response' => mb_substr($jsonResponse->body(), 0, 500),
-                    ],
-                    [
-                        'mode' => 'form',
-                        'status' => $formResponse->status(),
-                        'response' => mb_substr($formResponse->body(), 0, 500),
-                    ],
-                ],
+                'session_id_length' => strlen($sessionId),
+                'status' => $response->status(),
+                'response' => mb_substr($response->body(), 0, 500),
             ]);
 
             return false;
