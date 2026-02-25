@@ -53,10 +53,10 @@ class WhatsAppService
                 'payload' => $payload,
             ]);
 
+            // Send exactly like Postman - raw JSON body
             $response = Http::timeout(30)
-                ->acceptJson()
-                ->asJson()
-                ->post($endpoint, $payload);
+                ->withBody(json_encode($payload), 'application/json')
+                ->post($endpoint);
 
             if ($response->successful()) {
                 Log::info('WhatsApp OTP sent successfully', [
