@@ -140,6 +140,7 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
+        $product->coupons()->detach();
         $product->images()->delete();
         $product->variants()->delete();
         $product->delete();
