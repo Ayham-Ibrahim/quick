@@ -322,6 +322,7 @@ class OrderController extends Controller
         return response($csvData, 200, [
             'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            // semicolon is default excel delimiter for many locales
             'Content-Transfer-Encoding' => 'binary',
         ]);
     }

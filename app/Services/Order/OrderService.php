@@ -729,8 +729,10 @@ class OrderService extends Service
     {
         $orders = $this->getAllOrdersCollection($filters);
 
-        // BOM for UTF-8 Excel compatibility
-        $csv = "\xEF\xBB\xBF";
+        // Use a memory stream to let fputcsv handle quoting and delimiter
+        $handle = fopen('php://temp', 'r+');
+        // ensure BOM for UTF-8
+        fwrite($handle, "\xEF\xBB\xBF");
 
         // Headers
         $headers = [
@@ -750,29 +752,34 @@ class OrderService extends Service
             'تاريخ الإنشاء',
             'سبب الإلغاء',
         ];
-        $csv .= implode(',', $headers) . "\n";
+        // use semicolon delimiter for locales that expect it
+        fputcsv($handle, $headers, ';');
 
         // Rows
         foreach ($orders as $order) {
             $row = [
                 $order->id,
                 $order->status_text,
-                $this->escapeCsvField($order->user?->name ?? ''),
+                $order->user?->name ?? '',
                 $order->user?->phone ?? '',
-                $this->escapeCsvField($order->driver?->driver_name ?? ''),
+                $order->driver?->driver_name ?? '',
                 $order->driver?->phone ?? '',
                 $order->subtotal,
                 $order->discount_amount,
                 $order->delivery_fee,
                 $order->total,
-                $this->escapeCsvField($order->delivery_address ?? ''),
+                $order->delivery_address ?? '',
                 $order->coupon_code ?? '',
                 $order->is_immediate_delivery ? 'فوري' : 'مجدول',
                 $order->created_at?->format('Y-m-d H:i'),
-                $this->escapeCsvField($order->cancellation_reason ?? ''),
+                $order->cancellation_reason ?? '',
             ];
-            $csv .= implode(',', $row) . "\n";
+            fputcsv($handle, $row, ';');
         }
+
+        rewind($handle);
+        $csv = stream_get_contents($handle);
+        fclose($handle);
 
         return $csv;
     }
