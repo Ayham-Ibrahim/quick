@@ -43,7 +43,7 @@ class TransactionService
                 'provider_name' => $transaction->provider?->provider_name,
                 'driver_name'   => $transaction->driver?->driver_name,
                 'amount'        => $transaction->amount,
-                'created_at'    => $transaction->created_at,
+                'created_at'    => $transaction->created_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
             ];
         });
 
@@ -69,7 +69,7 @@ class TransactionService
                     'balance'     => $transaction->driver->wallet->balance,
                 ] : null,
                 'amount'         => $transaction->amount,
-                'created_at'     => $transaction->created_at,
+                'created_at'     => $transaction->created_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
             ];
         });
     }
@@ -86,7 +86,7 @@ class TransactionService
                 'provider_name'  => $transaction->provider?->provider_name,
                 'driver_name'    => $transaction->driver?->driver_name,
                 'amount'         => $transaction->amount,
-                'created_at'     => $transaction->created_at,
+                'created_at'     => $transaction->created_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
             ];
         });
     }
@@ -103,7 +103,7 @@ class TransactionService
                 'provider_name' => $transaction->provider?->provider_name,
                 'driver_name'   => $transaction->driver?->driver_name,
                 'amount'        => $transaction->amount,
-                'created_at'    => $transaction->created_at,
+                'created_at'    => $transaction->created_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
             ];
         }
 
@@ -120,7 +120,7 @@ class TransactionService
                     'balance'     => $transaction->driver->wallet->balance,
                 ] : null,
                 'amount'         => $transaction->amount,
-                'created_at'     => $transaction->created_at,
+                'created_at'     => $transaction->created_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
             ];
         }
 

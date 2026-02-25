@@ -23,8 +23,8 @@ class NotificationResource extends JsonResource
             'status' => $this->status,
             'status_label' => $this->status_label,
             'sent_count' => $this->sent_count,
-            'sent_at' => $this->sent_at?->toDateTimeString(),
-            'created_at' => $this->created_at->toDateTimeString(),
+            'sent_at' => $this->sent_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
+            'created_at' => $this->created_at->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
         ];
     }
 }

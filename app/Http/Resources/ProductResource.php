@@ -63,8 +63,8 @@ class ProductResource extends JsonResource
             'average_rating' => round($this->averageRating(), 1),
             'ratings_count' => $this->ratings()->count(),
 
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'created_at' => $this->created_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
+            'updated_at' => $this->updated_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
         ];
     }
 

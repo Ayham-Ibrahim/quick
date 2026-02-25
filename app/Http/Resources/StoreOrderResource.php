@@ -110,7 +110,7 @@ class StoreOrderResource extends JsonResource
             'hasDriver' => $this->has_driver,
 
             // حالات مفيدة
-            'confirmationExpiresAt' => $this->confirmation_expires_at?->setTimezone('Asia/Damascus')->toIso8601String(),
+            'confirmationExpiresAt' => $this->confirmation_expires_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
             'isConfirmationExpired' => $this->is_confirmation_expired,
 
             'updatedAt' => $this->updated_at->setTimezone('Asia/Damascus')->format('Y-m-d H:i'),

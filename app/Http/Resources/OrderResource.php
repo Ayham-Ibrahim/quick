@@ -135,15 +135,15 @@ class OrderResource extends JsonResource
                 'location' => $this->driver && $this->driver->current_lat && $this->driver->current_lng ? [
                     'lat' => (float) $this->driver->current_lat,
                     'lng' => (float) $this->driver->current_lng,
-                    'updatedAt' => $this->driver->last_location_update?->setTimezone('Asia/Damascus')->toIso8601String(),
+                    'updatedAt' => $this->driver->last_location_update?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
                     'isOnline' => (bool) $this->driver->is_online,
                 ] : null,
             ]),
             'hasDriver' => $this->has_driver,
-            'driverAssignedAt' => $this->driver_assigned_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i'),
+            'driverAssignedAt' => $this->driver_assigned_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
 
             // حالة انتظار السائق
-            'confirmationExpiresAt' => $this->confirmation_expires_at?->setTimezone('Asia/Damascus')->toIso8601String(),
+            'confirmationExpiresAt' => $this->confirmation_expires_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
             'isConfirmationExpired' => $this->is_confirmation_expired,
             'canResendToDrivers' => $this->can_resend_to_drivers,
             'isAvailableForDriver' => $this->is_available_for_driver,
