@@ -109,18 +109,34 @@ class OrderItem extends Model
             $attributes = collect($attributes);
         }
 
+        // إذا لم تكن هناك سمات، إرجاع null
+        if ($attributes->isEmpty()) {
+            return null;
+        }
+
         $details = $attributes->map(function ($attr) {
             // التعامل مع الكائن أو المصفوفة
             if (is_array($attr)) {
-                $attrName = $attr['attribute']['name'] ?? '';
-                $valueName = $attr['value']['value'] ?? '';
+                $attrName = trim($attr['attribute']['name'] ?? '');
+                $valueName = trim($attr['value']['value'] ?? '');
             } else {
-                $attrName = $attr->attribute->name ?? '';
-                $valueName = $attr->value->value ?? '';
+                $attrName = trim($attr->attribute->name ?? '');
+                $valueName = trim($attr->value->value ?? '');
             }
+            
+            // تجاهل السمات إذا كان الاسم أو القيمة فارغين
+            if (empty($attrName) || empty($valueName)) {
+                return null;
+            }
+            
             return "{$attrName}: {$valueName}";
-        })->filter()->implode('، ');
+        })->filter()->values();
 
-        return $details ?: null;
+        // إذا لم تبق أي سمات صالحة، إرجاع null
+        if ($details->isEmpty()) {
+            return null;
+        }
+
+        return $details->implode('، ');
     }
 }
