@@ -226,7 +226,8 @@ class CheckoutService extends Service
             ->with([
                 'items.product.store',
                 'items.product.coupons',
-                'items.variant',
+                'items.variant.attributes.attribute',
+                'items.variant.attributes.value',
             ])
             ->first();
 
