@@ -25,17 +25,19 @@ class ProductVariantAttribute extends Model
 
     /**
      * Attribute (Color, Size)
+     * Include soft-deleted attributes to prevent null values
      */
     public function attribute()
     {
-        return $this->belongsTo(Attribute::class);
+        return $this->belongsTo(Attribute::class)->withTrashed();
     }
 
     /**
      * Attribute value (Red, XL)
+     * Include soft-deleted values to prevent null values
      */
     public function value()
     {
-        return $this->belongsTo(AttributeValue::class, 'attribute_value_id');
+        return $this->belongsTo(AttributeValue::class, 'attribute_value_id')->withTrashed();
     }
 }
