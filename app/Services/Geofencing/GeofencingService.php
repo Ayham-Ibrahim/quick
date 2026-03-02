@@ -44,7 +44,7 @@ class GeofencingService
     /**
      * الحد الأقصى للمسافة بين أي متجرين في الطلب الواحد (كم)
      */
-    const MAX_DISTANCE_BETWEEN_STORES_KM = 3;
+    const MAX_DISTANCE_BETWEEN_STORES_KM = 20;
 
     /**
      * مدة اعتبار السائق نشطاً (بالدقائق)
