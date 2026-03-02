@@ -60,11 +60,19 @@ class CartItemResource extends JsonResource
                     'is_active' => $this->variant->is_active,
                     'attributes_string' => $this->variant_attributes_string,
                     'attributes' => $attributes->map(function ($attr) {
+                        $name = $attr->attribute?->name ?? null;
+                        $value = $attr->value?->value ?? null;
+                        
+                        // تجاهل السمات الفارغة
+                        if (empty($name) || empty($value)) {
+                            return null;
+                        }
+                        
                         return [
-                            'attribute_name' => $attr->attribute?->name ?? null,
-                            'attribute_value' => $attr->value?->value ?? null,
+                            'attribute_name' => $name,
+                            'attribute_value' => $value,
                         ];
-                    }),
+                    })->filter()->values(),
                 ];
             }),
 

@@ -124,10 +124,23 @@ class CartItem extends Model
             return null;
         }
 
-        return $attributes->map(function ($attr) {
-            $attributeName = $attr->attribute?->name ?? '';
-            $valueName = $attr->value?->value ?? '';
+        $details = $attributes->map(function ($attr) {
+            $attributeName = trim($attr->attribute?->name ?? '');
+            $valueName = trim($attr->value?->value ?? '');
+            
+            // تجاهل السمات إذا كان الاسم أو القيمة فارغين
+            if (empty($attributeName) || empty($valueName)) {
+                return null;
+            }
+            
             return "{$attributeName}: {$valueName}";
-        })->implode('، ');
+        })->filter()->values();
+
+        // إذا لم تبق أي سمات صالحة، إرجاع null
+        if ($details->isEmpty()) {
+            return null;
+        }
+
+        return $details->implode('، ');
     }
 }
