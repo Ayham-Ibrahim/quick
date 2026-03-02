@@ -47,4 +47,18 @@ class DeliveryFeeTest extends TestCase
 
         $this->assertSame(4.4 * 1234.56, $this->service->calculateDeliveryFee(4.4));
     }
+
+    /** @test */
+    public function it_respects_minimum_order_value()
+    {
+        // set km price small and a minimum threshold
+        ProfitRatios::where('tag', 'km_price')->update(['value' => 1000]);
+        ProfitRatios::create(['tag' => 'minimum_order_value', 'value' => 5000]);
+
+        // distance 3 -> fee 3000 but minimum is 5000
+        $this->assertSame(5000.0, $this->service->calculateDeliveryFee(3));
+
+        // distance 6 -> fee 6000 which is above minimum
+        $this->assertSame(6000.0, $this->service->calculateDeliveryFee(6));
+    }
 }
