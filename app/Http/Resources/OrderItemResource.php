@@ -23,11 +23,7 @@ class OrderItemResource extends JsonResource
             'productName' => $this->product_name,
             'productVariantId' => $this->product_variant_id,
             // إذا كان variant_details فارغاً، نحاول بناءه من العلاقة
-            'variantDetails' => $this->variant_details ?? (
-                $this->product_variant_id && $this->relationLoaded('variant') && $this->variant
-                    ? OrderItem::buildVariantDetails($this->variant)
-                    : null
-            ),
+            'variantDetails' => $this->variant_details ?? $this->buildVariantDetailsFallback(),
 
             // الكمية والأسعار
             'quantity' => $this->quantity,
@@ -72,6 +68,79 @@ class OrderItemResource extends JsonResource
                     'ratingsCount' => (int) $this->product->ratings()->count(),
                 ];
             }),
+
+            // تفاصيل المتغير (إن وجد)
+            'variant' => $this->when($this->product_variant_id, function () {
+                // تحميل العلاقة إذا لم تكن محملة
+                if (!$this->resource->relationLoaded('variant')) {
+                    $this->resource->load([
+                        'variant.attributes.attribute' => fn($q) => $q->withTrashed(),
+                        'variant.attributes.value' => fn($q) => $q->withTrashed(),
+                    ]);
+                }
+
+                if (!$this->variant) {
+                    return null;
+                }
+
+                $attributes = $this->variant->relationLoaded('attributes')
+                    ? $this->variant->attributes
+                    : collect([]);
+
+                // حساب السمات المفلترة
+                $filteredAttributes = $attributes->map(function ($attr) {
+                    $name = trim($attr->attribute?->name ?? '');
+                    $value = trim($attr->value?->value ?? '');
+                    
+                    if (empty($name) || empty($value)) {
+                        return null;
+                    }
+                    
+                    return [
+                        'attribute_name' => $name,
+                        'attribute_value' => $value,
+                    ];
+                })->filter()->values();
+
+                // بناء attributes_string
+                $attributesString = $filteredAttributes->isEmpty() 
+                    ? null 
+                    : $filteredAttributes->map(fn($a) => "{$a['attribute_name']}: {$a['attribute_value']}")->implode('، ');
+
+                return [
+                    'id' => $this->variant->id,
+                    'sku' => $this->variant->sku,
+                    'price' => (float) $this->variant->price,
+                    'stock_quantity' => $this->variant->stock_quantity,
+                    'is_active' => (bool) $this->variant->is_active,
+                    'attributes_string' => $attributesString,
+                    'attributes' => $filteredAttributes,
+                ];
+            }),
         ];
+    }
+
+    /**
+     * بناء variant_details من العلاقة إذا لم يكن مخزناً
+     */
+    private function buildVariantDetailsFallback(): ?string
+    {
+        if (!$this->product_variant_id) {
+            return null;
+        }
+
+        // تحميل العلاقة إذا لم تكن محملة
+        if (!$this->resource->relationLoaded('variant')) {
+            $this->resource->load([
+                'variant.attributes.attribute' => fn($q) => $q->withTrashed(),
+                'variant.attributes.value' => fn($q) => $q->withTrashed(),
+            ]);
+        }
+
+        if (!$this->variant) {
+            return null;
+        }
+
+        return OrderItem::buildVariantDetails($this->variant);
     }
 }
