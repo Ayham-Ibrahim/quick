@@ -23,13 +23,21 @@ class ProductVariantResource extends JsonResource
             'is_in_stock' => $this->stock_quantity > 0,
             'attributes' => $this->whenLoaded('attributes', function () {
                 return $this->attributes->map(function ($attr) {
+                    $name = $attr->attribute?->name;
+                    $value = $attr->value?->value;
+                    
+                    // تجاهل السمات الفارغة
+                    if (empty($name) || empty($value)) {
+                        return null;
+                    }
+                    
                     return [
                         'attribute_id' => $attr->attribute_id,
-                        'attribute_name' => $attr->attribute?->name,
+                        'attribute_name' => $name,
                         'attribute_value_id' => $attr->attribute_value_id,
-                        'attribute_value' => $attr->value?->value,
+                        'attribute_value' => $value,
                     ];
-                });
+                })->filter()->values();
             }),
             'created_at' => $this->created_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at?->setTimezone('Asia/Damascus')->format('Y-m-d H:i:s'),
