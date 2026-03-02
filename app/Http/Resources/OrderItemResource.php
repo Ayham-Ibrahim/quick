@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -15,6 +14,9 @@ class OrderItemResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        // حساب بيانات المتغير مرة واحدة
+        $variantData = $this->getVariantData();
+
         return [
             'id' => $this->id,
 
@@ -22,8 +24,8 @@ class OrderItemResource extends JsonResource
             'productId' => $this->product_id,
             'productName' => $this->product_name,
             'productVariantId' => $this->product_variant_id,
-            // إذا كان variant_details فارغاً، نحاول بناءه من العلاقة
-            'variantDetails' => $this->variant_details ?? $this->buildVariantDetailsFallback(),
+            // استخدام القيمة المخزنة أو المحسوبة
+            'variantDetails' => $this->variant_details ?? $variantData['attributes_string'],
 
             // الكمية والأسعار
             'quantity' => $this->quantity,
@@ -70,63 +72,17 @@ class OrderItemResource extends JsonResource
             }),
 
             // تفاصيل المتغير (إن وجد)
-            'variant' => $this->when($this->product_variant_id, function () {
-                // تحميل العلاقة إذا لم تكن محملة
-                if (!$this->resource->relationLoaded('variant')) {
-                    $this->resource->load([
-                        'variant.attributes.attribute' => fn($q) => $q->withTrashed(),
-                        'variant.attributes.value' => fn($q) => $q->withTrashed(),
-                    ]);
-                }
-
-                if (!$this->variant) {
-                    return null;
-                }
-
-                $attributes = $this->variant->relationLoaded('attributes')
-                    ? $this->variant->attributes
-                    : collect([]);
-
-                // حساب السمات المفلترة
-                $filteredAttributes = $attributes->map(function ($attr) {
-                    $name = trim($attr->attribute?->name ?? '');
-                    $value = trim($attr->value?->value ?? '');
-                    
-                    if (empty($name) || empty($value)) {
-                        return null;
-                    }
-                    
-                    return [
-                        'attribute_name' => $name,
-                        'attribute_value' => $value,
-                    ];
-                })->filter()->values();
-
-                // بناء attributes_string
-                $attributesString = $filteredAttributes->isEmpty() 
-                    ? null 
-                    : $filteredAttributes->map(fn($a) => "{$a['attribute_name']}: {$a['attribute_value']}")->implode('، ');
-
-                return [
-                    'id' => $this->variant->id,
-                    'sku' => $this->variant->sku,
-                    'price' => (float) $this->variant->price,
-                    'stock_quantity' => $this->variant->stock_quantity,
-                    'is_active' => (bool) $this->variant->is_active,
-                    'attributes_string' => $attributesString,
-                    'attributes' => $filteredAttributes,
-                ];
-            }),
+            'variant' => $this->when($this->product_variant_id && $variantData['variant'], $variantData['variant']),
         ];
     }
 
     /**
-     * بناء variant_details من العلاقة إذا لم يكن مخزناً
+     * حساب بيانات المتغير مرة واحدة
      */
-    private function buildVariantDetailsFallback(): ?string
+    private function getVariantData(): array
     {
         if (!$this->product_variant_id) {
-            return null;
+            return ['variant' => null, 'attributes_string' => null];
         }
 
         // تحميل العلاقة إذا لم تكن محملة
@@ -138,9 +94,44 @@ class OrderItemResource extends JsonResource
         }
 
         if (!$this->variant) {
-            return null;
+            return ['variant' => null, 'attributes_string' => null];
         }
 
-        return OrderItem::buildVariantDetails($this->variant);
+        $attributes = $this->variant->relationLoaded('attributes')
+            ? $this->variant->attributes
+            : collect([]);
+
+        // حساب السمات المفلترة
+        $filteredAttributes = $attributes->map(function ($attr) {
+            $name = trim($attr->attribute?->name ?? '');
+            $value = trim($attr->value?->value ?? '');
+            
+            if (empty($name) || empty($value)) {
+                return null;
+            }
+            
+            return [
+                'attribute_name' => $name,
+                'attribute_value' => $value,
+            ];
+        })->filter()->values();
+
+        // بناء attributes_string
+        $attributesString = $filteredAttributes->isEmpty() 
+            ? null 
+            : $filteredAttributes->map(fn($a) => "{$a['attribute_name']}: {$a['attribute_value']}")->implode('، ');
+
+        return [
+            'attributes_string' => $attributesString,
+            'variant' => [
+                'id' => $this->variant->id,
+                'sku' => $this->variant->sku,
+                'price' => (float) $this->variant->price,
+                'stock_quantity' => $this->variant->stock_quantity,
+                'is_active' => (bool) $this->variant->is_active,
+                'attributes_string' => $attributesString,
+                'attributes' => $filteredAttributes,
+            ],
+        ];
     }
 }
