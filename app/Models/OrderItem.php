@@ -100,7 +100,11 @@ class OrderItem extends Model
         }
 
         // إعادة تحميل العلاقات من قاعدة البيانات لضمان الحصول على Collection
-        $variant->load('attributes.attribute', 'attributes.value');
+        // استخدام withTrashed لجلب السمات المحذوفة أيضاً
+        $variant->load([
+            'attributes.attribute' => fn($q) => $q->withTrashed(),
+            'attributes.value' => fn($q) => $q->withTrashed(),
+        ]);
 
         $attributes = $variant->attributes;
 
