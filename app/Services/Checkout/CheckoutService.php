@@ -9,6 +9,7 @@ use App\Models\CartItem;
 use App\Models\ProductVariant;
 use App\Models\DiscountManagement\Coupon;
 use App\Models\DiscountManagement\CouponUsage;
+use App\Models\ProfitRatios;
 use App\Services\Service;
 use App\Services\NotificationService;
 use App\Services\Geofencing\GeofencingService;
@@ -64,6 +65,12 @@ class CheckoutService extends Service
 
                 // رسوم التوصيل (يمكن إرسالها من الـ request أو حسابها مستقبلاً)
                 $deliveryFee = $data['delivery_fee'] ?? 0;
+
+                // تأكد من احترام الحد الأدنى إذا تم ضبطه
+                $minFee = ProfitRatios::getValueByTag('minimum_order_value') ?? 0;
+                if ($deliveryFee < $minFee) {
+                    $deliveryFee = (float) $minFee;
+                }
 
                 // إنشاء الطلب مع فترة انتظار السائق
                 $order = Order::create([

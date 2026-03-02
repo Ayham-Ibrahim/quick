@@ -55,12 +55,14 @@ class CustomOrderService extends Service
     public function calculateDeliveryFee(float $distanceKm): float
     {
         $kmPrice = ProfitRatios::getValueByTag('km_price') ?? 0;
+        $minFee = ProfitRatios::getValueByTag('minimum_order_value') ?? 0;
 
         // استخدم bc math لحساب القيمة بدقة عشرية
         $feeString = bcmul((string) $distanceKm, (string) $kmPrice, 2);
+        $calculated = (float) $feeString;
 
-        // نتيجة الخوارزمية ستكون مثلاً "44000.00" فنحوّلها إلى float
-        return (float) $feeString;
+        // إذا كانت التكلفة أقل من الحد الأدنى، اعد الحد الأدنى
+        return $calculated < $minFee ? (float) $minFee : $calculated;
     }
 
     /* ═══════════════════════════════════════════════════════════════════

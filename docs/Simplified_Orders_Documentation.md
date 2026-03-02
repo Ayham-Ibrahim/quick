@@ -570,7 +570,9 @@ Accept: application/json
 ## 💰 حساب سعر التوصيل
 
 ```
-delivery_fee = distance_km × km_price
+delivery_fee = distance_km × km_price  
+- يتم استخدام المسافة العشرية كما ترسلها الـ frontend (لا يتم تقريبها إلى عدد صحيح).  
+- بعد الحساب يُطبق "الحد الأدنى لتوصيل الطلبية" (قيمة `minimum_order_value` في قاعدة البيانات): إذا كانت النتيجة أقل من الحد الأدنى، يُعاد الحد الأدنى بدلاً من نتيحة الحساب.
 ```
 
 - `km_price` من جدول `profit_ratios` (tag: `km_price`)
