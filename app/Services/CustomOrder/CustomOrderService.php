@@ -116,6 +116,10 @@ class CustomOrderService extends Service
                 // Notify user that order was created
                 $this->notificationService->notifyUserCustomOrderCreated($order);
 
+                // Notify available drivers about the new custom order
+                $eligibleDrivers = $this->geofencingService->getEligibleDriversForCustomOrder($order);
+                $this->notificationService->notifyDriversNewCustomOrder($eligibleDrivers, $order);
+
                 return $order->load('items');
             });
         } catch (HttpResponseException $e) {

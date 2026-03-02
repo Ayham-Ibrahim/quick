@@ -201,7 +201,7 @@
 | الطريقة | المسار | الوصف |
 |---------|--------|-------|
 | `POST` | `/api/custom-orders/calculate-fee` | حساب سعر التوصيل |
-| `POST` | `/api/custom-orders` | إنشاء طلب (معلق مباشرة) |
+| `POST` | `/api/custom-orders` | إنشاء طلب (معلق مباشرة) – يُرسل إشعاراً للسائقين المؤهلين |
 | `GET` | `/api/custom-orders` | قائمة طلباتي |
 | `GET` | `/api/custom-orders/{id}` | تفاصيل طلب |
 | `POST` | `/api/custom-orders/{id}/cancel` | إلغاء (معلق فقط) |
