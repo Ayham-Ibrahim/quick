@@ -74,6 +74,8 @@ class Order extends Model
         'driver_assigned_at',
         'notes',
         'cancellation_reason',
+        'reminder_sent_at',
+        'second_reminder_sent_at',
     ];
 
     protected $casts = [
@@ -87,6 +89,8 @@ class Order extends Model
         'confirmation_expires_at' => 'datetime',
         'driver_assigned_at' => 'datetime',
         'is_immediate_delivery' => 'boolean',
+        'reminder_sent_at' => 'datetime',
+        'second_reminder_sent_at' => 'datetime',
     ];
 
     /* ═══════════════════════════════════════════════════════════════════

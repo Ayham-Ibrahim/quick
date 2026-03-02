@@ -10,6 +10,7 @@ use App\Services\Service;
 use App\Services\NotificationService;
 use App\Services\AdminProfitService;
 use App\Services\Geofencing\GeofencingService;
+use App\Services\ScheduledReminderService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -31,15 +32,18 @@ class OrderService extends Service
     protected NotificationService $notificationService;
     protected GeofencingService $geofencingService;
     protected AdminProfitService $adminProfitService;
+    protected ScheduledReminderService $scheduledReminderService;
 
     public function __construct(
         NotificationService $notificationService,
         GeofencingService $geofencingService,
-        AdminProfitService $adminProfitService
+        AdminProfitService $adminProfitService,
+        ScheduledReminderService $scheduledReminderService
     ) {
         $this->notificationService = $notificationService;
         $this->geofencingService = $geofencingService;
         $this->adminProfitService = $adminProfitService;
+        $this->scheduledReminderService = $scheduledReminderService;
     }
     /* ═══════════════════════════════════════════════════════════════════
      * وظائف المستخدم - User Functions
@@ -542,6 +546,9 @@ class OrderService extends Service
 
         // Notify user that driver accepted the order
         $this->notificationService->notifyUserOrderAccepted($order);
+
+        // جدولة تذكيرات للطلبات المجدولة
+        $this->scheduledReminderService->scheduleRemindersForOrder($order);
 
         return $order;
     }
