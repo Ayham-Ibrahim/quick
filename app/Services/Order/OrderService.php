@@ -51,7 +51,7 @@ class OrderService extends Service
     public function getUserOrders(array $filters = []): LengthAwarePaginator
     {
         return Order::where('user_id', Auth::id())
-            ->with(['items.product', 'items.store', 'driver', 'coupon'])
+            ->with(['items.product', 'items.store', 'items.variant.attributes.attribute', 'items.variant.attributes.value', 'driver', 'coupon'])
             ->when($filters['status'] ?? null, fn($q, $status) => $q->byStatus($status))
             ->latest()
             ->paginate($filters['per_page'] ?? 15);
@@ -63,7 +63,7 @@ class OrderService extends Service
     public function getUserOrdersCollection(array $filters = [])
     {
         return Order::where('user_id', Auth::id())
-            ->with(['items.product', 'items.store', 'driver', 'coupon'])
+            ->with(['items.product', 'items.store', 'items.variant.attributes.attribute', 'items.variant.attributes.value', 'driver', 'coupon'])
             ->when($filters['status'] ?? null, fn($q, $status) => $q->byStatus($status))
             ->latest()
             ->get();

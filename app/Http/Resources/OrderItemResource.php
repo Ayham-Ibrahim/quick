@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -21,7 +22,12 @@ class OrderItemResource extends JsonResource
             'productId' => $this->product_id,
             'productName' => $this->product_name,
             'productVariantId' => $this->product_variant_id,
-            'variantDetails' => $this->variant_details,
+            // إذا كان variant_details فارغاً، نحاول بناءه من العلاقة
+            'variantDetails' => $this->variant_details ?? (
+                $this->product_variant_id && $this->relationLoaded('variant') && $this->variant
+                    ? OrderItem::buildVariantDetails($this->variant)
+                    : null
+            ),
 
             // الكمية والأسعار
             'quantity' => $this->quantity,
