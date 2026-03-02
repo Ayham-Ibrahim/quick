@@ -52,27 +52,34 @@ class CartItemResource extends JsonResource
                     ? $this->variant->attributes
                     : collect($this->variant->attributes ?? []);
 
+                // حساب السمات المفلترة مرة واحدة
+                $filteredAttributes = $attributes->map(function ($attr) {
+                    $name = trim($attr->attribute?->name ?? '');
+                    $value = trim($attr->value?->value ?? '');
+                    
+                    if (empty($name) || empty($value)) {
+                        return null;
+                    }
+                    
+                    return [
+                        'attribute_name' => $name,
+                        'attribute_value' => $value,
+                    ];
+                })->filter()->values();
+
+                // بناء attributes_string من نفس البيانات
+                $attributesString = $filteredAttributes->isEmpty() 
+                    ? null 
+                    : $filteredAttributes->map(fn($a) => "{$a['attribute_name']}: {$a['attribute_value']}")->implode('، ');
+
                 return [
                     'id' => $this->variant->id,
                     'sku' => $this->variant->sku,
                     'price' => (float) $this->variant->price,
                     'stock_quantity' => $this->variant->stock_quantity,
                     'is_active' => $this->variant->is_active,
-                    'attributes_string' => $this->variant_attributes_string,
-                    'attributes' => $attributes->map(function ($attr) {
-                        $name = $attr->attribute?->name ?? null;
-                        $value = $attr->value?->value ?? null;
-                        
-                        // تجاهل السمات الفارغة
-                        if (empty($name) || empty($value)) {
-                            return null;
-                        }
-                        
-                        return [
-                            'attribute_name' => $name,
-                            'attribute_value' => $value,
-                        ];
-                    })->filter()->values(),
+                    'attributes_string' => $attributesString,
+                    'attributes' => $filteredAttributes,
                 ];
             }),
 
