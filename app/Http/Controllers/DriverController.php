@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Driver;
 use App\Services\DriverService;
+use App\Services\DriverProximityService;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\DriverResource;
 use App\Http\Requests\DriverRequests\StoreDriverRequest;
@@ -13,10 +14,12 @@ use App\Http\Requests\DriverRequests\UpdateDriverProfileRequest;
 class DriverController extends Controller
 {
     protected $driverService;
+    protected DriverProximityService $proximityService;
 
-    public function __construct(DriverService $driverService)
+    public function __construct(DriverService $driverService, DriverProximityService $proximityService)
     {
         $this->driverService = $driverService;
+        $this->proximityService = $proximityService;
     }
 
     public function index()
@@ -121,6 +124,9 @@ class DriverController extends Controller
             'last_location_update' => now(),
             'last_activity_at' => now(),
         ]);
+
+        // فحص اقتراب السائق من نقاط التسليم وإرسال إشعارات
+        $this->proximityService->checkAndNotifyApproaching($driver);
 
         return $this->success([
             'lat' => (float) $driver->current_lat,

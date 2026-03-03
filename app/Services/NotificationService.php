@@ -71,6 +71,30 @@ class NotificationService
     }
 
     /**
+     * إشعار المستخدم عند اقتراب السائق (500 متر)
+     * 
+     * @param Order|CustomOrder $order
+     */
+    public function notifyUserDriverApproaching(Order|CustomOrder $order): void
+    {
+        $driverName = $order->driver->driver_name ?? 'السائق';
+        $isCustomOrder = $order instanceof CustomOrder;
+        $orderType = $isCustomOrder ? 'custom_order' : 'order';
+
+        $this->fcmService->sendToUser(
+            $order->user,
+            'السائق على بعد خطوات! 📍',
+            $driverName . ' اقترب من موقعك. استعد للاستلام!',
+            [
+                'type' => 'driver_approaching',
+                'order_type' => $orderType,
+                'order_id' => (string) $order->id,
+                'driver_id' => (string) $order->driver_id,
+            ]
+        );
+    }
+
+    /**
      * Notify user when order is delivered.
      */
     public function notifyUserOrderDelivered(Order $order): void
@@ -486,5 +510,59 @@ class NotificationService
                 'complaint_id' => (string) $complaintId,
             ]
         );
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+     * Scheduled Order Reminders
+     * ═══════════════════════════════════════════════════════════════════ */
+
+    /**
+     * تذكير السائق باقتراب موعد تسليم الطلب المجدول
+     * 
+     * @param Driver $driver السائق المعين
+     * @param Order|CustomOrder $order الطلب
+     * @param string $reminderType 'first' (30 دقيقة) أو 'second' (10 دقائق)
+     */
+    public function notifyDriverScheduledOrderReminder(Driver $driver, Order|CustomOrder $order, string $reminderType): void
+    {
+        $orderType = $order instanceof CustomOrder ? 'custom' : 'regular';
+        $orderTypeLabel = $order instanceof CustomOrder ? 'الخاص' : '';
+        
+        // تحديد وقت التسليم المجدول
+        $scheduledAt = $order instanceof CustomOrder 
+            ? $order->scheduled_at 
+            : $order->requested_delivery_at;
+
+        $timeFormatted = $scheduledAt?->setTimezone('Asia/Damascus')->format('h:i A');
+        
+        // تحديد الرسالة حسب نوع التذكير
+        if ($reminderType === 'first') {
+            $title = 'تذكير: طلب مجدول بعد 30 دقيقة ⏰';
+            $body = "لديك طلب {$orderTypeLabel} رقم #{$order->id} مجدول للتسليم في {$timeFormatted}";
+        } else {
+            $title = 'تذكير أخير: طلب مجدول بعد 10 دقائق ⚡';
+            $body = "طلبك {$orderTypeLabel} رقم #{$order->id} يجب تسليمه خلال 10 دقائق - الموعد: {$timeFormatted}";
+        }
+
+        $this->fcmService->sendToDriver(
+            $driver,
+            $title,
+            $body,
+            [
+                'type' => 'scheduled_order_reminder',
+                'order_id' => (string) $order->id,
+                'order_type' => $orderType,
+                'reminder_type' => $reminderType,
+                'scheduled_at' => $scheduledAt?->toIso8601String(),
+                'delivery_address' => $order->delivery_address,
+            ]
+        );
+
+        Log::info("Sent scheduled order reminder to driver", [
+            'driver_id' => $driver->id,
+            'order_id' => $order->id,
+            'order_type' => $orderType,
+            'reminder_type' => $reminderType,
+        ]);
     }
 }

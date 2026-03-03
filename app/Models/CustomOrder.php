@@ -70,6 +70,9 @@ class CustomOrder extends Model
         'driver_assigned_at',
         'notes',
         'cancellation_reason',
+        'reminder_sent_at',
+        'second_reminder_sent_at',
+        'driver_approaching_notified_at',
     ];
 
     protected $casts = [
@@ -81,6 +84,9 @@ class CustomOrder extends Model
         'scheduled_at' => 'datetime',
         'confirmation_expires_at' => 'datetime',
         'driver_assigned_at' => 'datetime',
+        'reminder_sent_at' => 'datetime',
+        'second_reminder_sent_at' => 'datetime',
+        'driver_approaching_notified_at' => 'datetime',
     ];
 
     /* ═══════════════════════════════════════════════════════════════════
