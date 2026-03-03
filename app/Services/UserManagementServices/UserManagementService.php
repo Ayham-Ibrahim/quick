@@ -132,17 +132,17 @@ class UserManagementService extends Service
             $user->update([
                 'phone_verified_at' => Carbon::now(),
             ]);
-            // إنشاء token بعد التفعيل
+            // إنشاء token بعد التفعيل (access سنة, refresh سنتين)
             $accessToken = $user->createToken(
                 'mobile-access',
                 ['access-api'],
-                now()->addHours(2)
+                now()->addYear()
             )->plainTextToken;
 
             $refreshToken = $user->createToken(
                 'mobile-refresh',
                 ['refresh-token'],
-                now()->addYear()
+                now()->addYears(2)
             )->plainTextToken;
 
             DB::commit();
@@ -155,7 +155,7 @@ class UserManagementService extends Service
                     'access_token'  => $accessToken,
                     'refresh_token' => $refreshToken,
                     'message' => 'تم تفعيل الحساب بنجاح',
-                    'expires_in'    => 7200, // 2 hours
+                    'expires_in'    => 31536000, // 1 year
                 ]
             ];
         } catch (\Exception $e) {
@@ -242,16 +242,17 @@ class UserManagementService extends Service
                 ];
             }
         }
+        // for regular users (non-admin) set extended durations
         $accessToken = $account->createToken(
             'mobile-access',
             ['access-api'],
-            now()->addHours(2)
+            now()->addYear()
         )->plainTextToken;
 
         $refreshToken = $account->createToken(
             'mobile-refresh',
             ['refresh-token'],
-            now()->addYear()
+            now()->addYears(2)
         )->plainTextToken;
 
         return [
@@ -261,7 +262,7 @@ class UserManagementService extends Service
                 'user'          => $account,
                 'access_token'  => $accessToken,
                 'refresh_token' => $refreshToken,
-                'expires_in'    => 7200, // 2 hours
+                'expires_in'    => 31536000, // 1 year
             ]
         ];
     }
@@ -296,17 +297,17 @@ class UserManagementService extends Service
                 'phone_verified_at' => Carbon::now()
             ]);
 
-            // إنشاء token بعد التفعيل
+            // إنشاء token بعد التفعيل (access سنة, refresh سنتين)
             $accessToken = $user->createToken(
                 'mobile-access',
                 ['access-api'],
-                now()->addHours(2)
+                now()->addYear()
             )->plainTextToken;
 
             $refreshToken = $user->createToken(
                 'mobile-refresh',
                 ['refresh-token'],
-                now()->addYear()
+                now()->addYears(2)
             )->plainTextToken;
 
             DB::commit();
@@ -318,7 +319,7 @@ class UserManagementService extends Service
                     'user' => $user->fresh(),
                     'access_token'  => $accessToken,
                     'refresh_token' => $refreshToken,
-                    'expires_in'    => 7200, // 2 hours
+                    'expires_in'    => 31536000, // 1 year
                 ]
             ];
         } catch (\Exception $e) {

@@ -206,7 +206,7 @@ class UserManagementController extends Controller
             $newAccess = $user->createToken(
                 'mobile-access',
                 ['access-api'],
-                now()->addHours(2)
+                now()->addYear()
             )->plainTextToken;
 
             $newRefresh = $user->createToken(
@@ -220,7 +220,7 @@ class UserManagementController extends Controller
                 'data' => [
                     'access_token'  => $newAccess,
                     'refresh_token' => $newRefresh,
-                    'expires_in'    => 7200, // 2 hours
+                    'expires_in'    => 31536000, // 1 year
                     'type'          => 'mobile'
                 ]
             ];
