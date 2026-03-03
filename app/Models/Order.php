@@ -76,6 +76,7 @@ class Order extends Model
         'cancellation_reason',
         'reminder_sent_at',
         'second_reminder_sent_at',
+        'driver_approaching_notified_at',
     ];
 
     protected $casts = [
@@ -91,6 +92,7 @@ class Order extends Model
         'is_immediate_delivery' => 'boolean',
         'reminder_sent_at' => 'datetime',
         'second_reminder_sent_at' => 'datetime',
+        'driver_approaching_notified_at' => 'datetime',
     ];
 
     /* ═══════════════════════════════════════════════════════════════════

@@ -71,6 +71,30 @@ class NotificationService
     }
 
     /**
+     * إشعار المستخدم عند اقتراب السائق (500 متر)
+     * 
+     * @param Order|CustomOrder $order
+     */
+    public function notifyUserDriverApproaching(Order|CustomOrder $order): void
+    {
+        $driverName = $order->driver->driver_name ?? 'السائق';
+        $isCustomOrder = $order instanceof CustomOrder;
+        $orderType = $isCustomOrder ? 'custom_order' : 'order';
+
+        $this->fcmService->sendToUser(
+            $order->user,
+            'السائق على بعد خطوات! 📍',
+            $driverName . ' اقترب من موقعك. استعد للاستلام!',
+            [
+                'type' => 'driver_approaching',
+                'order_type' => $orderType,
+                'order_id' => (string) $order->id,
+                'driver_id' => (string) $order->driver_id,
+            ]
+        );
+    }
+
+    /**
      * Notify user when order is delivered.
      */
     public function notifyUserOrderDelivered(Order $order): void
