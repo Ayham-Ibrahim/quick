@@ -212,7 +212,7 @@ class UserManagementController extends Controller
             $newRefresh = $user->createToken(
                 'mobile-refresh',
                 ['refresh-token'],
-                now()->addYear()
+                now()->addYears(2)
             )->plainTextToken;
 
             return [
