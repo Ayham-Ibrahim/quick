@@ -294,13 +294,22 @@ class CustomOrderService extends Service
 
     /**
      * جلب الطلبات المتاحة للسائقين (المعلقة) - مع Pagination
+     * السائق غير المتصل يحصل على قائمة فارغة
      */
     public function getAvailableOrdersForDrivers(array $filters = []): LengthAwarePaginator
     {
+        $driver = Auth::guard('driver')->user();
+        $perPage = $filters['per_page'] ?? 15;
+
+        // السائق غير المتصل لا يرى طلبات متاحة
+        if (!$driver || !$driver->is_online) {
+            return new LengthAwarePaginator([], 0, $perPage, 1, ['path' => request()->url()]);
+        }
+
         return CustomOrder::availableForDrivers()
             ->with(['items', 'user'])
             ->latest()
-            ->paginate($filters['per_page'] ?? 15);
+            ->paginate($perPage);
     }
 
     /**
@@ -328,6 +337,10 @@ class CustomOrderService extends Service
 
         // pending و available نفس الشيء = الطلبات المتاحة في المنطقة الجغرافية
         if ($status === 'available' || $status === 'pending') {
+            // السائق غير المتصل لا يرى طلبات متاحة
+            if (!$driver->is_online) {
+                return new LengthAwarePaginator([], 0, $perPage, 1, ['path' => request()->url()]);
+            }
             $availableOrders = $this->geofencingService->getAvailableCustomOrdersForDriver($driver);
             // تحويل Collection لـ Paginator يدوياً
             $page = request()->get('page', 1);
@@ -356,7 +369,10 @@ class CustomOrderService extends Service
             ->latest()
             ->get();
 
-        $availableOrders = $this->geofencingService->getAvailableCustomOrdersForDriver($driver);
+        // الطلبات المتاحة فقط إذا كان السائق متصلاً
+        $availableOrders = $driver->is_online
+            ? $this->geofencingService->getAvailableCustomOrdersForDriver($driver)
+            : collect([]);
 
         // دمج الطلبات مع منع التكرار وترتيب بالأحدث
         $allOrders = $myOrders->merge($availableOrders)
@@ -404,8 +420,10 @@ class CustomOrderService extends Service
             ->latest()
             ->get();
 
-        // الطلبات المتاحة في منطقة السائق الجغرافية
-        $availableOrders = $this->geofencingService->getAvailableCustomOrdersForDriver($driver);
+        // الطلبات المتاحة في منطقة السائق (فقط إذا كان متصلاً)
+        $availableOrders = $driver->is_online
+            ? $this->geofencingService->getAvailableCustomOrdersForDriver($driver)
+            : collect([]);
 
         return [
             'shipping' => $myOrders->where('status', CustomOrder::STATUS_SHIPPING)->values(),

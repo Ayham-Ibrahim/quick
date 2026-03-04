@@ -247,6 +247,7 @@ class GeofencingService
 
         return Driver::query()
             ->where('is_active', true)
+            ->where('is_online', true) // فقط السائقين المتصلين
             ->whereNotNull('current_lat')
             ->whereNotNull('current_lng')
             ->get()
@@ -295,6 +296,7 @@ class GeofencingService
 
         return Driver::query()
             ->where('is_active', true)
+            ->where('is_online', true) // فقط السائقين المتصلين
             ->whereNotNull('current_lat')
             ->whereNotNull('current_lng')
             ->get()
@@ -665,6 +667,7 @@ class GeofencingService
     {
         return Driver::query()
             ->where('is_active', true)
+            ->where('is_online', true) // فقط السائقين المتصلين
             ->whereNotNull('current_lat')
             ->whereNotNull('current_lng')
             ->get()
