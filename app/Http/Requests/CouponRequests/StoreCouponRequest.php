@@ -19,7 +19,9 @@ class StoreCouponRequest extends BaseFormRequest
         return Auth::check() && Auth::user()->is_admin;
     }
 
-
+    /**
+     * Normalize dates before validation
+     */
     protected function prepareForValidation(): void
     {
         $this->merge([
@@ -28,53 +30,27 @@ class StoreCouponRequest extends BaseFormRequest
         ]);
     }
 
+    /**
+     * Normalize any incoming date format to:
+     * Y-m-d H:i:s (Asia/Damascus timezone)
+     */
     private function normalizeDate($value): ?string
     {
         if (empty($value)) {
             return null;
         }
 
-        // strip any parenthesized timezone or locale info (e.g. "(غرينيتش+03:00)")
+        // إزالة أي نص داخل أقواس مثل (غرينتش+03:00)
         $value = preg_replace('/\s*\([^)]*\)$/u', '', $value);
 
-        // try a few common formats (including mobile date picker variants)
-        $formats = [
-            'Y-m-d H:i:s',
-            'Y-m-d H:i',
-            'Y-m-d',
-            'd/m/Y H:i:s',
-            'd/m/Y H:i',
-            'd/m/Y',
-            'd-m-Y H:i:s',
-            'd-m-Y H:i',
-            'd-m-Y',
-            'm/d/Y H:i:s',
-            'm/d/Y H:i',
-            'm/d/Y',
-            Carbon::RFC3339,
-            Carbon::RFC2822,
-        ];
-
-        foreach ($formats as $fmt) {
-            try {
-                return Carbon::createFromFormat($fmt, $value)
-                    ->timezone(config('app.timezone'))
-                    ->format('Y-m-d H:i:s');
-            } catch (\Throwable $e) {
-                // try next format
-            }
-        }
-
-        // final fallback to generic parser
         try {
             return Carbon::parse($value)
-                ->timezone(config('app.timezone'))
+                ->setTimezone('Asia/Damascus')
                 ->format('Y-m-d H:i:s');
         } catch (\Throwable $e) {
-            return $value; // let validation catch invalid format
+            return $value; // let validation handle invalid formats
         }
     }
-
 
     /**
      * Validation Rules
@@ -82,7 +58,6 @@ class StoreCouponRequest extends BaseFormRequest
     public function rules(): array
     {
         return [
-            // المتجر مطلوب
             'store_id' => 'required|exists:stores,id',
 
             'type' => 'required|in:percentage,fixed',
@@ -102,24 +77,24 @@ class StoreCouponRequest extends BaseFormRequest
             'usage_limit_per_user' => 'required|integer|min:1|max:100',
 
             'start_at' => 'nullable|date|after_or_equal:today',
-            'end_at' => 'nullable|date|after:start_at',
+            'end_at'   => 'nullable|date|after:start_at',
 
-
-            'product_ids' => 'nullable|array|min:1',
+            'product_ids'   => 'nullable|array|min:1',
             'product_ids.*' => 'exists:products,id',
         ];
     }
 
     /**
-     * التحقق من أن المنتجات تنتمي للمتجر المحدد
+     * Validate that products belong to selected store
      */
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
-            $storeId = $this->input('store_id');
+            $storeId   = $this->input('store_id');
             $productIds = $this->input('product_ids', []);
 
             if (!empty($productIds) && $storeId) {
+
                 $invalidProducts = Product::whereIn('id', $productIds)
                     ->where('store_id', '!=', $storeId)
                     ->pluck('name')
@@ -136,7 +111,7 @@ class StoreCouponRequest extends BaseFormRequest
     }
 
     /**
-     * Attributes (Arabic names)
+     * Arabic Attribute Names
      */
     public function attributes(): array
     {
@@ -153,7 +128,7 @@ class StoreCouponRequest extends BaseFormRequest
     }
 
     /**
-     * Custom Messages
+     * Custom Validation Messages
      */
     public function messages(): array
     {
@@ -167,7 +142,6 @@ class StoreCouponRequest extends BaseFormRequest
             'max' => 'حقل :attribute يجب ألا يتجاوز :max.',
             'in' => 'قيمة :attribute غير صحيحة.',
             'date' => 'حقل :attribute يجب أن يكون تاريخاً صالحاً.',
-            'date_format' => 'حقل :attribute يجب أن يكون بالصيغة :format.',
             'after' => 'حقل :attribute يجب أن يكون بعد :date.',
             'after_or_equal' => 'حقل :attribute يجب أن يكون من تاريخ اليوم أو بعده.',
         ];
