@@ -11,6 +11,7 @@ use App\Services\NotificationService;
 use App\Services\AdminProfitService;
 use App\Services\Geofencing\GeofencingService;
 use App\Services\ScheduledReminderService;
+use App\Services\PendingOrderExpirationService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -33,17 +34,20 @@ class OrderService extends Service
     protected GeofencingService $geofencingService;
     protected AdminProfitService $adminProfitService;
     protected ScheduledReminderService $scheduledReminderService;
+    protected PendingOrderExpirationService $pendingOrderExpirationService;
 
     public function __construct(
         NotificationService $notificationService,
         GeofencingService $geofencingService,
         AdminProfitService $adminProfitService,
-        ScheduledReminderService $scheduledReminderService
+        ScheduledReminderService $scheduledReminderService,
+        PendingOrderExpirationService $pendingOrderExpirationService
     ) {
         $this->notificationService = $notificationService;
         $this->geofencingService = $geofencingService;
         $this->adminProfitService = $adminProfitService;
         $this->scheduledReminderService = $scheduledReminderService;
+        $this->pendingOrderExpirationService = $pendingOrderExpirationService;
     }
     /* ═══════════════════════════════════════════════════════════════════
      * وظائف المستخدم - User Functions
@@ -200,6 +204,10 @@ class OrderService extends Service
         // Notify eligible drivers about the order
         $eligibleDrivers = $this->geofencingService->getEligibleDriversForOrder($order);
         $this->notificationService->notifyDriversNewOrder($eligibleDrivers, $order);
+
+        // Reschedule expiration jobs (30min reminder, 60min expiration)
+        // Old jobs will be ignored due to confirmation_expires_at mismatch
+        $this->pendingOrderExpirationService->rescheduleExpirationJobs($order->fresh());
 
         return $order->fresh(['items.product', 'items.store', 'driver']);
     }

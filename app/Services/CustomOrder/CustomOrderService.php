@@ -11,6 +11,7 @@ use App\Services\NotificationService;
 use App\Services\AdminProfitService;
 use App\Services\Geofencing\GeofencingService;
 use App\Services\ScheduledReminderService;
+use App\Services\PendingOrderExpirationService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -35,17 +36,20 @@ class CustomOrderService extends Service
     protected GeofencingService $geofencingService;
     protected AdminProfitService $adminProfitService;
     protected ScheduledReminderService $scheduledReminderService;
+    protected PendingOrderExpirationService $pendingOrderExpirationService;
 
     public function __construct(
         NotificationService $notificationService,
         GeofencingService $geofencingService,
         AdminProfitService $adminProfitService,
-        ScheduledReminderService $scheduledReminderService
+        ScheduledReminderService $scheduledReminderService,
+        PendingOrderExpirationService $pendingOrderExpirationService
     ) {
         $this->notificationService = $notificationService;
         $this->geofencingService = $geofencingService;
         $this->adminProfitService = $adminProfitService;
         $this->scheduledReminderService = $scheduledReminderService;
+        $this->pendingOrderExpirationService = $pendingOrderExpirationService;
     }
     /* ═══════════════════════════════════════════════════════════════════
      * الحسابات - Calculations
@@ -79,7 +83,7 @@ class CustomOrderService extends Service
     public function createOrder(array $data)
     {
         try {
-            return DB::transaction(function () use ($data) {
+            $order = DB::transaction(function () use ($data) {
                 $user = Auth::user();
 
                 // حساب سعر التوصيل
@@ -117,15 +121,22 @@ class CustomOrderService extends Service
                 // إضافة العناصر
                 $this->createOrderItems($order, $data['items']);
 
-                // Notify user that order was created
-                $this->notificationService->notifyUserCustomOrderCreated($order);
-
-                // Notify available drivers about the new custom order
-                $eligibleDrivers = $this->geofencingService->getEligibleDriversForCustomOrder($order);
-                $this->notificationService->notifyDriversNewCustomOrder($eligibleDrivers, $order);
-
                 return $order->load('items');
             });
+
+            // === Notifications & Jobs AFTER transaction commits ===
+
+            // Notify user that order was created
+            $this->notificationService->notifyUserCustomOrderCreated($order);
+
+            // Notify available drivers about the new custom order
+            $eligibleDrivers = $this->geofencingService->getEligibleDriversForCustomOrder($order);
+            $this->notificationService->notifyDriversNewCustomOrder($eligibleDrivers, $order);
+
+            // Schedule expiration jobs (30min reminder, 60min expiration)
+            $this->pendingOrderExpirationService->scheduleExpirationJobs($order);
+
+            return $order;
         } catch (HttpResponseException $e) {
             throw $e;
         } catch (\Throwable $th) {
@@ -171,6 +182,10 @@ class CustomOrderService extends Service
         // Notify eligible drivers about the order
         $eligibleDrivers = $this->geofencingService->getEligibleDriversForCustomOrder($order);
         $this->notificationService->notifyDriversNewCustomOrder($eligibleDrivers, $order);
+
+        // Reschedule expiration jobs (30min reminder, 60min expiration)
+        // Old jobs will be ignored due to confirmation_expires_at mismatch
+        $this->pendingOrderExpirationService->rescheduleExpirationJobs($order->fresh());
 
         return $order->fresh(['items', 'driver']);
     }
