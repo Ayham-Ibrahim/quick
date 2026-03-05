@@ -13,6 +13,7 @@ use App\Models\ProfitRatios;
 use App\Services\Service;
 use App\Services\NotificationService;
 use App\Services\Geofencing\GeofencingService;
+use App\Services\PendingOrderExpirationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -22,11 +23,16 @@ class CheckoutService extends Service
 {
     protected GeofencingService $geofencingService;
     protected NotificationService $notificationService;
+    protected PendingOrderExpirationService $pendingOrderExpirationService;
 
-    public function __construct(GeofencingService $geofencingService, NotificationService $notificationService)
-    {
+    public function __construct(
+        GeofencingService $geofencingService,
+        NotificationService $notificationService,
+        PendingOrderExpirationService $pendingOrderExpirationService
+    ) {
         $this->geofencingService = $geofencingService;
         $this->notificationService = $notificationService;
+        $this->pendingOrderExpirationService = $pendingOrderExpirationService;
     }
 
     /**
@@ -129,6 +135,9 @@ class CheckoutService extends Service
             } else {
                 Log::warning("Checkout: no eligible drivers found for order #{$order->id}");
             }
+
+            // Schedule expiration jobs (30min reminder, 60min expiration)
+            $this->pendingOrderExpirationService->scheduleExpirationJobs($order);
 
             return $order;
         } catch (\Throwable $th) {
