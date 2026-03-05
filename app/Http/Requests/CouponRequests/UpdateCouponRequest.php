@@ -9,7 +9,7 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Validator;
 
-class UpdateCouponRequest extends BaseFormRequest
+class StoreCouponRequest extends BaseFormRequest
 {
     /**
      * Authorization
@@ -18,6 +18,10 @@ class UpdateCouponRequest extends BaseFormRequest
     {
         return Auth::check() && Auth::user()->is_admin;
     }
+
+    /**
+     * Normalize dates before validation
+     */
     protected function prepareForValidation(): void
     {
         $this->merge([
@@ -26,57 +30,34 @@ class UpdateCouponRequest extends BaseFormRequest
         ]);
     }
 
+    /**
+     * Normalize any incoming date format to:
+     * Y-m-d H:i:s (Asia/Damascus timezone)
+     */
     private function normalizeDate($value): ?string
     {
         if (empty($value)) {
             return null;
         }
 
-        // remove trailing parentheses containing non-ASCII (timezone,Arabic text etc.)
+        // إزالة أي نص داخل أقواس مثل (غرينتش+03:00)
         $value = preg_replace('/\s*\([^)]*\)$/u', '', $value);
-
-        $formats = [
-            'Y-m-d H:i:s',
-            'Y-m-d H:i',
-            'Y-m-d',
-            'd/m/Y H:i:s',
-            'd/m/Y H:i',
-            'd/m/Y',
-            'd-m-Y H:i:s',
-            'd-m-Y H:i',
-            'd-m-Y',
-            'm/d/Y H:i:s',
-            'm/d/Y H:i',
-            'm/d/Y',
-            Carbon::RFC3339,
-            Carbon::RFC2822,
-        ];
-
-        foreach ($formats as $fmt) {
-            try {
-                return Carbon::createFromFormat($fmt, $value)
-                    ->timezone(config('app.timezone'))
-                    ->format('Y-m-d H:i:s');
-            } catch (\Throwable $e) {
-                // continue
-            }
-        }
 
         try {
             return Carbon::parse($value)
-                ->timezone(config('app.timezone'))
+                ->setTimezone('Asia/Damascus')
                 ->format('Y-m-d H:i:s');
         } catch (\Throwable $e) {
-            return $value;
+            return $value; // let validation handle invalid formats
         }
     }
+
     /**
      * Validation Rules
      */
     public function rules(): array
     {
         return [
-            // المتجر اختياري عند التحديث
             'store_id' => 'sometimes|exists:stores,id',
 
             'type' => 'sometimes|in:percentage,fixed',
@@ -86,9 +67,7 @@ class UpdateCouponRequest extends BaseFormRequest
                 'numeric',
                 'min:0.01',
                 function ($attribute, $value, $fail) {
-                    $type = $this->input('type', $this->route('coupon')->type ?? null);
-
-                    if ($type === 'percentage' && $value > 100) {
+                    if ($this->type === 'percentage' && $value > 100) {
                         $fail('قيمة الخصم بالنسبة لا يمكن أن تتجاوز 100%.');
                     }
                 }
@@ -98,24 +77,24 @@ class UpdateCouponRequest extends BaseFormRequest
             'usage_limit_per_user' => 'sometimes|integer|min:1|max:100',
 
             'start_at' => 'nullable|date|after_or_equal:today',
-            'end_at' => 'nullable|date|after:start_at',
+            'end_at'   => 'nullable|date|after:start_at',
 
-            'product_ids' => 'nullable|array',
+            'product_ids'   => 'nullable|array|min:1',
             'product_ids.*' => 'exists:products,id',
         ];
     }
 
     /**
-     * التحقق من أن المنتجات تنتمي للمتجر المحدد
+     * Validate that products belong to selected store
      */
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
-            // استخدام store_id من الطلب أو من الكوبون الحالي
-            $storeId = $this->input('store_id') ?? $this->route('coupon')->store_id;
+            $storeId   = $this->input('store_id');
             $productIds = $this->input('product_ids', []);
 
             if (!empty($productIds) && $storeId) {
+
                 $invalidProducts = Product::whereIn('id', $productIds)
                     ->where('store_id', '!=', $storeId)
                     ->pluck('name')
@@ -132,7 +111,7 @@ class UpdateCouponRequest extends BaseFormRequest
     }
 
     /**
-     * Attributes
+     * Arabic Attribute Names
      */
     public function attributes(): array
     {
@@ -149,11 +128,12 @@ class UpdateCouponRequest extends BaseFormRequest
     }
 
     /**
-     * Messages
+     * Custom Validation Messages
      */
     public function messages(): array
     {
         return [
+            'required' => 'حقل :attribute مطلوب.',
             'unique' => ':attribute مستخدم مسبقاً.',
             'exists' => ':attribute غير موجود.',
             'integer' => 'حقل :attribute يجب أن يكون عدداً صحيحاً.',
@@ -161,10 +141,8 @@ class UpdateCouponRequest extends BaseFormRequest
             'min' => 'حقل :attribute يجب ألا يقل عن :min.',
             'max' => 'حقل :attribute يجب ألا يتجاوز :max.',
             'in' => 'قيمة :attribute غير صحيحة.',
-            'after' => 'حقل :attribute يجب أن يكون بعد :date.',
-            'array' => 'حقل :attribute يجب أن يكون مصفوفة.',
             'date' => 'حقل :attribute يجب أن يكون تاريخاً صالحاً.',
-            'date_format' => 'حقل :attribute يجب أن يكون بالصيغة :format.',
+            'after' => 'حقل :attribute يجب أن يكون بعد :date.',
             'after_or_equal' => 'حقل :attribute يجب أن يكون من تاريخ اليوم أو بعده.',
         ];
     }
