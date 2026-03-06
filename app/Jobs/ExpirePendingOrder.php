@@ -210,6 +210,21 @@ class ExpirePendingOrder implements ShouldQueue
             }
 
             // إلغاء الطلب
+            // Restore stock for items before changing status
+            foreach ($freshOrder->items as $item) {
+                if ($item->product_variant_id) {
+                    $variant = $item->variant;
+                    if ($variant) {
+                        $variant->increment('stock_quantity', $item->quantity);
+                    }
+                } else {
+                    $product = $item->product;
+                    if ($product && $product->quantity !== null) {
+                        $product->increment('quantity', $item->quantity);
+                    }
+                }
+            }
+
             $freshOrder->update([
                 'status' => $freshOrder instanceof CustomOrder 
                     ? CustomOrder::STATUS_CANCELLED 

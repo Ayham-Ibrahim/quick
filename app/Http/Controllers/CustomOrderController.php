@@ -139,7 +139,7 @@ class CustomOrderController extends Controller
     public function calculateFee(Request $request)
     {
         $validated = $request->validate([
-            'distance_km' => 'required|numeric|min:0.1|max:100',
+            'distance_km' => 'required|numeric|max:100',
         ]);
 
         $fee = $this->customOrderService->calculateDeliveryFee($validated['distance_km']);

@@ -26,7 +26,7 @@ class UpdateCustomOrderRequest extends BaseFormRequest
             'delivery_address' => 'sometimes|string|max:500',
             'delivery_lat' => 'nullable|numeric|between:-90,90',
             'delivery_lng' => 'nullable|numeric|between:-180,180',
-            'distance_km' => 'sometimes|numeric|min:0.1|max:100',
+            'distance_km' => 'sometimes|numeric|max:100',
 
             // موعد التوصيل
             'is_immediate' => 'sometimes|boolean',
@@ -50,7 +50,6 @@ class UpdateCustomOrderRequest extends BaseFormRequest
     public function messages(): array
     {
         return [
-            'distance_km.min' => 'المسافة يجب أن تكون أكبر من 0.1 كم',
             'items.min' => 'يجب إضافة طلب واحد على الأقل',
             'items.max' => 'الحد الأقصى 10 طلبات',
             'items.*.description.required_with' => 'وصف الطلب مطلوب',
