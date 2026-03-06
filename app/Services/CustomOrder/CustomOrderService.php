@@ -146,15 +146,37 @@ class CustomOrderService extends Service
     }
 
     /**
-     * إلغاء طلب (فقط في حالة معلق)
+     * Restore inventory for a custom order (if items reference products)
      */
-    public function cancelOrder(int $orderId, ?string $reason = null)
+    private function restoreStockForCustom($order): void
+    {
+        foreach ($order->items as $item) {
+            if ($item->product_variant_id) {
+                $variant = $item->variant;
+                if ($variant) {
+                    $variant->increment('stock_quantity', $item->quantity);
+                }
+            } else {
+                $product = $item->product;
+                if ($product && $product->quantity !== null) {
+                    $product->increment('quantity', $item->quantity);
+                }
+            }
+        }
+    }
+
+    /**
+     * إلغاء طلب (فقط في حالة معلق)
+     */    public function cancelOrder(int $orderId, ?string $reason = null)
     {
         $order = $this->getUserOrder($orderId);
 
         if (!$order->is_cancellable) {
             $this->throwExceptionJson('لا يمكن إلغاء هذا الطلب في حالته الحالية', 400);
         }
+
+        // custom orders may not have stock tracking but if linked to products restore as needed
+        $this->restoreStockForCustom($order);
 
         $order->cancel($reason);
 
@@ -574,6 +596,9 @@ class CustomOrderService extends Service
             }
             $this->throwExceptionJson('لا يمكن إلغاء هذا الطلب في حالته الحالية', 400);
         }
+
+        // restore inventory if applicable
+        $this->restoreStockForCustom($order);
 
         // إلغاء الطلب
         $order->markAsCancelled($reason);

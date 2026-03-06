@@ -150,6 +150,9 @@ class OrderService extends Service
             $this->throwExceptionJson('لا يمكن إلغاء هذا الطلب في حالته الحالية', 400);
         }
 
+        // restore stock before cancelling so quantities return correctly
+        $this->restoreStock($order);
+
         $order->cancel($reason);
 
         // Notify driver if order was assigned
@@ -182,6 +185,27 @@ class OrderService extends Service
         $this->notificationService->notifyDriversNewOrder($eligibleDrivers, $order);
 
         return $order->fresh(['items.product', 'items.store', 'driver']);
+    }
+
+
+    /**
+     * Restore inventory quantities for a cancelled order
+     */
+    private function restoreStock(Order $order): void
+    {
+        foreach ($order->items as $item) {
+            if ($item->product_variant_id) {
+                $variant = $item->variant;
+                if ($variant) {
+                    $variant->increment('stock_quantity', $item->quantity);
+                }
+            } else {
+                $product = $item->product;
+                if ($product && $product->quantity !== null) {
+                    $product->increment('quantity', $item->quantity);
+                }
+            }
+        }
     }
 
     /**
@@ -646,6 +670,9 @@ class OrderService extends Service
             }
             $this->throwExceptionJson('لا يمكن إلغاء هذا الطلب في حالته الحالية', 400);
         }
+
+        // restore inventory since driver cancelled scheduled order
+        $this->restoreStock($order);
 
         // إلغاء الطلب
         $order->markAsCancelled($reason);
