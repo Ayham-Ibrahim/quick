@@ -26,7 +26,7 @@ class CheckoutRequest extends BaseFormRequest
             'delivery_lng' => 'required|numeric|between:-180,180',
             'is_immediate_delivery' => 'nullable|boolean',
             'requested_delivery_at' => 'nullable|date|after_or_equal:now|exclude_if:is_immediate_delivery,true|required_if:is_immediate_delivery,false',
-            'delivery_fee' => 'nullable|numeric|min:0', // جاهز للاستخدام المستقبلي
+            'distance_km' => 'required|numeric|max:100', // المسافة لأبعد متجر
             'notes' => 'nullable|string|max:500',
         ];
     }
@@ -56,8 +56,9 @@ class CheckoutRequest extends BaseFormRequest
             'is_immediate_delivery.boolean' => 'حقل التوصيل الفوري يجب أن يكون صحيح أو خطأ',
             'requested_delivery_at.after_or_equal' => 'موعد التوصيل يجب أن يكون الآن أو في المستقبل',
             'requested_delivery_at.required_if' => 'يجب إدخال موعد التوصيل عند اختيار طلب مجدول',
-            'delivery_fee.numeric' => 'رسوم التوصيل يجب أن تكون رقماً',
-            'delivery_fee.min' => 'رسوم التوصيل لا يمكن أن تكون سالبة',
+            'distance_km.required' => 'يجب إدخال المسافة لحساب رسوم التوصيل',
+            'distance_km.numeric' => 'المسافة يجب أن تكون رقماً',
+            'distance_km.max' => 'المسافة لا يمكن أن تتجاوز 100 كم',
             'coupon_code.max' => 'كود الكوبون طويل جداً',
             'notes.max' => 'الملاحظات طويلة جداً',
         ];

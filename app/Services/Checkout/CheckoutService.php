@@ -69,14 +69,9 @@ class CheckoutService extends Service
                 // حساب المبالغ
                 $totals = $this->calculateTotals($cart, $couponData);
 
-                // رسوم التوصيل (يمكن إرسالها من الـ request أو حسابها مستقبلاً)
-                $deliveryFee = $data['delivery_fee'] ?? 0;
-
-                // تأكد من احترام الحد الأدنى إذا تم ضبطه
-                $minFee = ProfitRatios::getValueByTag('minimum_order_value') ?? 0;
-                if ($deliveryFee < $minFee) {
-                    $deliveryFee = (float) $minFee;
-                }
+                // حساب رسوم التوصيل بالمعادلة الجديدة:
+                // (المسافة × سعر_الكيلومتر) + (سعر_الكيلومتر × (عدد_المتاجر - 1))
+                $deliveryFee = $this->calculateDeliveryFee($cart, $data['distance_km']);
 
                 // إنشاء الطلب مع فترة انتظار السائق
                 $order = Order::create([
@@ -506,5 +501,41 @@ class CheckoutService extends Service
                 ]
             );
         }
+    }
+
+    /**
+     * حساب رسوم التوصيل
+     * 
+     * المعادلة: (المسافة × سعر_الكيلومتر) + (سعر_الكيلومتر × (عدد_المتاجر - 1))
+     * مع مراعاة الحد الأدنى لرسوم التوصيل
+     * 
+     * @param Cart $cart السلة لحساب عدد المتاجر
+     * @param float $distanceKm المسافة بالكيلومتر
+     * @return float رسوم التوصيل
+     */
+    private function calculateDeliveryFee(Cart $cart, float $distanceKm): float
+    {
+        $kmPrice = (float) (ProfitRatios::getValueByTag('km_price') ?? 0);
+        $minDeliveryFee = (float) (ProfitRatios::getValueByTag('minimum_order_value') ?? 0);
+
+        // حساب عدد المتاجر الفريدة في السلة
+        $storeCount = $cart->items
+            ->pluck('product.store_id')
+            ->unique()
+            ->filter()
+            ->count();
+
+        // ضمان أن عدد المتاجر على الأقل 1
+        $storeCount = max(1, $storeCount);
+
+        // المعادلة: (المسافة × سعر الكم) + (سعر الكم × (عدد المتاجر - 1))
+        $baseFee = $distanceKm * $kmPrice;
+        $extraStoresFee = $kmPrice * ($storeCount - 1);
+        $calculatedFee = $baseFee + $extraStoresFee;
+
+        // مراعاة الحد الأدنى لرسوم التوصيل
+        $deliveryFee = max($calculatedFee, $minDeliveryFee);
+
+        return round($deliveryFee, 2);
     }
 }
