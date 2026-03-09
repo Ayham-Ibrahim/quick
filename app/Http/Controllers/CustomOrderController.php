@@ -140,12 +140,17 @@ class CustomOrderController extends Controller
     {
         $validated = $request->validate([
             'distance_km' => 'required|numeric|max:100',
+            'pickup_points_count' => 'required|integer|min:1|max:10',
         ]);
 
-        $fee = $this->customOrderService->calculateDeliveryFee($validated['distance_km']);
+        $fee = $this->customOrderService->calculateDeliveryFee(
+            $validated['distance_km'],
+            $validated['pickup_points_count']
+        );
 
         return $this->success([
             'distance_km' => (float) $validated['distance_km'],
+            'pickup_points_count' => (int) $validated['pickup_points_count'],
             'delivery_fee' => $fee,
         ], 'تم حساب سعر التوصيل');
     }

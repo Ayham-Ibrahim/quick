@@ -56,21 +56,32 @@ class CustomOrderService extends Service
      * ═══════════════════════════════════════════════════════════════════ */
 
     /**
-     * حساب سعر التوصيل بناءً على المسافة
+     * حساب سعر التوصيل بناءً على المسافة وعدد نقاط الاستلام
      *
-     * يتم استخدام أرقام بعشرية دقيقة ولا يتم تقريب القيم أثناء الحساب.
+     * المعادلة: (المسافة × سعر_الكيلومتر) + (سعر_الكيلومتر × (عدد_نقاط_الاستلام - 1))
+     * مع مراعاة الحد الأدنى لرسوم التوصيل
+     * 
+     * @param float $distanceKm المسافة بالكيلومتر
+     * @param int $pickupPointsCount عدد نقاط الاستلام (العناصر)
+     * @return float رسوم التوصيل
      */
-    public function calculateDeliveryFee(float $distanceKm): float
+    public function calculateDeliveryFee(float $distanceKm, int $pickupPointsCount = 1): float
     {
-        $kmPrice = ProfitRatios::getValueByTag('km_price') ?? 0;
-        $minFee = ProfitRatios::getValueByTag('minimum_order_value') ?? 0;
+        $kmPrice = (float) (ProfitRatios::getValueByTag('km_price') ?? 0);
+        $minDeliveryFee = (float) (ProfitRatios::getValueByTag('minimum_order_value') ?? 0);
 
-        // استخدم bc math لحساب القيمة بدقة عشرية
-        $feeString = bcmul((string) $distanceKm, (string) $kmPrice, 2);
-        $calculated = (float) $feeString;
+        // ضمان أن عدد نقاط الاستلام على الأقل 1
+        $pickupPointsCount = max(1, $pickupPointsCount);
 
-        // إذا كانت التكلفة أقل من الحد الأدنى، اعد الحد الأدنى
-        return $calculated < $minFee ? (float) $minFee : $calculated;
+        // المعادلة: (المسافة × سعر الكم) + (سعر الكم × (عدد النقاط - 1))
+        $baseFee = $distanceKm * $kmPrice;
+        $extraPointsFee = $kmPrice * ($pickupPointsCount - 1);
+        $calculatedFee = $baseFee + $extraPointsFee;
+
+        // مراعاة الحد الأدنى لرسوم التوصيل
+        $deliveryFee = max($calculatedFee, $minDeliveryFee);
+
+        return round($deliveryFee, 2);
     }
 
     /* ═══════════════════════════════════════════════════════════════════
@@ -86,14 +97,15 @@ class CustomOrderService extends Service
             $order = DB::transaction(function () use ($data) {
                 $user = Auth::user();
 
-                // حساب سعر التوصيل
-                $distanceKm = $data['distance_km'] ?? 0;
-                $deliveryFee = $this->calculateDeliveryFee($distanceKm);
-
                 // التحقق من وجود عناصر
                 if (empty($data['items'])) {
                     $this->throwExceptionJson('يجب إضافة عنصر واحد على الأقل', 400);
                 }
+
+                // حساب سعر التوصيل مع عدد نقاط الاستلام
+                $distanceKm = $data['distance_km'] ?? 0;
+                $pickupPointsCount = count($data['items']);
+                $deliveryFee = $this->calculateDeliveryFee($distanceKm, $pickupPointsCount);
 
                 // إنشاء الطلب مباشرة بحالة معلق
                 $order = CustomOrder::create([
