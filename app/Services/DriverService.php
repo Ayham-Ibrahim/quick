@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\Driver;
+use App\Models\Order;
+use App\Models\CustomOrder;
 use App\Services\Service;
 use App\Services\FileStorage;
 use Illuminate\Support\Facades\Log;
@@ -182,15 +184,41 @@ class DriverService extends Service
 
     /**
      * Delete driver and images
+     * 
+     * يمنع الحذف إذا كان السائق لديه طلبات قيد التوصيل
      */
     public function deleteDriver(Driver $driver)
     {
         try {
+            // التحقق من وجود طلبات قيد التوصيل
+            $activeOrdersCount = $driver->orders()
+                ->where('status', Order::STATUS_SHIPPING)
+                ->count();
+
+            $activeCustomOrdersCount = $driver->customOrders()
+                ->where('status', CustomOrder::STATUS_SHIPPING)
+                ->count();
+
+            if ($activeOrdersCount > 0 || $activeCustomOrdersCount > 0) {
+                $totalActive = $activeOrdersCount + $activeCustomOrdersCount;
+                $this->throwExceptionJson(
+                    "لا يمكن حذف السائق لأن لديه {$totalActive} طلب قيد التوصيل",
+                    400,
+                    [
+                        'active_orders' => $activeOrdersCount,
+                        'active_custom_orders' => $activeCustomOrdersCount,
+                    ]
+                );
+            }
+
+            // حذف الصور
             FileStorage::deleteFile($driver->driver_image);
             FileStorage::deleteFile($driver->front_id_image);
             FileStorage::deleteFile($driver->back_id_image);
 
-            $driver->delete();
+            // حذف نهائي
+            $driver->forceDelete();
+            
             return true;
         } catch (\Throwable $th) {
             Log::error($th);
