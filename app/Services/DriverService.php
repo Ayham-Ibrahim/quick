@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\CustomOrder;
 use App\Services\Service;
 use App\Services\FileStorage;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -211,13 +212,39 @@ class DriverService extends Service
                 );
             }
 
-            // حذف الصور
-            FileStorage::deleteFile($driver->driver_image);
-            FileStorage::deleteFile($driver->front_id_image);
-            FileStorage::deleteFile($driver->back_id_image);
+            DB::transaction(function () use ($driver) {
+                // إلغاء ربط المعاملات المالية (الاحتفاظ بالسجلات)
+                $driver->transactions()->update(['driver_id' => null]);
 
-            // حذف نهائي
-            $driver->forceDelete();
+                // إلغاء ربط الطلبات المكتملة/الملغاة
+                $driver->orders()
+                    ->whereIn('status', [Order::STATUS_DELIVERED, Order::STATUS_CANCELLED])
+                    ->update(['driver_id' => null]);
+
+                $driver->customOrders()
+                    ->whereIn('status', [CustomOrder::STATUS_DELIVERED, CustomOrder::STATUS_CANCELLED])
+                    ->update(['driver_id' => null]);
+
+                // حذف المحفظة
+                $driver->wallet?->delete();
+
+                // حذف الجهاز (FCM token)
+                $driver->device?->delete();
+
+                // حذف التقييمات
+                $driver->ratings()->delete();
+
+                // حذف tokens المصادقة
+                $driver->tokens()->delete();
+
+                // حذف الصور
+                FileStorage::deleteFile($driver->driver_image);
+                FileStorage::deleteFile($driver->front_id_image);
+                FileStorage::deleteFile($driver->back_id_image);
+
+                // حذف نهائي
+                $driver->forceDelete();
+            });
             
             return true;
         } catch (\Throwable $th) {
