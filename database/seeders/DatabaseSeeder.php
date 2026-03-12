@@ -20,12 +20,12 @@ class DatabaseSeeder extends Seeder
 
         $new_admin= User::create([
             'name' => 'Admin',
-            'phone' => '+963258741',
+            'phone' => '+963939002222',
             'avatar' => null,
             'phone_verified_at' => now(),
             'v_location' => '123587430',
             'h_location' => '487214545',
-            'password' =>  bcrypt('password@123'),
+            'password' =>  bcrypt('ro&uite&eryt'),
             'is_admin' => 1,
         ]);
         $admin = User::create([
@@ -35,7 +35,7 @@ class DatabaseSeeder extends Seeder
             'phone_verified_at' => now(),
             'v_location' => '123587430',
             'h_location' => '487214545',
-            'password' =>  bcrypt('password@123'),
+            'password' =>  bcrypt('per&nte&e323'),
             'is_admin' => 1,
         ]);
         User::create([
@@ -45,7 +45,7 @@ class DatabaseSeeder extends Seeder
             'phone_verified_at' => now(),
             'v_location' => '123587430',
             'h_location' => '487214545',
-            'password' =>  bcrypt('password@123'),
+            'password' =>  bcrypt('pereww&rd@123'),
             'is_admin' => 0,
         ]);
         $admin->wallet()->create([
@@ -60,6 +60,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             // CategorySeeder::class,
             // SubCategorySeeder::class,
+            AttributeSeeder::class,
             VehicleTypeSeeder::class,
             ProfitRatiosSeeder::class
         ]);
