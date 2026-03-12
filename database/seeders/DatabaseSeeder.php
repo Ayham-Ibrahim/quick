@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
             'phone_verified_at' => now(),
             'v_location' => '123587430',
             'h_location' => '487214545',
-            'password' =>  bcrypt('password@123'),
+            'password' =>  bcrypt('ro&uite&eryt'),
             'is_admin' => 1,
         ]);
         $admin = User::create([
