@@ -213,15 +213,20 @@ class ProductService extends Service
     protected function storeProductVariants(Product $product, array $variants): void
     {
         foreach ($variants as $variantData) {
+            $sku = $variantData['sku'] ?? $this->generateSku($product);
+            $price = $variantData['price'] ?? null;
+            $stockQuantity = $variantData['stock_quantity'] ?? 0;
+            $isActive = $variantData['is_active'] ?? true;
+
             $variant = $product->variants()->create([
-                'sku' => $variantData['sku'] ?? $this->generateSku($product),
-                'price' => $variantData['price'],
-                'stock_quantity' => $variantData['stock_quantity'],
-                'is_active' => $variantData['is_active'] ?? true,
+                'sku' => $sku,
+                'price' => $price,
+                'stock_quantity' => $stockQuantity,
+                'is_active' => $isActive,
             ]);
 
             // Store variant attributes (Color: Red, Size: XL, etc.)
-            foreach ($variantData['attributes'] as $attribute) {
+            foreach ($variantData['attributes'] ?? [] as $attribute) {
                 $variant->attributes()->create([
                     'attribute_id' => $attribute['attribute_id'],
                     'attribute_value_id' => $attribute['attribute_value_id'],
@@ -243,16 +248,21 @@ class ProductService extends Service
                 // Update existing variant
                 $variant = ProductVariant::find($variantData['id']);
                 if ($variant && $variant->product_id === $product->id) {
+                    $sku = $variantData['sku'] ?? $variant->sku;
+                    $price = $variantData['price'] ?? $variant->price;
+                    $stockQuantity = $variantData['stock_quantity'] ?? $variant->stock_quantity;
+                    $isActive = $variantData['is_active'] ?? $variant->is_active;
+
                     $variant->update([
-                        'sku' => $variantData['sku'] ?? $variant->sku,
-                        'price' => $variantData['price'],
-                        'stock_quantity' => $variantData['stock_quantity'],
-                        'is_active' => $variantData['is_active'] ?? $variant->is_active,
+                        'sku' => $sku,
+                        'price' => $price,
+                        'stock_quantity' => $stockQuantity,
+                        'is_active' => $isActive,
                     ]);
 
                     // Update attributes - delete old and create new
                     $variant->attributes()->delete();
-                    foreach ($variantData['attributes'] as $attribute) {
+                    foreach ($variantData['attributes'] ?? [] as $attribute) {
                         $variant->attributes()->create([
                             'attribute_id' => $attribute['attribute_id'],
                             'attribute_value_id' => $attribute['attribute_value_id'],
@@ -261,14 +271,19 @@ class ProductService extends Service
                 }
             } else {
                 // Create new variant
+                $sku = $variantData['sku'] ?? $this->generateSku($product);
+                $price = $variantData['price'] ?? null;
+                $stockQuantity = $variantData['stock_quantity'] ?? 0;
+                $isActive = $variantData['is_active'] ?? true;
+
                 $variant = $product->variants()->create([
-                    'sku' => $variantData['sku'] ?? $this->generateSku($product),
-                    'price' => $variantData['price'],
-                    'stock_quantity' => $variantData['stock_quantity'],
-                    'is_active' => $variantData['is_active'] ?? true,
+                    'sku' => $sku,
+                    'price' => $price,
+                    'stock_quantity' => $stockQuantity,
+                    'is_active' => $isActive,
                 ]);
 
-                foreach ($variantData['attributes'] as $attribute) {
+                foreach ($variantData['attributes'] ?? [] as $attribute) {
                     $variant->attributes()->create([
                         'attribute_id' => $attribute['attribute_id'],
                         'attribute_value_id' => $attribute['attribute_value_id'],
