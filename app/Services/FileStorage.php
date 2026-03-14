@@ -6,10 +6,8 @@ use Exception;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\ValidationException;
 
 class FileStorage
 {
@@ -84,12 +82,16 @@ class FileStorage
             $fileName = Str::random(32);
             $fileName = preg_replace('/[^A-Za-z0-9_\-]/', '', $fileName);
 
-            $path = $file->storeAs($folderName, $fileName . '.' . $extension, 'public');
+            $expectedFileName = $fileName . '.' . $extension;
+            $expectedPath = $folderName . '/' . $expectedFileName;
 
-            $expectedPath = storage_path('app/public/' . $folderName . '/' . $fileName . '.' . $extension);
-            $actualPath = storage_path('app/public/' . $path);
+            $path = $file->storeAs($folderName, $expectedFileName, 'public');
 
-            if ($actualPath !== $expectedPath) {
+            // تطبيع المسارات للمقارنة (إزالة اختلافات الفواصل)
+            $normalizedExpected = str_replace('\\', '/', $expectedPath);
+            $normalizedActual = str_replace('\\', '/', $path);
+
+            if ($normalizedActual !== $normalizedExpected) {
                 Storage::disk('public')->delete($path);
                 self::throwValidationError('file', 'حدث خطأ أثناء حفظ الملف');
             }
