@@ -70,13 +70,25 @@ class ProductResource extends JsonResource
 
     /**
      * Calculate total stock from all variants or base quantity
+     * 
+     * الحالات:
+     * 1. منتج بدون variants → الكمية من product.quantity
+     * 2. منتج له variants و quantity_depends_on_attributes = true → الكمية من مجموع variant.stock_quantity
+     * 3. منتج له variants و quantity_depends_on_attributes = false → الكمية من product.quantity
      */
     protected function calculateTotalStock(): int
     {
-        if ($this->variants->count() > 0) {
+        // إذا لا توجد variants، الكمية من المنتج مباشرة
+        if ($this->variants->count() === 0) {
+            return $this->quantity ?? 0;
+        }
+
+        // إذا الكمية تعتمد على الـ variants
+        if ($this->subCategory?->quantity_depends_on_attributes) {
             return $this->variants->where('is_active', true)->sum('stock_quantity');
         }
 
+        // الكمية من المنتج (variants للسعر فقط)
         return $this->quantity ?? 0;
     }
 

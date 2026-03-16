@@ -55,11 +55,22 @@ class CartItem extends Model
 
     /**
      * Get available stock for this item
+     * يراعي إعداد quantity_depends_on_attributes في الفئة الفرعية
      */
     public function getAvailableStockAttribute(): int
     {
+        // إذا كان للمنتج variant
         if ($this->variant) {
-            return $this->variant->stock_quantity;
+            // تحقق من إعداد الفئة الفرعية
+            $quantityDependsOnAttributes = $this->product?->subCategory?->quantity_depends_on_attributes ?? false;
+            
+            // إذا الكمية تعتمد على الـ variant
+            if ($quantityDependsOnAttributes) {
+                return $this->variant->stock_quantity;
+            }
+            
+            // الكمية من المنتج (variants للسعر فقط)
+            return $this->product->quantity ?? 0;
         }
 
         return $this->product->quantity ?? 0;
@@ -67,13 +78,28 @@ class CartItem extends Model
 
     /**
      * Check if requested quantity is available
+     * يراعي إعداد quantity_depends_on_attributes في الفئة الفرعية
      */
     public function isQuantityAvailable(int $quantity = null): bool
     {
         $qty = $quantity ?? $this->quantity;
 
         if ($this->variant) {
-            return $this->variant->is_active && $this->variant->stock_quantity >= $qty;
+            // الـ variant يجب أن يكون نشطاً
+            if (!$this->variant->is_active) {
+                return false;
+            }
+            
+            // تحقق من إعداد الفئة الفرعية
+            $quantityDependsOnAttributes = $this->product?->subCategory?->quantity_depends_on_attributes ?? false;
+            
+            // إذا الكمية تعتمد على الـ variant
+            if ($quantityDependsOnAttributes) {
+                return $this->variant->stock_quantity >= $qty;
+            }
+            
+            // الكمية من المنتج (variants للسعر فقط)
+            return ($this->product->quantity ?? 0) >= $qty;
         }
 
         return ($this->product->quantity ?? 0) >= $qty;

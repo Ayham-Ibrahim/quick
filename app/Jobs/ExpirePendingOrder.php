@@ -168,12 +168,12 @@ class ExpirePendingOrder implements ShouldQueue
     }
 
     /**
-     * جلب الطلب حسب النوع
+     * جلب الطلب حسب النوع مع العلاقات المطلوبة
      */
     private function getOrder(): Order|CustomOrder|null
     {
         return match ($this->orderType) {
-            'regular' => Order::find($this->orderId),
+            'regular' => Order::with(['items.product.subCategory', 'items.variant'])->find($this->orderId),
             'custom' => CustomOrder::find($this->orderId),
             default => null,
         };
@@ -210,15 +210,27 @@ class ExpirePendingOrder implements ShouldQueue
             }
 
             // إلغاء الطلب
-            // Restore stock for items before changing status
+            // Restore stock for items before changing status - يراعي إعداد quantity_depends_on_attributes
             foreach ($freshOrder->items as $item) {
+                $product = $item->product;
+                
                 if ($item->product_variant_id) {
                     $variant = $item->variant;
-                    if ($variant) {
-                        $variant->increment('stock_quantity', $item->quantity);
+                    // تحقق من إعداد الفئة الفرعية
+                    $quantityDependsOnAttributes = $product?->subCategory?->quantity_depends_on_attributes ?? false;
+                    
+                    if ($quantityDependsOnAttributes) {
+                        // استعادة للـ variant
+                        if ($variant) {
+                            $variant->increment('stock_quantity', $item->quantity);
+                        }
+                    } else {
+                        // استعادة للـ product (variants للسعر فقط)
+                        if ($product && $product->quantity !== null) {
+                            $product->increment('quantity', $item->quantity);
+                        }
                     }
                 } else {
-                    $product = $item->product;
                     if ($product && $product->quantity !== null) {
                         $product->increment('quantity', $item->quantity);
                     }

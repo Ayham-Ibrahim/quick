@@ -140,7 +140,9 @@ class OrderService extends Service
      */
     public function cancelOrder(int $orderId, ?string $reason = null): Order
     {
-        $order = Order::where('user_id', Auth::id())->find($orderId);
+        $order = Order::where('user_id', Auth::id())
+            ->with(['items.product.subCategory', 'items.variant'])
+            ->find($orderId);
 
         if (!$order) {
             $this->throwExceptionJson('الطلب غير موجود', 404);
@@ -190,17 +192,30 @@ class OrderService extends Service
 
     /**
      * Restore inventory quantities for a cancelled order
+     * يراعي إعداد quantity_depends_on_attributes في الفئة الفرعية
      */
     private function restoreStock(Order $order): void
     {
         foreach ($order->items as $item) {
+            $product = $item->product;
+            
             if ($item->product_variant_id) {
                 $variant = $item->variant;
-                if ($variant) {
-                    $variant->increment('stock_quantity', $item->quantity);
+                // تحقق من إعداد الفئة الفرعية
+                $quantityDependsOnAttributes = $product?->subCategory?->quantity_depends_on_attributes ?? false;
+                
+                if ($quantityDependsOnAttributes) {
+                    // استعادة للـ variant
+                    if ($variant) {
+                        $variant->increment('stock_quantity', $item->quantity);
+                    }
+                } else {
+                    // استعادة للـ product (variants للسعر فقط)
+                    if ($product && $product->quantity !== null) {
+                        $product->increment('quantity', $item->quantity);
+                    }
                 }
             } else {
-                $product = $item->product;
                 if ($product && $product->quantity !== null) {
                     $product->increment('quantity', $item->quantity);
                 }
@@ -247,7 +262,7 @@ class OrderService extends Service
     public function reorderOrder(int $orderId, array $data = []): Order
     {
         $originalOrder = Order::where('user_id', Auth::id())
-            ->with(['items.product', 'items.variant'])
+            ->with(['items.product.subCategory', 'items.variant'])
             ->find($orderId);
 
         if (!$originalOrder) {
@@ -280,9 +295,10 @@ class OrderService extends Service
                     ? (float) $variant->price 
                     : (float) $product->current_price;
 
-                // التحقق من توفر الكمية
+                // التحقق من توفر الكمية - يراعي إعداد quantity_depends_on_attributes
+                $quantityDependsOnAttributes = $product?->subCategory?->quantity_depends_on_attributes ?? false;
                 $availableStock = $variant 
-                    ? $variant->stock_quantity 
+                    ? ($quantityDependsOnAttributes ? $variant->stock_quantity : ($product->quantity ?? PHP_INT_MAX))
                     : ($product->quantity ?? PHP_INT_MAX);
 
                 if ($availableStock < $item->quantity) {
@@ -349,11 +365,22 @@ class OrderService extends Service
                 $newOrder->items()->create($itemData);
             }
 
-            // خصم الكميات من المخزون
+            // خصم الكميات من المخزون - يراعي إعداد quantity_depends_on_attributes
             foreach ($newOrder->items as $newItem) {
+                $product = Product::with('subCategory')->find($newItem->product_id);
+                $quantityDependsOnAttributes = $product?->subCategory?->quantity_depends_on_attributes ?? false;
+                
                 if ($newItem->product_variant_id) {
-                    ProductVariant::where('id', $newItem->product_variant_id)
-                        ->decrement('stock_quantity', $newItem->quantity);
+                    if ($quantityDependsOnAttributes) {
+                        // خصم من variant
+                        ProductVariant::where('id', $newItem->product_variant_id)
+                            ->decrement('stock_quantity', $newItem->quantity);
+                    } else {
+                        // خصم من product (variants للسعر فقط)
+                        Product::where('id', $newItem->product_id)
+                            ->where('quantity', '>', 0)
+                            ->decrement('quantity', $newItem->quantity);
+                    }
                 } else {
                     Product::where('id', $newItem->product_id)
                         ->where('quantity', '>', 0)

@@ -43,12 +43,13 @@ class ProductController extends Controller
         $query = Product::where('is_accepted', true)
             ->with([
                 'store:id,store_name,store_logo',
-                'subCategory:id,name,category_id',
+                'subCategory:id,name,category_id,quantity_depends_on_attributes',
                 'subCategory.category:id,name',
                 'images',
                 'variants' => fn($q) => $q->where('is_active', true),
                 'variants.attributes.attribute',
-                'variants.attributes.value'
+                'variants.attributes.value',
+                'variants.product.subCategory:id,quantity_depends_on_attributes'
             ])->orderBy('created_at', 'desc');
 
         // Filter by subcategory if passed
@@ -74,11 +75,12 @@ class ProductController extends Controller
         $query = Product::where('store_id', $store_id)
             ->with([
                 'store:id,store_name,store_logo',
-                'subCategory:id,name,category_id',
+                'subCategory:id,name,category_id,quantity_depends_on_attributes',
                 'subCategory.category:id,name',
                 'images',
                 'variants.attributes.attribute',
-                'variants.attributes.value'
+                'variants.attributes.value',
+                'variants.product.subCategory:id,quantity_depends_on_attributes'
             ])
             ->orderBy('created_at', 'desc');
         // Filter by subcategory if passed
@@ -226,11 +228,12 @@ class ProductController extends Controller
             ->where('is_accepted', true)
             ->with([
                 'store:id,store_name,store_logo',
-                'subCategory:id,name,category_id',
+                'subCategory:id,name,category_id,quantity_depends_on_attributes',
                 'subCategory.category:id,name',
                 'images',
                 'variants.attributes.attribute',
-                'variants.attributes.value'
+                'variants.attributes.value',
+                'variants.product.subCategory:id,quantity_depends_on_attributes'
             ])->orderBy('created_at', 'desc');
 
         // Filter by subcategory if provided
