@@ -449,17 +449,30 @@ class CheckoutService extends Service
 
     /**
      * خصم الكميات من المخزون
+     * يراعي إعداد quantity_depends_on_attributes في الفئة الفرعية
      */
     private function decrementStock(Cart $cart): void
     {
         foreach ($cart->items as $item) {
+            $product = $item->product;
+            
             if ($item->variant) {
-                // خصم من variant
-                $item->variant->decrement('stock_quantity', $item->quantity);
+                // تحقق من إعداد الفئة الفرعية
+                $quantityDependsOnAttributes = $product?->subCategory?->quantity_depends_on_attributes ?? false;
+                
+                if ($quantityDependsOnAttributes) {
+                    // خصم من variant
+                    $item->variant->decrement('stock_quantity', $item->quantity);
+                } else {
+                    // خصم من product (variants للسعر فقط)
+                    if ($product && $product->quantity !== null) {
+                        $product->decrement('quantity', $item->quantity);
+                    }
+                }
             } else {
                 // خصم من product
-                if ($item->product->quantity !== null) {
-                    $item->product->decrement('quantity', $item->quantity);
+                if ($product && $product->quantity !== null) {
+                    $product->decrement('quantity', $item->quantity);
                 }
             }
         }

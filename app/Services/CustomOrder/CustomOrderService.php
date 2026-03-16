@@ -159,17 +159,30 @@ class CustomOrderService extends Service
 
     /**
      * Restore inventory for a custom order (if items reference products)
+     * يراعي إعداد quantity_depends_on_attributes في الفئة الفرعية
      */
     private function restoreStockForCustom($order): void
     {
         foreach ($order->items as $item) {
+            $product = $item->product;
+            
             if ($item->product_variant_id) {
                 $variant = $item->variant;
-                if ($variant) {
-                    $variant->increment('stock_quantity', $item->quantity);
+                // تحقق من إعداد الفئة الفرعية
+                $quantityDependsOnAttributes = $product?->subCategory?->quantity_depends_on_attributes ?? false;
+                
+                if ($quantityDependsOnAttributes) {
+                    // استعادة للـ variant
+                    if ($variant) {
+                        $variant->increment('stock_quantity', $item->quantity);
+                    }
+                } else {
+                    // استعادة للـ product (variants للسعر فقط)
+                    if ($product && $product->quantity !== null) {
+                        $product->increment('quantity', $item->quantity);
+                    }
                 }
             } else {
-                $product = $item->product;
                 if ($product && $product->quantity !== null) {
                     $product->increment('quantity', $item->quantity);
                 }
@@ -707,7 +720,7 @@ class CustomOrderService extends Service
     protected function getUserOrder(int $orderId)
     {
         $order = CustomOrder::where('user_id', Auth::id())
-            ->with(['items', 'driver'])
+            ->with(['items.product.subCategory', 'items.variant', 'driver'])
             ->find($orderId);
 
         if (!$order) {

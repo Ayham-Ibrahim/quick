@@ -314,6 +314,7 @@ class ProductService extends Service
 
     /**
      * Decrease stock quantity for a specific variant
+     * يراعي إعداد quantity_depends_on_attributes في الفئة الفرعية
      *
      * @param int $variantId
      * @param int $quantity
@@ -322,23 +323,35 @@ class ProductService extends Service
      */
     public function decreaseVariantStock(int $variantId, int $quantity): bool
     {
-        $variant = ProductVariant::lockForUpdate()->find($variantId);
+        $variant = ProductVariant::with('product.subCategory')->lockForUpdate()->find($variantId);
 
         if (!$variant) {
             $this->throwExceptionJson('المتغير غير موجود', 404);
         }
 
-        if ($variant->stock_quantity < $quantity) {
-            $this->throwExceptionJson('الكمية المطلوبة غير متوفرة في المخزون', 400);
-        }
+        $product = $variant->product;
+        $quantityDependsOnAttributes = $product?->subCategory?->quantity_depends_on_attributes ?? false;
 
-        $variant->decrement('stock_quantity', $quantity);
+        if ($quantityDependsOnAttributes) {
+            // خصم من variant
+            if ($variant->stock_quantity < $quantity) {
+                $this->throwExceptionJson('الكمية المطلوبة غير متوفرة في المخزون', 400);
+            }
+            $variant->decrement('stock_quantity', $quantity);
+        } else {
+            // خصم من product (variants للسعر فقط)
+            if (($product->quantity ?? 0) < $quantity) {
+                $this->throwExceptionJson('الكمية المطلوبة غير متوفرة في المخزون', 400);
+            }
+            $product->decrement('quantity', $quantity);
+        }
 
         return true;
     }
 
     /**
      * Increase stock quantity for a specific variant (e.g., order cancellation)
+     * يراعي إعداد quantity_depends_on_attributes في الفئة الفرعية
      *
      * @param int $variantId
      * @param int $quantity
@@ -346,19 +359,29 @@ class ProductService extends Service
      */
     public function increaseVariantStock(int $variantId, int $quantity): bool
     {
-        $variant = ProductVariant::find($variantId);
+        $variant = ProductVariant::with('product.subCategory')->find($variantId);
 
         if (!$variant) {
             $this->throwExceptionJson('المتغير غير موجود', 404);
         }
 
-        $variant->increment('stock_quantity', $quantity);
+        $product = $variant->product;
+        $quantityDependsOnAttributes = $product?->subCategory?->quantity_depends_on_attributes ?? false;
+
+        if ($quantityDependsOnAttributes) {
+            // استعادة للـ variant
+            $variant->increment('stock_quantity', $quantity);
+        } else {
+            // استعادة للـ product (variants للسعر فقط)
+            $product->increment('quantity', $quantity);
+        }
 
         return true;
     }
 
     /**
      * Check if variant has enough stock
+     * يراعي إعداد quantity_depends_on_attributes في الفئة الفرعية
      *
      * @param int $variantId
      * @param int $quantity
@@ -366,13 +389,26 @@ class ProductService extends Service
      */
     public function checkVariantStock(int $variantId, int $quantity): bool
     {
-        $variant = ProductVariant::find($variantId);
+        $variant = ProductVariant::with('product.subCategory')->find($variantId);
 
         if (!$variant) {
             return false;
         }
 
-        return $variant->is_active && $variant->stock_quantity >= $quantity;
+        if (!$variant->is_active) {
+            return false;
+        }
+
+        $product = $variant->product;
+        $quantityDependsOnAttributes = $product?->subCategory?->quantity_depends_on_attributes ?? false;
+
+        if ($quantityDependsOnAttributes) {
+            // تحقق من variant
+            return $variant->stock_quantity >= $quantity;
+        } else {
+            // تحقق من product (variants للسعر فقط)
+            return ($product->quantity ?? 0) >= $quantity;
+        }
     }
 
     /**
@@ -385,7 +421,7 @@ class ProductService extends Service
     {
         return Product::with([
             'store:id,store_name,store_logo',
-            'subCategory:id,name,category_id',
+            'subCategory:id,name,category_id,quantity_depends_on_attributes',
             'subCategory.category:id,name',
             'images',
             'variants' => function ($query) {
@@ -393,6 +429,7 @@ class ProductService extends Service
             },
             'variants.attributes.attribute',
             'variants.attributes.value',
+            'variants.product.subCategory:id,quantity_depends_on_attributes', // لحساب is_in_stock
             'ratings'
         ])->find($productId);
     }

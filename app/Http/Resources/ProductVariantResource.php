@@ -14,13 +14,22 @@ class ProductVariantResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        // تحديد مصدر الكمية بناءً على إعدادات الفئة الفرعية
+        $quantityDependsOnAttributes = $this->product?->subCategory?->quantity_depends_on_attributes ?? false;
+        
+        // إذا الكمية تعتمد على الـ variant، نتحقق من stock_quantity
+        // وإلا نتحقق من كمية المنتج الأساسية
+        $isInStock = $quantityDependsOnAttributes 
+            ? $this->stock_quantity > 0 
+            : ($this->product?->quantity ?? 0) > 0;
+
         return [
             'id' => $this->id,
             'sku' => $this->sku,
             'price' => (float) $this->price,
             'stock_quantity' => (int) $this->stock_quantity,
             'is_active' => (bool) $this->is_active,
-            'is_in_stock' => $this->stock_quantity > 0,
+            'is_in_stock' => $isInStock,
             'attributes' => $this->whenLoaded('attributes', function () {
                 return $this->attributes->map(function ($attr) {
                 //     $name = $attr->attribute?->name;
