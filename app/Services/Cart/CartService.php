@@ -49,7 +49,7 @@ class CartService extends Service
             DB::beginTransaction();
 
             $cart = $this->getOrCreateCart();
-            $product = Product::find($data['product_id']);
+            $product = Product::with('subCategory')->find($data['product_id']);
 
             if (!$product) {
                 $this->throwExceptionJson('المنتج غير موجود', 404);
@@ -58,6 +58,9 @@ class CartService extends Service
             if (!$product->is_accepted) {
                 $this->throwExceptionJson('هذا المنتج غير متاح حالياً', 400);
             }
+
+            // تحديد مصدر الكمية بناءً على إعدادات الفئة الفرعية
+            $quantityDependsOnAttributes = $product->subCategory?->quantity_depends_on_attributes ?? false;
 
             $variantId = $data['product_variant_id'] ?? null;
             $quantity = $data['quantity'] ?? 1;
@@ -77,9 +80,14 @@ class CartService extends Service
                     $this->throwExceptionJson('هذا المتغير غير متاح حالياً', 400);
                 }
 
-                if ($variant->stock_quantity < $quantity) {
+                // التحقق من الكمية بناءً على إعدادات الفئة الفرعية
+                $availableStock = $quantityDependsOnAttributes 
+                    ? $variant->stock_quantity 
+                    : ($product->quantity ?? 0);
+
+                if ($availableStock < $quantity) {
                     $this->throwExceptionJson(
-                        "الكمية المطلوبة غير متوفرة. المتوفر: {$variant->stock_quantity}",
+                        "الكمية المطلوبة غير متوفرة. المتوفر: {$availableStock}",
                         400
                     );
                 }
@@ -108,9 +116,14 @@ class CartService extends Service
                 // Validate new quantity against stock
                 if ($variantId) {
                     $variant = ProductVariant::find($variantId);
-                    if ($variant->stock_quantity < $newQuantity) {
+                    // التحقق من الكمية بناءً على إعدادات الفئة الفرعية
+                    $availableStockForUpdate = $quantityDependsOnAttributes 
+                        ? $variant->stock_quantity 
+                        : ($product->quantity ?? 0);
+
+                    if ($availableStockForUpdate < $newQuantity) {
                         $this->throwExceptionJson(
-                            "لا يمكن إضافة المزيد. الكمية الإجمالية تتجاوز المخزون المتاح ({$variant->stock_quantity})",
+                            "لا يمكن إضافة المزيد. الكمية الإجمالية تتجاوز المخزون المتاح ({$availableStockForUpdate})",
                             400
                         );
                     }
