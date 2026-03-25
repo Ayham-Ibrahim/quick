@@ -13,10 +13,14 @@ class AdminProfit extends Model
         'order_id',
         'amount',
         'description',
+        'is_settled',
+        'settled_at',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'is_settled' => 'boolean',
+        'settled_at' => 'datetime',
     ];
 
     /* ================= Constants ================= */
@@ -61,6 +65,21 @@ class AdminProfit extends Model
     public function scopeFromStores($query)
     {
         return $query->where('source_type', self::SOURCE_STORE);
+    }
+
+    public function scopeUnsettled($query)
+    {
+        return $query->where('is_settled', false);
+    }
+
+    public function scopeSettled($query)
+    {
+        return $query->where('is_settled', true);
+    }
+
+    public function scopeForStore($query, int $storeId)
+    {
+        return $query->fromStores()->where('source_id', $storeId);
     }
 
     /* ================= Static Methods ================= */
@@ -126,5 +145,57 @@ class AdminProfit extends Model
     public static function getTotalProfits(): float
     {
         return (float) self::sum('amount');
+    }
+
+    /**
+     * Get unsettled profits for a specific store
+     */
+    public static function getUnsettledStoreProfits(int $storeId): float
+    {
+        return (float) self::forStore($storeId)->unsettled()->sum('amount');
+    }
+
+    /**
+     * Get total profits for a specific store (all time)
+     */
+    public static function getTotalStoreProfitsById(int $storeId): float
+    {
+        return (float) self::forStore($storeId)->sum('amount');
+    }
+
+    /**
+     * Get settled profits for a specific store
+     */
+    public static function getSettledStoreProfits(int $storeId): float
+    {
+        return (float) self::forStore($storeId)->settled()->sum('amount');
+    }
+
+    /**
+     * Settle all unsettled profits for a specific store
+     * 
+     * @return int Number of records settled
+     */
+    public static function settleStoreProfits(int $storeId): int
+    {
+        return self::forStore($storeId)
+            ->unsettled()
+            ->update([
+                'is_settled' => true,
+                'settled_at' => now(),
+            ]);
+    }
+
+    /**
+     * Get store profit statistics
+     */
+    public static function getStoreProfitStats(int $storeId): array
+    {
+        return [
+            'total_profits' => self::getTotalStoreProfitsById($storeId),
+            'unsettled_profits' => self::getUnsettledStoreProfits($storeId),
+            'settled_profits' => self::getSettledStoreProfits($storeId),
+            'unsettled_count' => self::forStore($storeId)->unsettled()->count(),
+        ];
     }
 }

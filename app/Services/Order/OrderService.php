@@ -1061,7 +1061,10 @@ class OrderService extends Service
 
         // جلب نسبة أرباح الإدارة من الطلبات
         $adminProfitPercentage = \App\Models\ProfitRatios::getValueByTag('order_profit_percentage') ?? 10;
-        $adminProfitAmount = round($totalStoreRevenue * ($adminProfitPercentage / 100), 2);
+
+        // استخدام البيانات الفعلية من جدول admin_profits بدلاً من الحساب النظري
+        $profitStats = \App\Models\AdminProfit::getStoreProfitStats($storeId);
+        $adminProfitAmount = $profitStats['unsettled_profits']; // المبلغ الفعلي غير المسوى
         $netStoreBalance = round($totalStoreRevenue - $adminProfitAmount, 2);
 
         return [
@@ -1069,7 +1072,7 @@ class OrderService extends Service
             'total_store_revenue' => round($totalStoreRevenue, 2), // إجمالي رصيد الطلبات
             'total_coupon_discount' => round($totalStoreCouponDiscount, 2), // إجمالي الخصومات
             'admin_profit_percentage' => $adminProfitPercentage,
-            'admin_profit_amount' => $adminProfitAmount, // نسبة الإدارة
+            'admin_profit_amount' => $adminProfitAmount, // نسبة الإدارة (من جدول الأرباح الفعلي)
             'net_store_balance' => $netStoreBalance, // رصيد طلبات المتجر (صافي)
         ];
     }

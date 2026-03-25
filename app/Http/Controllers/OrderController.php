@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Order\ReorderRequest;
 use App\Http\Resources\OrderResource;
 use App\Http\Resources\StoreOrderResource;
+use App\Models\AdminProfit;
 use App\Services\Geofencing\GeofencingService;
 use App\Services\Order\OrderService;
 use Illuminate\Http\Request;
@@ -448,6 +449,8 @@ class OrderController extends Controller
      * Get orders of a specific store (admin)
      *
      * GET /admin/stores/{id}/orders
+     * 
+     * يعرض طلبات المتجر مع إحصائيات أرباح الإدارة غير المسددة
      */
     public function storeOrdersForAdmin(Request $request, int $id)
     {
@@ -456,10 +459,42 @@ class OrderController extends Controller
             'per_page' => $request->query('per_page', 15),
         ]);
 
-        return $this->paginate(
+        // جلب إحصائيات أرباح الإدارة من هذا المتجر
+        $profitStats = AdminProfit::getStoreProfitStats($id);
+
+        return $this->paginateWithData(
             $orders->setCollection($orders->getCollection()->map(fn($o) => new OrderResource($o))),
+            [
+                'adminProfitStats' => [
+                    'totalProfits' => $profitStats['total_profits'],
+                    'unsettledProfits' => $profitStats['unsettled_profits'],
+                    'settledProfits' => $profitStats['settled_profits'],
+                    'unsettledCount' => $profitStats['unsettled_count'],
+                ],
+            ],
             'تم جلب طلبات المتجر بنجاح'
         );
+    }
+
+    /**
+     * Settle store profits (admin marks store as paid)
+     *
+     * POST /admin/stores/{id}/settle-profits
+     * 
+     * تصفير أرباح الإدارة من المتجر (عند تسديد التاجر يدوياً)
+     */
+    public function settleStoreProfits(int $id)
+    {
+        $settledCount = AdminProfit::settleStoreProfits($id);
+
+        if ($settledCount === 0) {
+            return $this->error('لا توجد أرباح غير مسددة لهذا المتجر', 400);
+        }
+
+        return $this->success([
+            'settled_count' => $settledCount,
+            'message' => "تم تسوية {$settledCount} سجل أرباح بنجاح",
+        ], 'تم تصفير أرباح المتجر بنجاح');
     }
 
     /* ==========================================

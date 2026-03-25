@@ -364,6 +364,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::get('/admin/stores/{id}/orders', [OrderController::class, 'storeOrdersForAdmin']); // طلبات متجر معين
+    Route::post('/admin/stores/{id}/settle-profits', [OrderController::class, 'settleStoreProfits']); // تصفير أرباح المتجر
 
     /*
     |--------------------------------------------------------------------------
