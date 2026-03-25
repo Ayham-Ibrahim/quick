@@ -2,12 +2,14 @@
 namespace App\Services\Store;
 
 use App\Models\Store;
+use App\Models\Product;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Services\Service;
 use App\Services\FileStorage;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use App\Http\Resources\StoreResource;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StoreService extends Service
@@ -83,40 +85,55 @@ class StoreService extends Service
     public function updateStore($data, Store $store)
     {
         try {
-            $store->update(array_filter([
-                'store_name'                => $data['store_name'] ?? null,
-                'phone'                     => $data['phone'] ?? null,
-                'store_owner_name'          => $data['store_owner_name'] ?? null,
-                'password'                  => isset($data['password']) ? bcrypt($data['password']) : null,
+            return DB::transaction(function () use ($data, $store) {
+                $store->update(array_filter([
+                    'store_name'                => $data['store_name'] ?? null,
+                    'phone'                     => $data['phone'] ?? null,
+                    'store_owner_name'          => $data['store_owner_name'] ?? null,
+                    'password'                  => isset($data['password']) ? bcrypt($data['password']) : null,
 
-                'commercial_register_image' => FileStorage::fileExists(
-                    $data['commercial_register_image'] ?? null,
-                    $store->commercial_register_image,
-                    'Store',
-                    'img'
-                ),
+                    'commercial_register_image' => FileStorage::fileExists(
+                        $data['commercial_register_image'] ?? null,
+                        $store->commercial_register_image,
+                        'Store',
+                        'img'
+                    ),
 
-                'store_logo'                => FileStorage::fileExists(
-                    $data['store_logo'] ?? null,
-                    $store->store_logo,
-                    'Store',
-                    'img'
-                ),
+                    'store_logo'                => FileStorage::fileExists(
+                        $data['store_logo'] ?? null,
+                        $store->store_logo,
+                        'Store',
+                        'img'
+                    ),
 
-                'city'                      => array_key_exists('city', $data) ? $data['city'] : null,
-                'v_location'                => $data['v_location'] ?? null,
-                'h_location'                => $data['h_location'] ?? null,
-            ]));
+                    'city'                      => array_key_exists('city', $data) ? $data['city'] : null,
+                    'v_location'                => $data['v_location'] ?? null,
+                    'h_location'                => $data['h_location'] ?? null,
+                ]));
 
-            if (isset($data['category_ids'])) {
-                $store->categories()->sync($data['category_ids']);
-            }
+                if (isset($data['category_ids'])) {
+                    $store->categories()->sync($data['category_ids']);
+                }
 
-            if (isset($data['subcategory_ids'])) {
-                $store->subcategories()->sync($data['subcategory_ids']);
-            }
+                if (isset($data['subcategory_ids'])) {
+                    // جلب الأقسام الفرعية الحالية قبل التحديث
+                    $currentSubcategoryIds = $store->subcategories()->pluck('sub_categories.id')->toArray();
+                    $newSubcategoryIds = $data['subcategory_ids'];
 
-            return $store->load(['subCategories', 'categories']);
+                    // تحديد الأقسام الفرعية المحذوفة
+                    $removedSubcategoryIds = array_diff($currentSubcategoryIds, $newSubcategoryIds);
+
+                    // التحقق من عدم وجود طلبات نشطة قبل السماح بحذف الفئة
+                    if (!empty($removedSubcategoryIds)) {
+                        $this->validateNoActiveOrdersForSubcategories($store->id, $removedSubcategoryIds);
+                    }
+
+                    // تحديث الأقسام الفرعية
+                    $store->subcategories()->sync($newSubcategoryIds);
+                }
+
+                return $store->load(['subCategories', 'categories']);
+            });
         } catch (\Throwable $th) {
             Log::error($th);
 
@@ -139,40 +156,55 @@ class StoreService extends Service
                 throw new \Exception('غير مصرح لك بالقيام بهذا الإجراء.');
             }
 
-            $store->update(array_filter([
-                'store_name'                => $data['store_name'] ?? null,
-                'phone'                     => $data['phone'] ?? null,
-                'store_owner_name'          => $data['store_owner_name'] ?? null,
-                'password'                  => isset($data['password']) ? bcrypt($data['password']) : null,
+            return DB::transaction(function () use ($data, $store) {
+                $store->update(array_filter([
+                    'store_name'                => $data['store_name'] ?? null,
+                    'phone'                     => $data['phone'] ?? null,
+                    'store_owner_name'          => $data['store_owner_name'] ?? null,
+                    'password'                  => isset($data['password']) ? bcrypt($data['password']) : null,
 
-                'commercial_register_image' => FileStorage::fileExists(
-                    $data['commercial_register_image'] ?? null,
-                    $store->commercial_register_image,
-                    'Store',
-                    'img'
-                ),
+                    'commercial_register_image' => FileStorage::fileExists(
+                        $data['commercial_register_image'] ?? null,
+                        $store->commercial_register_image,
+                        'Store',
+                        'img'
+                    ),
 
-                'store_logo'                => FileStorage::fileExists(
-                    $data['store_logo'] ?? null,
-                    $store->store_logo,
-                    'Store',
-                    'img'
-                ),
+                    'store_logo'                => FileStorage::fileExists(
+                        $data['store_logo'] ?? null,
+                        $store->store_logo,
+                        'Store',
+                        'img'
+                    ),
 
-                'city'                      => array_key_exists('city', $data) ? $data['city'] : null,
-                'v_location'                => $data['v_location'] ?? null,
-                'h_location'                => $data['h_location'] ?? null,
-            ]));
+                    'city'                      => array_key_exists('city', $data) ? $data['city'] : null,
+                    'v_location'                => $data['v_location'] ?? null,
+                    'h_location'                => $data['h_location'] ?? null,
+                ]));
 
-            if (isset($data['category_ids'])) {
-                $store->categories()->sync($data['category_ids']);
-            }
+                if (isset($data['category_ids'])) {
+                    $store->categories()->sync($data['category_ids']);
+                }
 
-            if (isset($data['subcategory_ids'])) {
-                $store->subcategories()->sync($data['subcategory_ids']);
-            }
+                if (isset($data['subcategory_ids'])) {
+                    // جلب الأقسام الفرعية الحالية قبل التحديث
+                    $currentSubcategoryIds = $store->subcategories()->pluck('sub_categories.id')->toArray();
+                    $newSubcategoryIds = $data['subcategory_ids'];
 
-            return $store->load(['subCategories', 'categories']);
+                    // تحديد الأقسام الفرعية المحذوفة
+                    $removedSubcategoryIds = array_diff($currentSubcategoryIds, $newSubcategoryIds);
+
+                    // التحقق من عدم وجود طلبات نشطة قبل السماح بحذف الفئة
+                    if (!empty($removedSubcategoryIds)) {
+                        $this->validateNoActiveOrdersForSubcategories($store->id, $removedSubcategoryIds);
+                    }
+
+                    // تحديث الأقسام الفرعية
+                    $store->subcategories()->sync($newSubcategoryIds);
+                }
+
+                return $store->load(['subCategories', 'categories']);
+            });
         } catch (\Throwable $e) {
             $this->throwExceptionJson(
                 'حدث خطأ أثناء تحديث بياناتك',
@@ -200,6 +232,39 @@ class StoreService extends Service
             }
 
             $this->throwExceptionJson();
+        }
+    }
+
+    /**
+     * التحقق من عدم وجود طلبات نشطة للمنتجات في الأقسام المحذوفة
+     * 
+     * - إذا كان هناك طلبات نشطة (pending أو shipping) تحتوي على منتجات من هذه الأقسام
+     *   لا يُسمح بإزالة المتجر من هذه الفئة
+     */
+    private function validateNoActiveOrdersForSubcategories(int $storeId, array $removedSubcategoryIds): void
+    {
+        // جلب المنتجات المتأثرة في الأقسام المحذوفة
+        $affectedProductIds = Product::where('store_id', $storeId)
+            ->whereIn('sub_category_id', $removedSubcategoryIds)
+            ->pluck('id')
+            ->toArray();
+
+        if (empty($affectedProductIds)) {
+            return;
+        }
+
+        // التحقق من وجود طلبات نشطة (pending أو shipping) تحتوي على هذه المنتجات
+        $activeOrdersCount = OrderItem::whereIn('product_id', $affectedProductIds)
+            ->whereHas('order', function ($query) {
+                $query->whereIn('status', [Order::STATUS_PENDING, Order::STATUS_SHIPPING]);
+            })
+            ->count();
+
+        if ($activeOrdersCount > 0) {
+            $this->throwExceptionJson(
+                'لا يمكن إزالة هذه الفئة لأن هناك طلبات نشطة تحتوي على منتجات منها',
+                400
+            );
         }
     }
 }
