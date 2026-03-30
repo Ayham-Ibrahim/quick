@@ -106,34 +106,37 @@ class WhatsAppService
         return $messages[$type] ?? "كود التحقق الخاص بك هو: {$otpCode}\n\nهذا الكود صالح لمدة 4 دقائق";
     }
 
-    private function normalizeReceiver(string $phone): ?string
-    {
-        // Remove everything except digits and +
-        $clean = preg_replace('/[^0-9+]/', '', trim($phone));
+   private function normalizeReceiver(string $phone): ?string
+{
+    $clean = preg_replace('/[^0-9+]/', '', trim($phone));
 
-        if ($clean === null || $clean === '') {
-            return null;
-        }
-
-        // Remove + if present for processing
-        $digits = ltrim($clean, '+');
-
-        // If starts with 00, remove it (e.g., 00963 -> 963)
-        if (str_starts_with($digits, '00')) {
-            $digits = substr($digits, 2);
-        }
-
-        // If starts with Syrian local format 09, convert to 963
-        if (str_starts_with($digits, '09')) {
-            $digits = '963' . substr($digits, 1);
-        }
-
-        // If doesn't start with country code, assume Syrian
-        if (!str_starts_with($digits, '963')) {
-            $digits = '963' . $digits;
-        }
-
-        // Return WITH + prefix (Technoplus format from Postman)
-        return '+' . $digits;
+    if ($clean === '' || $clean === null) {
+        return null;
     }
+
+    // + or 00 international prefix
+    if (str_starts_with($clean, '00')) {
+        $clean = substr($clean, 2);
+    }
+
+    if (str_starts_with($clean, '+')) {
+        $clean = substr($clean, 1);
+    }
+
+    // Syrian local format: 09xxxxxxx -> 9639xxxxxxx
+    if (str_starts_with($clean, '09')) {
+        $clean = '963' . substr($clean, 1);
+    }
+
+    // رفض الأرقام المحلية غير المحولة (لا يوجد فرض كود دولة عام)
+    if (str_starts_with($clean, '0')) {
+        return null;
+    }
+
+    if (!preg_match('/^[0-9]+$/', $clean)) {
+        return null;
+    }
+
+    return '+' . $clean;
+}
 }
