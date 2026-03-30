@@ -3,6 +3,7 @@ namespace App\Services\Store;
 
 use App\Models\Store;
 use App\Models\Product;
+use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\Service;
@@ -130,6 +131,11 @@ class StoreService extends Service
 
                     // تحديث الأقسام الفرعية
                     $store->subcategories()->sync($newSubcategoryIds);
+
+                    // حذف المنتجات التابعة للأقسام التي أزيلت
+                    if (!empty($removedSubcategoryIds)) {
+                        $this->handleRemovedSubcategoryProducts($store->id, $removedSubcategoryIds);
+                    }
                 }
 
                 return $store->load(['subCategories', 'categories']);
@@ -201,6 +207,11 @@ class StoreService extends Service
 
                     // تحديث الأقسام الفرعية
                     $store->subcategories()->sync($newSubcategoryIds);
+
+                    // حذف المنتجات التابعة للأقسام التي أزيلت
+                    if (!empty($removedSubcategoryIds)) {
+                        $this->handleRemovedSubcategoryProducts($store->id, $removedSubcategoryIds);
+                    }
                 }
 
                 return $store->load(['subCategories', 'categories']);
@@ -266,5 +277,33 @@ class StoreService extends Service
                 400
             );
         }
+    }
+
+    /**
+     * حذف المنتجات وعناصر السلة التابعة للأقسام المحذوفة بعد التأكد من عدم وجود طلبات نشطة
+     */
+    private function handleRemovedSubcategoryProducts(int $storeId, array $removedSubcategoryIds): void
+    {
+        $affectedProducts = Product::where('store_id', $storeId)
+            ->whereIn('sub_category_id', $removedSubcategoryIds)
+            ->get();
+
+        if ($affectedProducts->isEmpty()) {
+            return;
+        }
+
+        $productIds = $affectedProducts->pluck('id')->toArray();
+
+        // حذف عناصر السلة الحالية المرتبطة بهذه المنتجات
+        CartItem::whereIn('product_id', $productIds)->delete();
+
+        // حذف المنتجات
+        Product::whereIn('id', $productIds)->delete();
+
+        Log::info('Products removed for store when subcategory removed', [
+            'store_id' => $storeId,
+            'removed_subcategory_ids' => $removedSubcategoryIds,
+            'product_ids' => $productIds,
+        ]);
     }
 }

@@ -1059,13 +1059,15 @@ class OrderService extends Service
             }
         }
 
-        // جلب نسبة أرباح الإدارة من الطلبات
+        // جلب نسبة أرباح الإدارة (للحفاظ على قيمة العرض التاريخي)
         $adminProfitPercentage = \App\Models\ProfitRatios::getValueByTag('order_profit_percentage') ?? 10;
 
-        // استخدام البيانات الفعلية من جدول admin_profits بدلاً من الحساب النظري
-        $profitStats = \App\Models\AdminProfit::getStoreProfitStats($storeId);
-        $adminProfitAmount = $profitStats['unsettled_profits']; // المبلغ الفعلي غير المسوى
-        $netStoreBalance = round($totalStoreRevenue - $adminProfitAmount, 2);
+        // جلب بيانات أرباح الإدارة من جدول admin_profits (المصدر الموحد)
+        $adminProfitStats = \App\Models\AdminProfit::getStoreProfitStats($storeId);
+        $adminProfitAmount = $adminProfitStats['unsettled_profits'];
+
+        // عائد صافي المتجر بعد خصم حصص الأدمن المستحقة
+        $netStoreBalance = $totalStoreRevenue - $adminProfitAmount;
 
         return [
             'total_orders_count' => $deliveredOrders->count(),
