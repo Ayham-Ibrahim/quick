@@ -459,18 +459,22 @@ class OrderController extends Controller
             'per_page' => $request->query('per_page', 15),
         ]);
 
-        // جلب إحصائيات أرباح الإدارة من هذا المتجر
+        // جلب إحصائيات منفصلة
+        $financialStats = $this->orderService->calculateStoreFinancialStats($id);
         $profitStats = AdminProfit::getStoreProfitStats($id);
+
+        $adminProfitStatsData = AdminProfit::getStoreProfitStats($id);
 
         return $this->paginateWithData(
             $orders->setCollection($orders->getCollection()->map(fn($o) => new OrderResource($o))),
             [
                 'adminProfitStats' => [
-                    'totalProfits' => $profitStats['total_profits'],
-                    'unsettledProfits' => $profitStats['unsettled_profits'],
-                    'settledProfits' => $profitStats['settled_profits'],
-                    'unsettledCount' => $profitStats['unsettled_count'],
+                    'totalProfits' => $adminProfitStatsData['total_profits'],
+                    'unsettledProfits' => $adminProfitStatsData['unsettled_profits'],
+                    'settledProfits' => $adminProfitStatsData['settled_profits'],
+                    'unsettledCount' => $adminProfitStatsData['unsettled_count'],
                 ],
+                'financialStats' => $financialStats,
             ],
             'تم جلب طلبات المتجر بنجاح'
         );
@@ -491,10 +495,17 @@ class OrderController extends Controller
             return $this->error('لا توجد أرباح غير مسددة لهذا المتجر', 400);
         }
 
+        $adminProfitStatsData = AdminProfit::getStoreProfitStats($id);
+
         return $this->success([
             'settled_count' => $settledCount,
-            'message' => "تم تسوية {$settledCount} سجل أرباح بنجاح",
-        ], 'تم تصفير أرباح المتجر بنجاح');
+            'adminProfitStats' => [
+                'totalProfits' => $adminProfitStatsData['total_profits'],
+                'unsettledProfits' => $adminProfitStatsData['unsettled_profits'],
+                'settledProfits' => $adminProfitStatsData['settled_profits'],
+                'unsettledCount' => $adminProfitStatsData['unsettled_count'],
+            ],
+        ], 'تم تسوية أرباح المتجر بنجاح');
     }
 
     /* ==========================================
