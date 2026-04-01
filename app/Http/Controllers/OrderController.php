@@ -563,7 +563,7 @@ class OrderController extends Controller
                     'totalOrdersCount' => $financialStats['total_orders_count'],
                     'totalStoreRevenue' => $financialStats['total_store_revenue'],
                     'totalCouponDiscount' => $financialStats['total_coupon_discount'],
-                    'adminProfitPercentage' => $financialStats['admin_profit_percentage'],
+                    'adminProfitPercentage' => $financialStats['admin_profit_amount'],
                     'adminProfitAmount' => $financialStats['admin_profit_amount'],
                     'netStoreBalance' => $financialStats['net_store_balance'],
                 ],
