@@ -198,4 +198,18 @@ class AdminProfit extends Model
             'unsettled_count' => self::forStore($storeId)->unsettled()->count(),
         ];
     }
+
+    /**
+     * Get unsettled order IDs for a specific store
+     * 
+     * يجلب معرفات الطلبات غير المصفاة للمتجر
+     */
+    public static function getUnsettledOrderIds(int $storeId): array
+    {
+        return self::forStore($storeId)
+            ->unsettled()
+            ->where('order_type', self::ORDER_TYPE_REGULAR)
+            ->pluck('order_id')
+            ->toArray();
+    }
 }

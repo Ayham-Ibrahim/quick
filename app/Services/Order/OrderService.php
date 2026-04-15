@@ -1040,8 +1040,12 @@ class OrderService extends Service
      */
     public function calculateStoreFinancialStats(int $storeId): array
     {
-        // جلب الطلبات المكتملة التي تحتوي على منتجات من هذا المتجر
+        // جلب معرفات الطلبات غير المصفاة فقط
+        $unsettledOrderIds = \App\Models\AdminProfit::getUnsettledOrderIds($storeId);
+
+        // جلب الطلبات المكتملة غير المصفاة فقط
         $deliveredOrders = Order::with('items')
+            ->whereIn('id', $unsettledOrderIds)
             ->whereHas('items', fn($q) => $q->where('store_id', $storeId))
             ->where('status', Order::STATUS_DELIVERED)
             ->get();
@@ -1062,7 +1066,7 @@ class OrderService extends Service
         // جلب نسبة أرباح الإدارة (للحفاظ على قيمة العرض التاريخي)
         $adminProfitPercentage = \App\Models\ProfitRatios::getValueByTag('order_profit_percentage') ?? 10;
 
-        // جلب بيانات أرباح الإدارة من جدول admin_profits (المصدر الموحد)
+        // جلب بيانات أرباح الإدارة من جدول admin_profits (غير المصفاة فقط)
         $adminProfitStats = \App\Models\AdminProfit::getStoreProfitStats($storeId);
         $adminProfitAmount = $adminProfitStats['unsettled_profits'];
 
