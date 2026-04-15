@@ -32,8 +32,8 @@ class FileStorage
 
             switch ($suffix) {
                 case 'img':
-                    $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-                    $allowedExtensions = ['jpeg', 'png', 'jpg'];
+                    $allowedExtensions = ['jpeg', 'jpg', 'webp', 'png'];
+                    $allowedImageTypes = ['jpeg', 'webp', 'png'];
                     break;
 
                 case 'vid':
@@ -63,20 +63,39 @@ class FileStorage
                     self::throwValidationError('file', 'ان الملف الذي ارسلته غير امن');
             }
 
-            $mime_type = $file->getMimeType();
-            $extension = $file->getClientOriginalExtension();
-            // Log::info("File validation details", [
-            //     'file_name' => $file->getClientOriginalName(),
-            //     'mime_type' => $mime_type,
-            //     'extension' => $extension,
-            //     'allowed_types' => $allowedMimeTypes,
-            //     'allowed_extensions' => $allowedExtensions,
-            //     'validation_result' => in_array($mime_type, $allowedMimeTypes) &&
-            //         in_array($extension, $allowedExtensions)
-            // ]);
+            $extension = strtolower($file->getClientOriginalExtension());
 
-            if (!in_array($mime_type, $allowedMimeTypes) || !in_array($extension, $allowedExtensions)) {
-                self::throwValidationError('file', 'نوع الملف غير مسموح به');
+            // For images, use getimagesize() to verify actual file content
+            if ($suffix === 'img') {
+                if (!in_array($extension, $allowedExtensions)) {
+                    self::throwValidationError('file', 'نوع الملف غير مسموح به');
+                }
+
+                // Verify the file is a valid image using getimagesize
+                $imageInfo = getimagesize($file->getPathname());
+                if ($imageInfo === false) {
+                    self::throwValidationError('file', 'الملف المرسل ليس صورة صالحة');
+                }
+
+                // Map image type constant to string
+                $imageTypeMap = [
+                    IMAGETYPE_JPEG => 'jpeg',
+                    IMAGETYPE_PNG => 'png',
+                    IMAGETYPE_GIF => 'gif',
+                    IMAGETYPE_WEBP => 'webp',
+                ];
+
+                $detectedType = $imageTypeMap[$imageInfo[2]] ?? null;
+                if ($detectedType === null || !in_array($detectedType, $allowedImageTypes)) {
+                    self::throwValidationError('file', 'نوع الملف غير مسموح به');
+                }
+            } else {
+                // For other file types, use MIME type and extension validation
+                $mime_type = $file->getMimeType();
+
+                if (!in_array($mime_type, $allowedMimeTypes) || !in_array($extension, $allowedExtensions)) {
+                    self::throwValidationError('file', 'نوع الملف غير مسموح به');
+                }
             }
 
             $fileName = Str::random(32);
