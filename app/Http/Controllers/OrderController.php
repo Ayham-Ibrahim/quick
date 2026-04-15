@@ -495,7 +495,9 @@ class OrderController extends Controller
             return $this->error('لا توجد أرباح غير مسددة لهذا المتجر', 400);
         }
 
+        // جلب الإحصائيات بعد التصفير (ستظهر أصفار)
         $adminProfitStatsData = AdminProfit::getStoreProfitStats($id);
+        $financialStats = $this->orderService->calculateStoreFinancialStats($id);
 
         return $this->success([
             'settled_count' => $settledCount,
@@ -505,6 +507,7 @@ class OrderController extends Controller
                 'settledProfits' => $adminProfitStatsData['settled_profits'],
                 'unsettledCount' => $adminProfitStatsData['unsettled_count'],
             ],
+            'financialStats' => $financialStats,
         ], 'تم تسوية أرباح المتجر بنجاح');
     }
 
