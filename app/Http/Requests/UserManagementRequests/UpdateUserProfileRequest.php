@@ -26,10 +26,10 @@ class UpdateUserProfileRequest extends BaseFormRequest
     {
         return [
             'name' => 'nullable|string|max:255',
-            'avatar'   => 'nullable|image
-                                    |mimes:png,jpg,jpeg
-                                    |mimetypes:image/jpeg,image/png,image/jpg
-                                    |max:5000',
+            'avatar'   => 'nullable|image|max:5000',
+                                    
+                                    
+                                    
             'v_location'    => 'nullable|string|max:255',
             'h_location'    => 'nullable|string|max:255',
             'phone' => [

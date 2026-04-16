@@ -26,7 +26,7 @@ class StoreSubCategoryRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
-            'image' => 'required|file|image|mimes:png,jpg,jpeg|max:10000|mimetypes:image/jpeg,image/png,image/jpg',
+            'image' => 'required|file|image|max:10000',
 
             // Attribute settings
             'price_depends_on_attributes' => 'nullable|boolean',

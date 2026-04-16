@@ -31,7 +31,7 @@ class UpdateCategoryRequest extends FormRequest
                 'max:255',
                 Rule::unique('categories')->ignore($this->category)
             ],
-            'image' => 'nullable|file|image|mimes:png,jpg,jpeg|max:10000|mimetypes:image/jpeg,image/png,image/jpg',
+            'image' => 'nullable|file|image|max:10000',
         ];
     }
 

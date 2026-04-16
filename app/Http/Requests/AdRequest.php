@@ -24,10 +24,7 @@ class AdRequest extends BaseFormRequest
     public function rules(): array
     {
         return [
-            'ad_image_url' => 'required|image
-                                    |mimes:png,jpg,jpeg
-                                    |mimetypes:image/jpeg,image/png,image/jpg
-                                    |max:5000',
+            'ad_image_url' => 'required|image|max:5000',
         ];
     }
     /**
