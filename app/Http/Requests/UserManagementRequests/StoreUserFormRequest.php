@@ -25,7 +25,7 @@ class StoreUserFormRequest extends BaseFormRequest
             'name'     => 'required|string|max:255',
             'phone'    => 'required|string|max:255|unique:users,phone',
             'password' => 'required|string|min:6|confirmed',
-            'avatar'   => 'nullable|image|max:5000',
+            'avatar'   => 'nullable|image',
             'gender' => 'required|string|max:255|in:male,female',
             'city' => 'required|string|max:255',
             'v_location' => 'required|string|max:255',

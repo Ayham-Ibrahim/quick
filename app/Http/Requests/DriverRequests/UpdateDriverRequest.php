@@ -31,17 +31,17 @@ class UpdateDriverRequest extends BaseFormRequest
             'driver_image'    => 'nullable|image
                                    
                                    
-                                   |max:5000',
+                                   ',
 
             'front_id_image'  => 'nullable|image
                                    
                                    
-                                   |max:5000',
+                                   ',
 
             'back_id_image'   => 'nullable|image
                                    
                                    
-                                   |max:5000',
+                                   ',
 
             'city'            => 'nullable|string|max:255',
             'v_location'      => 'nullable|string|max:255',

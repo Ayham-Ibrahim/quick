@@ -26,7 +26,7 @@ class UpdateUserProfileRequest extends BaseFormRequest
     {
         return [
             'name' => 'nullable|string|max:255',
-            'avatar'   => 'nullable|image|max:5000',
+            'avatar'   => 'nullable|image',
                                     
                                     
                                     
