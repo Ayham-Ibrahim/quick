@@ -20,20 +20,14 @@ class StoreDriverRequest extends BaseFormRequest
             'phone'           => 'required|string|max:20|unique:drivers,phone',
             'password'        => 'required|string|min:6|confirmed',
 
-            'driver_image'    => 'required|image
-                                   |mimes:png,jpg,jpeg
-                                   |mimetypes:image/jpeg,image/png,image/jpg
-                                   |max:5000',
+            'driver_image'    => 'required|image|max:5000',
+                                   
+                                   
+                                   
 
-            'front_id_image'  => 'required|image
-                                   |mimes:png,jpg,jpeg
-                                   |mimetypes:image/jpeg,image/png,image/jpg
-                                   |max:5000',
+            'front_id_image'  => 'required|image|max:5000',
 
-            'back_id_image'   => 'required|image
-                                   |mimes:png,jpg,jpeg
-                                   |mimetypes:image/jpeg,image/png,image/jpg
-                                   |max:5000',
+            'back_id_image'   => 'required|image|max:5000',
 
             'city'            => 'nullable|string|max:255',
 

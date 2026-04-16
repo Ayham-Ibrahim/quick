@@ -32,8 +32,8 @@ class FileStorage
 
             switch ($suffix) {
                 case 'img':
-                    $allowedExtensions = ['jpeg', 'jpg', 'webp', 'png'];
-                    $allowedImageTypes = ['jpeg', 'webp', 'png'];
+                    // Allow all valid image types and rely on getimagesize() for content validation
+                    $allowedExtensions = null;
                     break;
 
                 case 'vid':
@@ -67,27 +67,9 @@ class FileStorage
 
             // For images, use getimagesize() to verify actual file content
             if ($suffix === 'img') {
-                if (!in_array($extension, $allowedExtensions)) {
-                    self::throwValidationError('file', 'نوع الملف غير مسموح به');
-                }
-
-                // Verify the file is a valid image using getimagesize
                 $imageInfo = getimagesize($file->getPathname());
                 if ($imageInfo === false) {
                     self::throwValidationError('file', 'الملف المرسل ليس صورة صالحة');
-                }
-
-                // Map image type constant to string
-                $imageTypeMap = [
-                    IMAGETYPE_JPEG => 'jpeg',
-                    IMAGETYPE_PNG => 'png',
-                    IMAGETYPE_GIF => 'gif',
-                    IMAGETYPE_WEBP => 'webp',
-                ];
-
-                $detectedType = $imageTypeMap[$imageInfo[2]] ?? null;
-                if ($detectedType === null || !in_array($detectedType, $allowedImageTypes)) {
-                    self::throwValidationError('file', 'نوع الملف غير مسموح به');
                 }
             } else {
                 // For other file types, use MIME type and extension validation

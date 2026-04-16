@@ -30,7 +30,7 @@ class UpdateProductRequest extends FormRequest
             'sub_category_id' => ['nullable', 'exists:sub_categories,id'],
 
             'images'          => 'nullable|array',
-            'images.*.file'   => 'nullable|file|image|mimes:png,jpg,jpeg|max:10000|mimetypes:image/jpeg,image/png,image/jpg',
+            'images.*.file'   => 'nullable|file|image|max:10000',
 
             // Product Variants (optional - for updating variations)
             'variants' => ['nullable', 'array'],
