@@ -29,14 +29,14 @@ class UpdateDriverProfileRequest extends BaseFormRequest
 
             'password' => 'nullable|string|min:6|confirmed',
 
-            'driver_image' => 'nullable|image|max:5000',
+            'driver_image' => 'nullable|image',
                                
                                
                                
 
-            'front_id_image' => 'nullable|image|max:5000',
+            'front_id_image' => 'nullable|image',
 
-            'back_id_image' => 'nullable|image|max:5000',
+            'back_id_image' => 'nullable|image',
 
             'city'         => 'nullable|string|max:255',
             'v_location'   => 'nullable|string|max:255',

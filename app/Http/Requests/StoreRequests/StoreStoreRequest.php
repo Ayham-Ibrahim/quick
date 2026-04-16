@@ -21,11 +21,11 @@ class StoreStoreRequest extends BaseFormRequest
             'phone'                     => 'required|string|max:255|unique:stores,phone',
             'store_owner_name'          => 'required|string|max:255',
             'password'                  => 'required|string|min:6|confirmed',
-            'commercial_register_image' => 'required|image|max:5000',
+            'commercial_register_image' => 'required|image',
                                             
                                             
                                             
-            'store_logo'                => 'required|image|max:5000',
+            'store_logo'                => 'required|image',
             'city'                      => 'nullable|string|max:255',
             'v_location'                => 'required|string|max:255',
             'h_location'                => 'required|string|max:255',

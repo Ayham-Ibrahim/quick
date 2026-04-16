@@ -27,12 +27,12 @@ class UpdateStoreRequest extends BaseFormRequest
             ],
             'store_owner_name'          => 'nullable|string|max:255',
             'password'                  => 'nullable|string|min:6|confirmed',
-            'commercial_register_image' => 'nullable|image|max:5000',
+            'commercial_register_image' => 'nullable|image',
                                             
                                             
                                             
 
-            'store_logo'                => 'nullable|image|max:5000',
+            'store_logo'                => 'nullable|image',
 
             'city'                      => 'nullable|string|max:255',
             'v_location'                => 'nullable|string|max:255',
