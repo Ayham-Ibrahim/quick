@@ -28,15 +28,12 @@ class FileStorage
             $fileName = Str::random(32);
             $fileName = preg_replace('/[^A-Za-z0-9_\-]/', '', $fileName);
             $expectedFileName = $fileName . '.' . $extension;
-            $expectedPath = $folderName . '/' . $expectedFileName;
             $path = $file->storeAs($folderName, $expectedFileName, 'public');
-            // تطبيع المسارات للمقارنة (إزالة اختلافات الفواصل)
-            $normalizedExpected = str_replace('\\', '/', $expectedPath);
-            $normalizedActual = str_replace('\\', '/', $path);
-            if ($normalizedActual !== $normalizedExpected) {
-                Storage::disk('public')->delete($path);
+
+            if (!$path || !Storage::disk('public')->exists($path)) {
                 self::throwValidationError('file', 'حدث خطأ أثناء حفظ الملف');
             }
+
             return Storage::url($path);
         } catch (\Exception $e) {
             self::throwValidationError('file', 'حدث خطأ أثناء معالجة الملف');
