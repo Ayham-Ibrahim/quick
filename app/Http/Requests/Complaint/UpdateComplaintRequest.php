@@ -21,7 +21,7 @@ class UpdateComplaintRequest extends FormRequest
     {
         return [
             'content' => ['nullable', 'string', 'min:10', 'max:2000'],
-            'image' => ['nullable', 'image', 'mimes:png,jpg,jpeg' , 'max:10240'],
+            'image' => ['nullable', 'image', 'mimes:png,jpg,jpeg'],
         ];
     }
 

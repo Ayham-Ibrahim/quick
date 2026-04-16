@@ -23,7 +23,7 @@ class StoreComplaintRequest extends FormRequest
     {
         return [
             'content' => ['required', 'string'],
-            'image' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:5120'], // 5MB
+            'image' => ['nullable', 'image', 'mimes:png,jpg,jpeg'], // 5MB
         ];
     }
 

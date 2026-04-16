@@ -30,7 +30,7 @@ class UpdateSubCategoryRequest extends FormRequest
                 'max:255',
             ],
             'category_id' => 'nullable|exists:categories,id',
-            'image' => 'nullable|file|image|max:10000',
+            'image' => 'nullable|file|image',
 
             // Attribute settings
             'price_depends_on_attributes' => 'nullable|boolean',

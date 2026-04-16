@@ -30,7 +30,7 @@ class StoreProductRequest extends FormRequest
             'sub_category_id' => ['required', 'exists:sub_categories,id'],
 
             'images'          => 'required|array',
-            'images.*.file'   => 'required|file|image|max:10000',
+            'images.*.file'   => 'required|file|image',
 
             // Product Variants (optional - for products with variations)
             'variants' => ['nullable', 'array'],
