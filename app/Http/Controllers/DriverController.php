@@ -7,6 +7,7 @@ use App\Services\DriverService;
 use App\Services\DriverProximityService;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\DriverResource;
+use Illuminate\Http\Request;
 use App\Http\Requests\DriverRequests\StoreDriverRequest;
 use App\Http\Requests\DriverRequests\UpdateDriverRequest;
 use App\Http\Requests\DriverRequests\UpdateDriverProfileRequest;
@@ -22,9 +23,12 @@ class DriverController extends Controller
         $this->proximityService = $proximityService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        return $this->success($this->driverService->paginate());
+        return $this->success($this->driverService->paginate(
+            $request->query('per_page', 10),
+            $request->only(['is_online'])
+        ));
     }
 
 

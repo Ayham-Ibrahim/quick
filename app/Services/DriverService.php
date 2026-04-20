@@ -19,9 +19,14 @@ class DriverService extends Service
     /**
      * Paginate drivers
      */
-    public function paginate($perPage = 10)
+    public function paginate($perPage = 10, array $filters = [])
     {
-        $drivers = Driver::with('vehicleType')->paginate($perPage);
+        $drivers = Driver::with('vehicleType')
+            ->when(array_key_exists('is_online', $filters), function ($query) use ($filters) {
+                $query->where('is_online', (bool) $filters['is_online']);
+            })
+            ->paginate($perPage);
+
         return DriverResource::collection($drivers);
     }
 
