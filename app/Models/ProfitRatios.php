@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class ProfitRatios extends Model
 {
+    public const TAG_EXCHANGE_RATE = 'exchange_rate';
+
     protected $table = 'profit_ratios';
 
     protected $fillable = [

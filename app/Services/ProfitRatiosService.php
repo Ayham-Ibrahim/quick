@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\RepriceSyncedVariantsJob;
 use App\Models\ProfitRatios;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +34,13 @@ class ProfitRatiosService extends Service
         }
 
         try {
+            $exchangeRateToDispatch = null;
+            $incomingRatios = collect($ratios)->keyBy('id');
+            $currentRatios = ProfitRatios::query()
+                ->whereIn('id', $incomingRatios->keys())
+                ->get(['id', 'tag', 'value'])
+                ->keyBy('id');
+
             DB::transaction(function () use ($ratios) {
                 foreach ($ratios as $ratio) {
                     ProfitRatios::where('id', $ratio['id'])
@@ -41,6 +49,24 @@ class ProfitRatiosService extends Service
                         ]);
                 }
             });
+
+            $exchangeRateRow = $currentRatios->firstWhere('tag', ProfitRatios::TAG_EXCHANGE_RATE);
+            $incomingExchangeRate = $exchangeRateRow
+                ? (float) ($incomingRatios->get($exchangeRateRow->id)['value'] ?? 0)
+                : null;
+
+            if (
+                $exchangeRateRow
+                && $incomingExchangeRate !== null
+                && $incomingExchangeRate > 0
+                && (float) $exchangeRateRow->value !== $incomingExchangeRate
+            ) {
+                $exchangeRateToDispatch = $incomingExchangeRate;
+            }
+
+            if ($exchangeRateToDispatch !== null) {
+                RepriceSyncedVariantsJob::dispatch($exchangeRateToDispatch);
+            }
         } catch (Throwable $e) {
             $this->throwExceptionJson(
                 'فشل تحديث نسب الأرباح',

@@ -27,6 +27,7 @@ class ProductVariantResource extends JsonResource
             'id' => $this->id,
             'sku' => $this->sku,
             'price' => (float) $this->price,
+            'base_price_usd' => $this->base_price_usd ? (float) $this->base_price_usd : null,
             'stock_quantity' => (int) $this->stock_quantity,
             'is_active' => (bool) $this->is_active,
             'is_in_stock' => $isInStock,

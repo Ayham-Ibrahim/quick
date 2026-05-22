@@ -20,6 +20,8 @@ class ProductResource extends JsonResource
             'description' => $this->description,
             'quantity' => $this->quantity,
             'current_price' => $this->current_price ? (float) $this->current_price : null,
+            'base_price_usd' => $this->base_price_usd ? (float) $this->base_price_usd : null,
+            'sync_enabled' => (bool) $this->sync_enabled,
             'previous_price' => $this->previous_price ? (float) $this->previous_price : null,
             'is_accepted' => (bool) $this->is_accepted,
 

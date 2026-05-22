@@ -2,17 +2,23 @@
 
 namespace App\Services\Products;
 
+use App\Models\Categories\SubCategory;
 use App\Models\Product;
 use App\Models\ProductVariant;
-use App\Services\Service;
 use App\Services\FileStorage;
-use App\Models\Categories\SubCategory;
+use App\Services\Pricing\DynamicPricingService;
+use App\Services\Service;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
 class ProductService extends Service
 {
+    public function __construct(
+        protected DynamicPricingService $dynamicPricingService
+    ) {
+    }
+
     /**
      * add new product to the database
      * @param mixed $data
@@ -27,13 +33,19 @@ class ProductService extends Service
             // Validate subcategory requirements
             $subCategory = SubCategory::with('attributes')->find($data['sub_category_id']);
             $this->validateSubCategoryRequirements($subCategory, $data);
+            $productPricingPayload = $this->dynamicPricingService->prepareProductPricingPayload(
+                $data,
+                !$subCategory->price_depends_on_attributes
+            );
 
             $product = Product::create([
                 'store_id' => $data['store_id'],
                 'name' => $data['name'],
                 'description' => $data['description'],
                 'quantity' => $subCategory->quantity_depends_on_attributes ? null : ($data['quantity'] ?? null),
-                'current_price' => $subCategory->price_depends_on_attributes ? null : ($data['current_price'] ?? null),
+                'current_price' => $productPricingPayload['current_price'],
+                'base_price_usd' => $productPricingPayload['base_price_usd'],
+                'sync_enabled' => $productPricingPayload['sync_enabled'],
                 'previous_price' => $data['previous_price'] ?? null,
                 'sub_category_id' => $data['sub_category_id'],
                 'is_accepted' => false, // Assuming new products need admin approval
@@ -137,11 +149,27 @@ class ProductService extends Service
         try {
             DB::beginTransaction();
 
+            $targetSubCategory = isset($data['sub_category_id'])
+                ? SubCategory::with('attributes')->find($data['sub_category_id'])
+                : $product->subCategory;
+
+            $this->validateSubCategoryRequirements($targetSubCategory, array_merge([
+                'variants' => $data['variants'] ?? $product->variants()->with('attributes')->get()->toArray(),
+            ], $data));
+
+            $productPricingPayload = $this->dynamicPricingService->prepareProductPricingPayload(
+                $data,
+                !$targetSubCategory->price_depends_on_attributes,
+                $product
+            );
+
             $product->update([
                 'name' => $data['name'] ?? $product->name,
                 'description' => $data['description'] ?? $product->description,
                 'quantity' => $data['quantity'] ?? $product->quantity,
-                'current_price' => $data['current_price'] ?? $product->current_price,
+                'current_price' => $productPricingPayload['current_price'],
+                'base_price_usd' => $productPricingPayload['base_price_usd'],
+                'sync_enabled' => $productPricingPayload['sync_enabled'],
                 'previous_price' => $data['previous_price'] ?? $product->previous_price,
                 'sub_category_id' => $data['sub_category_id'] ?? $product->sub_category_id,
             ]);
@@ -160,7 +188,11 @@ class ProductService extends Service
 
             // Handle variant updates/creates
             if (isset($data['variants'])) {
-                $this->updateProductVariants($product, $data['variants']);
+                $this->updateProductVariants($product->fresh('subCategory'), $data['variants']);
+            } elseif ($product->sync_enabled && $product->subCategory?->price_depends_on_attributes) {
+                $this->refreshExistingVariantBasePrices($product->fresh('subCategory'));
+            } elseif (!$product->sync_enabled && $product->subCategory?->price_depends_on_attributes) {
+                $this->clearExistingVariantBasePrices($product);
             }
 
             DB::commit();
@@ -212,15 +244,22 @@ class ProductService extends Service
      */
     protected function storeProductVariants(Product $product, array $variants): void
     {
+        $hasDirectVariantPrice = (bool) ($product->subCategory?->price_depends_on_attributes ?? false);
+
         foreach ($variants as $variantData) {
             $sku = $variantData['sku'] ?? $this->generateSku($product);
-            $price = $variantData['price'] ?? null;
             $stockQuantity = $variantData['stock_quantity'] ?? 0;
             $isActive = $variantData['is_active'] ?? true;
+            $pricingPayload = $this->dynamicPricingService->prepareVariantPricingPayload(
+                $variantData,
+                (bool) $product->sync_enabled,
+                $hasDirectVariantPrice
+            );
 
             $variant = $product->variants()->create([
                 'sku' => $sku,
-                'price' => $price,
+                'price' => $pricingPayload['price'],
+                'base_price_usd' => $pricingPayload['base_price_usd'],
                 'stock_quantity' => $stockQuantity,
                 'is_active' => $isActive,
             ]);
@@ -243,19 +282,27 @@ class ProductService extends Service
      */
     protected function updateProductVariants(Product $product, array $variants): void
     {
+        $hasDirectVariantPrice = (bool) ($product->subCategory?->price_depends_on_attributes ?? false);
+
         foreach ($variants as $variantData) {
             if (isset($variantData['id'])) {
                 // Update existing variant
                 $variant = ProductVariant::find($variantData['id']);
                 if ($variant && $variant->product_id === $product->id) {
                     $sku = $variantData['sku'] ?? $variant->sku;
-                    $price = $variantData['price'] ?? $variant->price;
                     $stockQuantity = $variantData['stock_quantity'] ?? $variant->stock_quantity;
                     $isActive = $variantData['is_active'] ?? $variant->is_active;
+                    $pricingPayload = $this->dynamicPricingService->prepareVariantPricingPayload(
+                        $variantData,
+                        (bool) $product->sync_enabled,
+                        $hasDirectVariantPrice,
+                        $variant
+                    );
 
                     $variant->update([
                         'sku' => $sku,
-                        'price' => $price,
+                        'price' => $pricingPayload['price'],
+                        'base_price_usd' => $pricingPayload['base_price_usd'],
                         'stock_quantity' => $stockQuantity,
                         'is_active' => $isActive,
                     ]);
@@ -272,13 +319,18 @@ class ProductService extends Service
             } else {
                 // Create new variant
                 $sku = $variantData['sku'] ?? $this->generateSku($product);
-                $price = $variantData['price'] ?? null;
                 $stockQuantity = $variantData['stock_quantity'] ?? 0;
                 $isActive = $variantData['is_active'] ?? true;
+                $pricingPayload = $this->dynamicPricingService->prepareVariantPricingPayload(
+                    $variantData,
+                    (bool) $product->sync_enabled,
+                    $hasDirectVariantPrice
+                );
 
                 $variant = $product->variants()->create([
                     'sku' => $sku,
-                    'price' => $price,
+                    'price' => $pricingPayload['price'],
+                    'base_price_usd' => $pricingPayload['base_price_usd'],
                     'stock_quantity' => $stockQuantity,
                     'is_active' => $isActive,
                 ]);
@@ -291,6 +343,26 @@ class ProductService extends Service
                 }
             }
         }
+    }
+
+    protected function refreshExistingVariantBasePrices(Product $product): void
+    {
+        foreach ($product->variants as $variant) {
+            if ($variant->price === null) {
+                continue;
+            }
+
+            $variant->update([
+                'base_price_usd' => $this->dynamicPricingService->calculateBasePriceUsd((float) $variant->price),
+            ]);
+        }
+    }
+
+    protected function clearExistingVariantBasePrices(Product $product): void
+    {
+        $product->variants()->update([
+            'base_price_usd' => null,
+        ]);
     }
 
     /**

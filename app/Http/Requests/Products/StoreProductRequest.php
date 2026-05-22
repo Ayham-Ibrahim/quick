@@ -26,6 +26,7 @@ class StoreProductRequest extends FormRequest
             'description' => ['required', 'string'],
             'quantity' => ['nullable', 'integer', 'min:0'],
             'current_price' => ['nullable', 'numeric', 'min:0'],
+            'sync_enabled' => ['nullable', 'boolean'],
             'previous_price' => ['nullable', 'numeric', 'min:0'],
             'sub_category_id' => ['required', 'exists:sub_categories,id'],
 
