@@ -26,6 +26,7 @@ class UpdateProductRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'quantity' => ['nullable', 'integer', 'min:0'],
             'current_price' => ['nullable', 'numeric', 'min:0'],
+            'sync_enabled' => ['nullable', 'boolean'],
             'previous_price' => ['nullable', 'numeric', 'min:0'],
             'sub_category_id' => ['nullable', 'exists:sub_categories,id'],
 

@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\ProfitRatios;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class ProfitRatiosSeeder extends Seeder
@@ -38,6 +37,11 @@ class ProfitRatiosSeeder extends Seeder
                 'tag' => 'minimum_order_value',
                 'ratio_name' => 'الحد الأدنى لتوصيل الطلبية',
                 'value' => 3000,
+            ],
+            [
+                'tag' => 'exchange_rate',
+                'ratio_name' => 'سعر صرف الدولار',
+                'value' => 15000,
             ],
         ];
 

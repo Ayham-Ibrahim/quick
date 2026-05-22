@@ -15,8 +15,15 @@ class ProductVariant extends Model
         'product_id',
         'sku',
         'price',
+        'base_price_usd',
         'stock_quantity',
         'is_active',
+    ];
+
+    protected $casts = [
+        'price' => 'decimal:2',
+        'base_price_usd' => 'decimal:6',
+        'is_active' => 'boolean',
     ];
 
     /**

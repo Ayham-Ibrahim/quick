@@ -8,7 +8,6 @@ use App\Models\ProductVariant;
 use App\Models\Categories\SubCategory;
 
 use App\Models\DiscountManagement\Coupon;
-use App\Models\DiscountManagement\CouponProduct;
 
 use Illuminate\Database\Eloquent\Model;
 
@@ -20,9 +19,18 @@ class Product extends Model
         'description',
         'quantity',
         'current_price',
+        'base_price_usd',
+        'sync_enabled',
         'previous_price',
         'sub_category_id',
         'is_accepted'
+    ];
+
+    protected $casts = [
+        'current_price' => 'decimal:2',
+        'base_price_usd' => 'decimal:6',
+        'sync_enabled' => 'boolean',
+        'is_accepted' => 'boolean',
     ];
 
     public function store()
