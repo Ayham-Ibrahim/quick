@@ -4,7 +4,6 @@ namespace App\Services\Cart;
 
 use App\Models\Cart;
 use App\Models\Product;
-use App\Models\CartItem;
 use App\Services\Service;
 use App\Models\ProductVariant;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +13,22 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 
 class CartService extends Service
 {
+    /**
+     * Relations required for consistent cart responses.
+     */
+    private function cartDetailRelations(): array
+    {
+        return [
+            'items.product:id,name,description,current_price,previous_price,quantity,store_id,sub_category_id',
+            'items.product.store:id,store_name,store_logo',
+            'items.product.images',
+            'items.product.subCategory:id,quantity_depends_on_attributes',
+            'items.variant:id,product_id,sku,price,stock_quantity,is_active',
+            'items.variant.attributes.attribute:id,name',
+            'items.variant.attributes.value:id,value',
+        ];
+    }
+
     /**
      * Get or create active cart for current user
      */
@@ -32,12 +47,7 @@ class CartService extends Service
             ]);
         }
 
-        return $cart->load([
-            'items.product:id,name,current_price,quantity',
-            'items.product.images',
-            'items.variant.attributes.attribute',
-            'items.variant.attributes.value',
-        ]);
+        return $cart->load($this->cartDetailRelations());
     }
 
     /**
@@ -309,14 +319,7 @@ class CartService extends Service
      */
     public function getCartWithDetails(int $cartId): Cart
     {
-        return Cart::with([
-            'items.product:id,name,description,current_price,previous_price,quantity,store_id',
-            'items.product.store:id,store_name,store_logo',
-            'items.product.images',
-            'items.variant:id,product_id,sku,price,stock_quantity,is_active',
-            'items.variant.attributes.attribute:id,name',
-            'items.variant.attributes.value:id,value',
-        ])->findOrFail($cartId);
+        return Cart::with($this->cartDetailRelations())->findOrFail($cartId);
     }
 
     /**
