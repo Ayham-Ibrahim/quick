@@ -26,10 +26,10 @@ class CartResource extends JsonResource
             'total' => (float) $this->total,
 
             // Items
-            'items' => CartItemResource::collection($this->whenLoaded('items')),
+            'items' => CartItemResource::collection($this->items),
 
             // Group items by store (useful for multi-store carts)
-            'items_by_store' => $this->when($this->relationLoaded('items'), function () {
+            'items_by_store' => $this->when($this->items->isNotEmpty(), function () {
                 return $this->items->groupBy(function ($item) {
                     return $item->product->store_id ?? 0;
                 })->map(function ($storeItems, $storeId) {
