@@ -37,7 +37,7 @@ class CartItemResource extends JsonResource
                 'current_price' => (float) $this->product->current_price,
                 'previous_price' => $this->product->previous_price ? (float) $this->product->previous_price : null,
                 'image' => $this->product->images->first()?->image,
-                'store' => $this->whenLoaded('product', function () {
+                'store' => $this->when($this->product && $this->product->store, function () {
                     return $this->product->store ? [
                         'id' => $this->product->store->id,
                         'store_name' => $this->product->store->store_name,
