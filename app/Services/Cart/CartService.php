@@ -70,6 +70,7 @@ class CartService extends Service
         try {
             DB::beginTransaction();
 
+            $user = $this->currentUser();
             $cart = $this->getOrCreateCart();
             $product = Product::with('subCategory')->find($data['product_id']);
 
@@ -155,18 +156,46 @@ class CartService extends Service
                     'quantity' => $newQuantity,
                     'unit_price' => $price, // Update to current price
                 ]);
+
+                Log::info('Cart item quantity updated', [
+                    'user_id' => $user->id,
+                    'cart_id' => $cart->id,
+                    'cart_item_id' => $existingItem->id,
+                    'product_id' => $product->id,
+                    'product_variant_id' => $variantId,
+                    'quantity' => $newQuantity,
+                    'unit_price' => $price,
+                ]);
             } else {
                 // Create new item
-                $cart->items()->create([
+                $createdItem = $cart->items()->create([
                     'product_id' => $product->id,
                     'product_variant_id' => $variantId,
                     'quantity' => $quantity,
                     'unit_price' => $price,
                     'notes' => $data['notes'] ?? null,
                 ]);
+
+                Log::info('Cart item created', [
+                    'user_id' => $user->id,
+                    'cart_id' => $cart->id,
+                    'cart_item_id' => $createdItem->id,
+                    'product_id' => $product->id,
+                    'product_variant_id' => $variantId,
+                    'quantity' => $quantity,
+                    'unit_price' => $price,
+                ]);
             }
 
             DB::commit();
+
+            $cartItemsCount = Cart::whereKey($cart->id)->withCount('items')->value('items_count');
+
+            Log::info('Cart addItem committed', [
+                'user_id' => $user->id,
+                'cart_id' => $cart->id,
+                'items_count' => $cartItemsCount,
+            ]);
 
             return $this->getCartWithDetails($cart->id);
         } catch (\Throwable $th) {
