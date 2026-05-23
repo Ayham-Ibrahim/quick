@@ -150,6 +150,4 @@ class WhatsAppService
 
     }
 
-    return '+' . $clean;
-}
 }
