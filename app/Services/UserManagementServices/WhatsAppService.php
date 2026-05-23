@@ -2,6 +2,7 @@
 
 namespace App\Services\UserManagementServices;
 
+use Exception;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 
@@ -74,6 +75,10 @@ class WhatsAppService
                 return true;
             }
 
+            $providerMessage = data_get($response->json(), 'response.message.0')
+                ?? data_get($response->json(), 'message')
+                ?? mb_substr($response->body(), 0, 500);
+
             Log::error('Failed to send WhatsApp OTP', [
                 'phone' => $phoneNumber,
                 'type' => $type,
@@ -82,10 +87,11 @@ class WhatsAppService
                 'session_id_length' => strlen($sessionId),
                 'status' => $response->status(),
                 'response' => mb_substr($response->body(), 0, 500),
+                'provider_message' => $providerMessage,
             ]);
 
             return false;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Exception while sending WhatsApp OTP', [
                 'phone' => $phoneNumber,
                 'type' => $type,
@@ -108,7 +114,7 @@ class WhatsAppService
 
     private function normalizeReceiver(string $phone): ?string
     {
-        // Remove everything except digits and +
+        // The v2 API expects digits only, without the + prefix.
         $clean = preg_replace('/[^0-9+]/', '', trim($phone));
 
         if ($clean === null || $clean === '') {
@@ -133,7 +139,10 @@ class WhatsAppService
             $digits = '963' . $digits;
         }
 
-        // Return WITH + prefix (Technoplus format from Postman)
-        return '+' . $digits;
+        if (!preg_match('/^[0-9]{7,15}$/', $digits)) {
+            return null;
+        }
+
+        return $digits;
     }
 }
