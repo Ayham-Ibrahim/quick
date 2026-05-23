@@ -50,9 +50,15 @@ class RepriceSyncedVariantsJob implements ShouldQueue
                 }
 
                 foreach ($products as $product) {
-                    $dynamicPricingService->repriceProduct($product, $this->exchangeRate);
+                    $freshProduct = $product->fresh(['variants:id,product_id,price,base_price_usd,sync_enabled']);
 
-                    foreach ($product->variants as $variant) {
+                    if (!$freshProduct || !$freshProduct->sync_enabled) {
+                        continue;
+                    }
+
+                    $dynamicPricingService->repriceProduct($freshProduct, $this->exchangeRate);
+
+                    foreach ($freshProduct->variants as $variant) {
                         $dynamicPricingService->repriceVariant($variant, $this->exchangeRate);
                     }
                 }
