@@ -20,6 +20,13 @@ class ProfitRatios extends Model
         'tag'
     ];
 
+    public static function getValueByTag(string $tag): mixed
+    {
+        return static::query()
+            ->where('tag', $tag)
+            ->value('value');
+    }
+
     // scope for get value by tag
     public function scopeGetValueByTag($query, $tag)
     {
