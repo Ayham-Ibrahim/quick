@@ -2,6 +2,7 @@
 
 namespace App\Services\UserManagementServices;
 
+use Exception;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 
@@ -74,6 +75,10 @@ class WhatsAppService
                 return true;
             }
 
+            $providerMessage = data_get($response->json(), 'response.message.0')
+                ?? data_get($response->json(), 'message')
+                ?? mb_substr($response->body(), 0, 500);
+
             Log::error('Failed to send WhatsApp OTP', [
                 'phone' => $phoneNumber,
                 'type' => $type,
@@ -82,10 +87,11 @@ class WhatsAppService
                 'session_id_length' => strlen($sessionId),
                 'status' => $response->status(),
                 'response' => mb_substr($response->body(), 0, 500),
+                'provider_message' => $providerMessage,
             ]);
 
             return false;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Exception while sending WhatsApp OTP', [
                 'phone' => $phoneNumber,
                 'type' => $type,
@@ -106,9 +112,11 @@ class WhatsAppService
         return $messages[$type] ?? "كود التحقق الخاص بك هو: {$otpCode}\n\nهذا الكود صالح لمدة 4 دقائق";
     }
 
-   private function normalizeReceiver(string $phone): ?string
-{
-    $clean = preg_replace('/[^0-9+]/', '', trim($phone));
+    private function normalizeReceiver(string $phone): ?string
+    {
+        // The v2 API expects digits only, without the + prefix.
+        $clean = preg_replace('/[^0-9+]/', '', trim($phone));
+
 
     if ($clean === '' || $clean === null) {
         return null;
@@ -133,8 +141,13 @@ class WhatsAppService
         return null;
     }
 
-    if (!preg_match('/^[0-9]+$/', $clean)) {
-        return null;
+
+        if (!preg_match('/^[0-9]{7,15}$/', $digits)) {
+            return null;
+        }
+
+        return $digits;
+
     }
 
     return '+' . $clean;
