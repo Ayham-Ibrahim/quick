@@ -6,6 +6,7 @@ use App\Models\Cart;
 use App\Models\Product;
 use App\Services\Service;
 use App\Models\ProductVariant;
+use App\Models\UserManagement\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +14,17 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 
 class CartService extends Service
 {
+    private function currentUser(): User
+    {
+        $user = Auth::guard('api')->user();
+
+        if (!$user instanceof User) {
+            $this->throwExceptionJson('غير مصرح لك بالوصول إلى السلة', 401);
+        }
+
+        return $user;
+    }
+
     /**
      * Relations required for consistent cart responses.
      */
@@ -34,7 +46,7 @@ class CartService extends Service
      */
     public function getOrCreateCart(): Cart
     {
-        $user = Auth::user();
+        $user = $this->currentUser();
 
         $cart = Cart::where('user_id', $user->id)
             ->active()
@@ -327,7 +339,7 @@ class CartService extends Service
      */
     public function getCartSummary(): array
     {
-        $cart = Cart::where('user_id', Auth::id())
+        $cart = Cart::where('user_id', $this->currentUser()->id)
             ->active()
             ->withCount('items')
             ->first();
