@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Services\Cart\CartService;
 use App\Http\Resources\CartResource;
+use Illuminate\Support\Facades\Log;
 
 class CartController extends Controller
 {
@@ -23,14 +24,24 @@ class CartController extends Controller
     public function index()
     {
         $cart = $this->cartService->getOrCreateCart();
+        $resource = new CartResource($cart->load([
+            'items.product.store',
+            'items.product.images',
+            'items.variant.attributes.attribute',
+            'items.variant.attributes.value',
+        ]));
+
+        $resolved = $resource->resolve();
+
+        Log::info('Cart index response summary', [
+            'cart_id' => $cart->id,
+            'model_items_count' => $cart->items->count(),
+            'resource_items_count' => count($resolved['items'] ?? []),
+            'resource_items_by_store_count' => count($resolved['items_by_store'] ?? []),
+        ]);
 
         return $this->success(
-            new CartResource($cart->load([
-                'items.product.store',
-                'items.product.images',
-                'items.variant.attributes.attribute',
-                'items.variant.attributes.value',
-            ])),
+            $resource,
             'تم جلب السلة بنجاح'
         );
     }
@@ -69,14 +80,24 @@ class CartController extends Controller
         ]);
 
         $cart = $this->cartService->addItem($validated);
+        $resource = new CartResource($cart->load([
+            'items.product.store',
+            'items.product.images',
+            'items.variant.attributes.attribute',
+            'items.variant.attributes.value',
+        ]));
+
+        $resolved = $resource->resolve();
+
+        Log::info('Cart addItem response summary', [
+            'cart_id' => $cart->id,
+            'model_items_count' => $cart->items->count(),
+            'resource_items_count' => count($resolved['items'] ?? []),
+            'resource_items_by_store_count' => count($resolved['items_by_store'] ?? []),
+        ]);
 
         return $this->success(
-            new CartResource($cart->load([
-                'items.product.store',
-                'items.product.images',
-                'items.variant.attributes.attribute',
-                'items.variant.attributes.value',
-            ])),
+            $resource,
             'تمت إضافة المنتج إلى السلة',
             201
         );
