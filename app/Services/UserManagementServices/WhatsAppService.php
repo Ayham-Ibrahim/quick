@@ -39,6 +39,11 @@ class WhatsAppService
             return false;
         }
 
+        if (empty($this->accessToken)) {
+            Log::error('WhatsApp OTP config missing access_token');
+            return false;
+        }
+
         if (empty($receiver)) {
             Log::error('WhatsApp OTP receiver is empty', ['phone' => $phoneNumber]);
             return false;
@@ -114,39 +119,33 @@ class WhatsAppService
 
     private function normalizeReceiver(string $phone): ?string
     {
-        // The v2 API expects digits only, without the + prefix.
         $clean = preg_replace('/[^0-9+]/', '', trim($phone));
 
-
-    if ($clean === '' || $clean === null) {
-        return null;
-    }
-
-    // + or 00 international prefix
-    if (str_starts_with($clean, '00')) {
-        $clean = substr($clean, 2);
-    }
-
-    if (str_starts_with($clean, '+')) {
-        $clean = substr($clean, 1);
-    }
-
-    // Syrian local format: 09xxxxxxx -> 9639xxxxxxx
-    if (str_starts_with($clean, '09')) {
-        $clean = '963' . substr($clean, 1);
-    }
-
-    // رفض الأرقام المحلية غير المحولة (لا يوجد فرض كود دولة عام)
-    if (str_starts_with($clean, '0')) {
-        return null;
-    }
-
-
-        if (!preg_match('/^[0-9]{7,15}$/', $digits)) {
+        if ($clean === '' || $clean === null) {
             return null;
         }
 
-        return $digits;
+        if (str_starts_with($clean, '00')) {
+            $clean = substr($clean, 2);
+        }
+
+        if (str_starts_with($clean, '+')) {
+            $clean = substr($clean, 1);
+        }
+
+        if (str_starts_with($clean, '09')) {
+            $clean = '963' . substr($clean, 1);
+        }
+
+        if (str_starts_with($clean, '0')) {
+            return null;
+        }
+
+        if (!preg_match('/^[0-9]{7,15}$/', $clean)) {
+            return null;
+        }
+
+        return $clean;
 
     }
 
