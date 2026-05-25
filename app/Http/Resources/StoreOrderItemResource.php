@@ -101,7 +101,7 @@ class StoreOrderItemResource extends JsonResource
                 'sku' => $this->variant->sku,
                 'price' => (float) $this->variant->price,
                 'stock_quantity' => $this->variant->stock_quantity,
-                'is_active' => (bool) $this->variant->is_active,
+                'is_active' => (int) ((bool) $this->variant->is_active),
                 'attributes_string' => $attributesString,
                 'attributes' => $filteredAttributes,
             ],
