@@ -9,7 +9,7 @@ use App\Services\Service;
 
 class DynamicPricingService extends Service
 {
-    private const DEFAULT_ROUNDING_STEP_SYP = 500.0;
+    private const DEFAULT_ROUNDING_STEP_SYP = 50.0;
     private const USD_SCALE = 6;
     private const PRICE_SCALE = 2;
 
