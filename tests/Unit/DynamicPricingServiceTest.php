@@ -74,4 +74,12 @@ class DynamicPricingServiceTest extends TestCase
         $this->assertSame(3.0, $payload['base_price_usd']);
         $this->assertTrue($payload['sync_enabled']);
     }
+
+    /** @test */
+    public function it_rounds_synced_prices_to_the_nearest_fifty_liras(): void
+    {
+        $syncedPrice = $this->service->calculateSyncedPriceSyp(3.1234, 15000);
+
+        $this->assertSame(46850.0, $syncedPrice);
+    }
 }
