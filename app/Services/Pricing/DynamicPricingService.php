@@ -9,7 +9,6 @@ use App\Services\Service;
 
 class DynamicPricingService extends Service
 {
-    private const DEFAULT_ROUNDING_STEP_SYP = 50.0;
     private const USD_SCALE = 6;
     private const PRICE_SCALE = 2;
 
@@ -44,7 +43,7 @@ class DynamicPricingService extends Service
         $effectiveExchangeRate = $exchangeRate ?? $this->getExchangeRate();
         $rawPrice = $basePriceUsd * $effectiveExchangeRate;
 
-        return $this->roundSypPrice($rawPrice);
+        return round($rawPrice, self::PRICE_SCALE);
     }
 
     public function prepareProductPricingPayload(array $productData, bool $hasDirectPrice, ?Product $product = null): array
@@ -174,16 +173,5 @@ class DynamicPricingService extends Service
     public function isExchangeRateCurrent(float $expectedExchangeRate): bool
     {
         return abs($this->getExchangeRate() - $expectedExchangeRate) < 0.0001;
-    }
-
-    private function roundSypPrice(float $price): float
-    {
-        $rounded = round(round($price / self::DEFAULT_ROUNDING_STEP_SYP) * self::DEFAULT_ROUNDING_STEP_SYP, self::PRICE_SCALE);
-
-        if ($rounded <= 0 && $price > 0) {
-            return self::DEFAULT_ROUNDING_STEP_SYP;
-        }
-
-        return $rounded;
     }
 }
