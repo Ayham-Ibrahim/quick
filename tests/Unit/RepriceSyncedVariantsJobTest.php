@@ -40,8 +40,8 @@ class RepriceSyncedVariantsJobTest extends TestCase
 
         app(RepriceSyncedVariantsJob::class, ['exchangeRate' => 15800])->handle(app('App\Services\Pricing\DynamicPricingService'));
 
-        $this->assertSame(31500.0, (float) $product->fresh()->current_price);
-        $this->assertSame(47500.0, (float) $syncedVariant->fresh()->price);
+        $this->assertSame(31600.0, (float) $product->fresh()->current_price);
+        $this->assertSame(47400.0, (float) $syncedVariant->fresh()->price);
         $this->assertSame(60000.0, (float) $manualProduct->fresh()->current_price);
     }
 

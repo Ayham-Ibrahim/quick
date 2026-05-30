@@ -178,6 +178,12 @@ class DynamicPricingService extends Service
 
     private function roundSypPrice(float $price): float
     {
-        return round(round($price / self::DEFAULT_ROUNDING_STEP_SYP) * self::DEFAULT_ROUNDING_STEP_SYP, self::PRICE_SCALE);
+        $rounded = round(round($price / self::DEFAULT_ROUNDING_STEP_SYP) * self::DEFAULT_ROUNDING_STEP_SYP, self::PRICE_SCALE);
+
+        if ($rounded <= 0 && $price > 0) {
+            return self::DEFAULT_ROUNDING_STEP_SYP;
+        }
+
+        return $rounded;
     }
 }
