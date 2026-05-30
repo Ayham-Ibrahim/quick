@@ -65,7 +65,7 @@ class ProfitRatiosService extends Service
             }
 
             if ($exchangeRateToDispatch !== null) {
-                RepriceSyncedVariantsJob::dispatchSync($exchangeRateToDispatch);
+                RepriceSyncedVariantsJob::dispatch($exchangeRateToDispatch);
             }
         } catch (Throwable $e) {
             $this->throwExceptionJson(
