@@ -164,6 +164,14 @@ class CustomOrderService extends Service
     private function restoreStockForCustom($order): void
     {
         foreach ($order->items as $item) {
+            if (!$item->product_id && !$item->product_variant_id) {
+                continue;
+            }
+
+            if (!method_exists($item, 'product') || !method_exists($item, 'variant')) {
+                continue;
+            }
+
             $product = $item->product;
             
             if ($item->product_variant_id) {
@@ -720,7 +728,7 @@ class CustomOrderService extends Service
     protected function getUserOrder(int $orderId)
     {
         $order = CustomOrder::where('user_id', Auth::id())
-            ->with(['items.product.subCategory', 'items.variant', 'driver'])
+            ->with(['items.variant', 'driver'])
             ->find($orderId);
 
         if (!$order) {
