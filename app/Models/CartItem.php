@@ -114,7 +114,7 @@ class CartItem extends Model
             return (float) $this->variant->price;
         }
 
-        return (float) $this->product->current_price;
+        return (float) ($this->product?->current_price ?? $this->unit_price);
     }
 
     /**
