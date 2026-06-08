@@ -59,7 +59,40 @@ class CartService extends Service
             ]);
         }
 
-        return $cart->load($this->cartDetailRelations());
+        return $this->prepareCartForResponse($cart->load($this->cartDetailRelations()));
+    }
+
+    private function prepareCartForResponse(Cart $cart): Cart
+    {
+        $originalItems = $cart->items;
+        $visibleItems = $originalItems->filter(function ($item) {
+            if (!$item->product) {
+                return false;
+            }
+
+            if ($item->product_variant_id && !$item->variant) {
+                return false;
+            }
+
+            return true;
+        })->values();
+
+        if ($visibleItems->count() !== $originalItems->count()) {
+            Log::warning('Cart response filtered stale items', [
+                'cart_id' => $cart->id,
+                'original_items_count' => $originalItems->count(),
+                'visible_items_count' => $visibleItems->count(),
+                'filtered_item_ids' => $originalItems
+                    ->reject(fn ($item) => $visibleItems->contains('id', $item->id))
+                    ->pluck('id')
+                    ->values()
+                    ->all(),
+            ]);
+        }
+
+        $cart->setRelation('items', $visibleItems);
+
+        return $cart;
     }
 
     /**
@@ -360,7 +393,9 @@ class CartService extends Service
      */
     public function getCartWithDetails(int $cartId): Cart
     {
-        return Cart::with($this->cartDetailRelations())->findOrFail($cartId);
+        return $this->prepareCartForResponse(
+            Cart::with($this->cartDetailRelations())->findOrFail($cartId)
+        );
     }
 
     /**
@@ -381,7 +416,8 @@ class CartService extends Service
             ];
         }
 
-        $cart->load('items');
+        $cart->load($this->cartDetailRelations());
+        $cart = $this->prepareCartForResponse($cart);
 
         return [
             'cart_id' => $cart->id,
