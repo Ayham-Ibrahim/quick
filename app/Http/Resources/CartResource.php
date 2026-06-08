@@ -31,7 +31,7 @@ class CartResource extends JsonResource
             // Group items by store (useful for multi-store carts)
             'items_by_store' => $this->when($this->items->isNotEmpty(), function () {
                 return $this->items->groupBy(function ($item) {
-                    return $item->product->store_id ?? 0;
+                    return $item->product?->store_id ?? 0;
                 })->map(function ($storeItems, $storeId) {
                     $store = $storeItems->first()->product?->store;
                     return [
