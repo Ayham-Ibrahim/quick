@@ -59,18 +59,7 @@ class CartService extends Service
             ]);
         }
 
-        $this->removeInvalidCartItems($cart);
-
         return $cart->load($this->cartDetailRelations());
-    }
-
-    private function removeInvalidCartItems(Cart $cart): void
-    {
-        $cart->items()->doesntHave('product')->delete();
-        $cart->items()
-            ->whereNotNull('product_variant_id')
-            ->doesntHave('variant')
-            ->delete();
     }
 
     /**
