@@ -33,7 +33,7 @@ class CartResource extends JsonResource
                 return $this->items->groupBy(function ($item) {
                     return $item->product->store_id ?? 0;
                 })->map(function ($storeItems, $storeId) {
-                    $store = $storeItems->first()->product->store;
+                    $store = $storeItems->first()->product?->store;
                     return [
                         'store' => $store ? [
                             'id' => $store->id,

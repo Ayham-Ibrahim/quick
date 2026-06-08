@@ -31,12 +31,12 @@ class CartItemResource extends JsonResource
 
             // Product details
             'product' => [
-                'id' => $this->product->id,
-                'name' => $this->product->name,
-                'description' => $this->product->description,
-                'current_price' => (float) $this->product->current_price,
-                'previous_price' => $this->product->previous_price ? (float) $this->product->previous_price : null,
-                'image' => $this->product->images->first()?->image,
+                'id' => $this->product?->id,
+                'name' => $this->product?->name ?? 'منتج محذوف',
+                'description' => $this->product?->description,
+                'current_price' => (float) ($this->product?->current_price ?? $this->unit_price),
+                'previous_price' => $this->product?->previous_price ? (float) $this->product->previous_price : null,
+                'image' => $this->product?->images->first()?->image,
                 'store' => $this->when($this->product && $this->product->store, function () {
                     return $this->product->store ? [
                         'id' => $this->product->store->id,
