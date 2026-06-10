@@ -891,7 +891,7 @@ class OrderService extends Service
      */
     public function cancelOrderByAdmin(int $orderId, string $reason): Order
     {
-        $order = Order::find($orderId);
+        $order = Order::with(['items.product.subCategory', 'items.variant', 'driver'])->find($orderId);
 
         if (!$order) {
             $this->throwExceptionJson('الطلب غير موجود', 404);
@@ -900,6 +900,8 @@ class OrderService extends Service
         if (!$order->can_admin_cancel) {
             $this->throwExceptionJson('لا يمكن إلغاء هذا الطلب', 400);
         }
+
+        $this->restoreStock($order);
 
         $order->markAsCancelled($reason);
 
