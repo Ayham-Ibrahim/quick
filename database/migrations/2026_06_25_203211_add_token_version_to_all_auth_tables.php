@@ -14,17 +14,22 @@ return new class extends Migration
     {
         $tables = ['users', 'providers', 'stores', 'drivers'];
 
-        foreach ($tables as $table) {
+        foreach (['users', 'providers', 'stores'] as $table) {
             Schema::table($table, function (Blueprint $table) {
                 $table->unsignedBigInteger('token_version')
                       ->default(1)
                       ->after('remember_token');
             });
-
-            // كل المستخدمين الحاليين يبدأون بـ version = 2
-            // حتى يختلف عن الـ default في الـ app
             DB::table($table)->update(['token_version' => 2]);
         }
+
+        // drivers ما عنده remember_token — نضيف بعد updated_at
+        Schema::table('drivers', function (Blueprint $table) {
+            $table->unsignedBigInteger('token_version')
+                  ->default(1)
+                  ->after('updated_at');
+        });
+        DB::table('drivers')->update(['token_version' => 2]);
     }
 
     public function down(): void
