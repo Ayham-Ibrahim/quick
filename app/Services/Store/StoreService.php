@@ -22,6 +22,11 @@ class StoreService extends Service
         return $stores;
     }
 
+    public function getAll()
+    {
+        return Store::with(['subCategories', 'categories'])->get();
+    }
+
     public function listOfStores()
     {
         $stores = Store::select(['id','store_name', 'store_logo'])->get();
