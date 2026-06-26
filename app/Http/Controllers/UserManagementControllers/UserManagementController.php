@@ -161,15 +161,21 @@ class UserManagementController extends Controller
     if (!$refreshToken) {
         $refreshToken = $request->input('refresh_token');
     }
+    if (!$refreshToken) {
+        return $this->error('لم يتم إرسال Refresh Token', 401);
+    }
 
     $personal = \Laravel\Sanctum\PersonalAccessToken::findToken($refreshToken);
 
     if (!$personal) {
-        return [
-            'success' => false,
-            'message' => 'Refresh token غير صالح'
-        ];
+        return $this->error('انتهت الجلسة، الرجاء تسجيل الدخول مجدداً', 401);
     }
+
+    if ($personal->expires_at && $personal->expires_at->isPast()) {
+        $personal->delete();
+        return $this->error('انتهت صلاحية الجلسة، الرجاء تسجيل الدخول مجدداً', 401);
+    }
+    
 
     $abilities = $personal->abilities;
     $user = $personal->tokenable;
@@ -193,7 +199,8 @@ class UserManagementController extends Controller
                 'access_token'  => $newAccess,
                 'refresh_token' => $refreshToken,
                 'expires_in'    => 600, // 10 min
-                'type'          => 'admin'
+                'type'          => 'admin',
+                'token_version' => $user->token_version,
             ]
         ];
     }
@@ -221,15 +228,13 @@ class UserManagementController extends Controller
                     'access_token'  => $newAccess,
                     'refresh_token' => $newRefresh,
                     'expires_in'    => 31536000, // 1 year
-                    'type'          => 'mobile'
+                    'type'          => 'mobile',
+                    'token_version' => $user->token_version,
                 ]
             ];
         }
 
-        return [
-            'success' => false,
-            'message' => 'هذا التوكن ليس Refresh Token'
-        ];
+        return $this->error('هذا التوكن ليس Refresh Token', 401);
     }
 
     /**
