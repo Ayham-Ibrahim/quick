@@ -156,6 +156,7 @@ class UserManagementService extends Service
                     'refresh_token' => $refreshToken,
                     'message' => 'تم تفعيل الحساب بنجاح',
                     'expires_in'    => 31536000, // 1 year
+                    'token_version' => $user->fresh()->token_version,
                 ]
             ];
         } catch (\Exception $e) {
@@ -221,6 +222,7 @@ class UserManagementService extends Service
                     'access_token'   => $accessToken,
                     'refresh_token'  => $refreshToken,
                     'expires_in'     => 600, // 10 minutes
+                    'token_version'  => $account->token_version,
                 ],
             ];
         }
@@ -263,6 +265,7 @@ class UserManagementService extends Service
                 'access_token'  => $accessToken,
                 'refresh_token' => $refreshToken,
                 'expires_in'    => 31536000, // 1 year
+                'token_version' => $account->token_version,
             ]
         ];
     }
@@ -320,6 +323,7 @@ class UserManagementService extends Service
                     'access_token'  => $accessToken,
                     'refresh_token' => $refreshToken,
                     'expires_in'    => 31536000, // 1 year
+                    'token_version' => $user->fresh()->token_version,
                 ]
             ];
         } catch (\Exception $e) {
