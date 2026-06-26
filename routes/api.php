@@ -36,8 +36,11 @@ use App\Http\Controllers\Admin;
 Route::post('register', [UserManagementController::class, 'register']);
 Route::post('confirm-registration', [UserManagementController::class, 'confirmRegistration']);
 
-// تسجيل الدخول والتأكيد
-Route::post('login', [UserManagementController::class, 'login']);
+
+Route::middleware('clear.auth.header')->group(function () {
+    // تسجيل الدخول والتأكيد
+    Route::post('login', [UserManagementController::class, 'login']);
+});
 Route::post('confirm-login', [UserManagementController::class, 'confirmLogin']);
 Route::post('refresh', [UserManagementController::class, 'refreshToken']);
 
