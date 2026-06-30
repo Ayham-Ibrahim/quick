@@ -35,7 +35,7 @@ use App\Http\Controllers\Admin;
 
 
 
-Route::middleware('clear.auth.header')->group(function () {
+// Route::middleware('clear.auth.header')->group(function () {
     // تسجيل الدخول والتأكيد
     Route::post('login', [UserManagementController::class, 'login']);
     Route::post('register', [UserManagementController::class, 'register']);
@@ -48,7 +48,7 @@ Route::middleware('clear.auth.header')->group(function () {
     
     // إعادة إرسال OTP
     Route::post('resend-otp', [UserManagementController::class, 'resendOTP']);
-});
+// });
 Route::post('refresh', [UserManagementController::class, 'refreshToken']);
 
 
