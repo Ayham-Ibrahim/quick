@@ -162,20 +162,29 @@ class UserManagementController extends Controller
         $refreshToken = $request->input('refresh_token');
     }
     if (!$refreshToken) {
-        return $this->error('لم يتم إرسال Refresh Token', 401);
+        return [
+            'success' => false,
+            'message' => 'لم يتم إرسال Refresh Token'
+        ];
     }
 
     $personal = \Laravel\Sanctum\PersonalAccessToken::findToken($refreshToken);
 
     if (!$personal) {
-        return $this->error('انتهت الجلسة، الرجاء تسجيل الدخول مجدداً', 401);
+        return [
+            'success' => false,
+            'message' => 'انتهت الجلسة، الرجاء تسجيل الدخول مجدداً'
+        ];
     }
 
     if ($personal->expires_at && $personal->expires_at->isPast()) {
         $personal->delete();
-        return $this->error('انتهت صلاحية الجلسة، الرجاء تسجيل الدخول مجدداً', 401);
+        return [
+            'success' => false,
+            'message' => 'انتهت صلاحية الجلسة، الرجاء تسجيل الدخول مجدداً'
+        ];
     }
-    
+
 
     $abilities = $personal->abilities;
     $user = $personal->tokenable;
@@ -234,7 +243,10 @@ class UserManagementController extends Controller
             ];
         }
 
-        return $this->error('هذا التوكن ليس Refresh Token', 401);
+        return [
+            'success' => false,
+            'message' => 'هذا التوكن ليس Refresh Token'
+        ];
     }
 
     /**
