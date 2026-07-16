@@ -10,7 +10,7 @@ use App\Services\Service;
 class DynamicPricingService extends Service
 {
     private const USD_SCALE = 6;
-    private const PRICE_SCALE = 2;
+    private const PRICE_SCALE = 0;
 
     public function getExchangeRate(): float
     {
