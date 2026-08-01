@@ -54,14 +54,19 @@ class SmsService
         }
 
         try {
+            $vars = [$this->otpCodeVar => $otpCode];
+
+            // Only include the name var if a template var name is configured for it
+            // (some templates, like this account's OTP template, take a single var).
+            if (! empty($this->otpNameVar)) {
+                $vars[$this->otpNameVar] = $this->otpNameValue;
+            }
+
             $payload = [
                 'sender_id' => (int) $this->senderId,
                 'template_id' => (int) $this->templateId,
                 'numbers' => [$receiver],
-                'vars' => [
-                    $this->otpNameVar => $this->otpNameValue,
-                    $this->otpCodeVar => $otpCode,
-                ],
+                'vars' => $vars,
             ];
 
             Log::debug('SMS OTP request', [
