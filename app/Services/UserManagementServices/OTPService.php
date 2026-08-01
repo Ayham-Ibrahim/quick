@@ -3,15 +3,19 @@ namespace App\Services\UserManagementServices;
 
 use App\Models\OTPCode;
 use App\Services\UserManagementServices\WhatsAppService;
+use App\Services\UserManagementServices\SmsService;
 use Carbon\Carbon;
 
 class OTPService
 {
+    // WhatsApp delivery is temporarily suspended (not removed) — see $channel below.
     protected $whatsAppService;
+    protected $smsService;
 
-    public function __construct(WhatsAppService $whatsAppService)
+    public function __construct(WhatsAppService $whatsAppService, SmsService $smsService)
     {
         $this->whatsAppService = $whatsAppService;
+        $this->smsService = $smsService;
     }
 
     /**
@@ -38,7 +42,12 @@ class OTPService
             'attempts'   => 0,
         ]);
 
-        $sent = $this->whatsAppService->sendOTP($phone, $otpCode, $type);
+        // WhatsApp is temporarily suspended; OTPs are routed through SMS (msgPlus) by default.
+        // Set OTP_CHANNEL=whatsapp in .env to switch back without touching this code.
+        $channel = config('otp.channel', 'sms');
+        $sent = $channel === 'whatsapp'
+            ? $this->whatsAppService->sendOTP($phone, $otpCode, $type)
+            : $this->smsService->sendOTP($phone, $otpCode, $type);
 
         if (! $sent) {
             throw new \Exception('فشل في إرسال كود التحقق');
